@@ -118,6 +118,7 @@ export default function Home() {
       </nav>
 
       <main className="container">
+        {error && <p style={{ color: '#ff6b6b', marginBottom: '1rem' }}>{error}</p>}
         {/* Hero секция в стиле Lunacy */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -137,15 +138,15 @@ export default function Home() {
         {/* Статистика */}
         <div className="stat-grid">
           <div className="stat-item">
-            <div className="stat-number">{stats.members}</div>
+            <div className="stat-number">{loading ? '…' : stats.members}</div>
             <div className="stat-label">ВОЛКОВ В СТАЕ</div>
           </div>
           <div className="stat-item">
-            <div className="stat-number">{stats.online}</div>
+            <div className="stat-number">{loading ? '…' : stats.online}</div>
             <div className="stat-label">ОНЛАЙН СЕЙЧАС</div>
           </div>
           <div className="stat-item">
-            <div className="stat-number">{stats.achievements}+</div>
+            <div className="stat-number">{loading ? '…' : `${stats.achievements}+`}</div>
             <div className="stat-label">ДОСТИЖЕНИЙ</div>
           </div>
         </div>
