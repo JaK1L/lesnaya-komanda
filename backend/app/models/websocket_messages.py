@@ -7,12 +7,21 @@ from datetime import datetime
 
 
 # Модели данных
+class RoleData(BaseModel):
+    """Данные о роли пользователя"""
+    name: str
+    color: Optional[str] = None
+
+
 class ActivityData(BaseModel):
     """Данные об активности пользователя"""
     user_id: str
     username: str
     game: Optional[str] = None
     status: Literal["online", "offline", "idle", "dnd"]
+    roles: List[RoleData] = []
+    activity_started_at: Optional[str] = None
+    game_icon_url: Optional[str] = None
 
 
 class LeaderboardEntry(BaseModel):

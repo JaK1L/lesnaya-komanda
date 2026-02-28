@@ -28,8 +28,12 @@ class DiscordMonitor:
             SELECT
                 p.discord_id,
                 COALESCE(u.discord_username, 'Unknown') AS username,
+                u.avatar_url,
                 p.activity_name as game,
-                p.status
+                p.status,
+                p.roles,
+                p.activity_started_at,
+                p.game_icon_url
             FROM discord_presence p
             LEFT JOIN users u ON u.discord_id = p.discord_id
             WHERE p.status IS NOT NULL AND p.status <> 'offline'
@@ -42,8 +46,12 @@ class DiscordMonitor:
             {
                 "user_id": str(row["discord_id"]),
                 "username": row["username"],
+                "avatar_url": row["avatar_url"],
                 "game": row["game"],
-                "status": row["status"]
+                "status": row["status"],
+                "roles": row["roles"] or [],
+                "activity_started_at": row["activity_started_at"].isoformat() if row["activity_started_at"] else None,
+                "game_icon_url": row["game_icon_url"]
             }
             for row in activity_rows
         ]
@@ -118,9 +126,55 @@ class DiscordMonitor:
         Returns:
             Список activity_update сообщений
         """
-        # TODO: Реализовать детекцию изменений
-        # Пока возвращаем пустой список
-        return []
+        if not previous_state or "activity" not in previous_state:
+            return []
+        
+        # Получаем текущее состояние
+        current_state = await self.get_initial_state()
+        current_activity = {item["user_id"]: item for item in current_state.get("activity", [])}
+        previous_activity = {item["user_id"]: item for item in previous_state.get("activity", [])}
+        
+        updates = []
+        
+        # Проверяем изменения существующих пользователей
+        for user_id, current_data in current_activity.items():
+            if user_id in previous_activity:
+                previous_data = previous_activity[user_id]
+                # Определяем измененные поля
+                changed_fields = {"user_id": user_id}
+                
+                for field in ["username", "avatar_url", "game", "status", "roles", "activity_started_at", "game_icon_url"]:
+                    if current_data.get(field) != previous_data.get(field):
+                        changed_fields[field] = current_data.get(field)
+                
+                # Если есть изменения (кроме user_id), создаем update сообщение
+                if len(changed_fields) > 1:
+                    updates.append({
+                        "type": "activity_update",
+                        "timestamp": datetime.now().isoformat(),
+                        "data": changed_fields
+                    })
+            else:
+                # Новый пользователь - отправляем все данные
+                updates.append({
+                    "type": "activity_update",
+                    "timestamp": datetime.now().isoformat(),
+                    "data": current_data
+                })
+        
+        # Проверяем пользователей, которые ушли в оффлайн
+        for user_id, previous_data in previous_activity.items():
+            if user_id not in current_activity:
+                updates.append({
+                    "type": "activity_update",
+                    "timestamp": datetime.now().isoformat(),
+                    "data": {
+                        "user_id": user_id,
+                        "status": "offline"
+                    }
+                })
+        
+        return updates
     
     async def should_update_statistics(self) -> bool:
         """

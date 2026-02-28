@@ -5,6 +5,39 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting'
 
+export interface Role {
+  name: string
+  color?: string
+}
+
+export interface ActivityData {
+  user_id: string
+  username: string
+  avatar_url?: string
+  game?: string
+  status: 'online' | 'offline' | 'idle' | 'dnd'
+  roles: Role[]
+  activity_started_at?: string  // ISO 8601 timestamp
+  game_icon_url?: string
+}
+
+export interface LeaderboardEntry {
+  user_id: string
+  username: string
+  count?: number  // для сообщений
+  minutes?: number  // для голоса
+}
+
+export interface StatisticsData {
+  message_leaderboard: LeaderboardEntry[]
+  voice_leaderboard: LeaderboardEntry[]
+}
+
+export interface InitialStateData {
+  activity: ActivityData[]
+  statistics: StatisticsData
+}
+
 export interface DiscordUpdate {
   type: 'initial_state' | 'activity_update' | 'statistics_update' | 'ping' | 'batch'
   timestamp: string

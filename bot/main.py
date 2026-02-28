@@ -6,6 +6,7 @@ import asyncpg
 import aiohttp
 from datetime import datetime, timezone
 import asyncio
+import json
 
 load_dotenv()
 
@@ -30,8 +31,23 @@ class StatsCollector:
 
         status = str(member.status) if member.status else "offline"
 
+        # Сбор ролей (исключаем @everyone)
+        roles = []
+        for role in member.roles[1:]:  # Пропускаем @everyone (первая роль)
+            role_color = None
+            if role.color.value != 0:  # Если цвет установлен
+                # Преобразуем в hex формат
+                role_color = f"#{role.color.value:06x}"
+            roles.append({
+                "name": role.name,
+                "color": role_color
+            })
+
         activity_name = None
         activity_type = None
+        activity_started_at = None
+        game_icon_url = None
+        
         # Берём первую "осмысленную" активность (игра/стрим/слушает/смотрит/соревнование/кастом)
         for act in getattr(member, "activities", []) or []:
             try:
@@ -43,6 +59,18 @@ class StatsCollector:
                 if name:
                     activity_name = str(name)[:200]
                     activity_type = str(atype).split(".")[-1] if atype is not None else None
+                    
+                    # Получаем timestamp начала активности
+                    start = getattr(act, "start", None)
+                    if start:
+                        activity_started_at = start
+                    
+                    # Получаем иконку игры (для Rich Presence)
+                    if hasattr(act, "large_image_url"):
+                        game_icon_url = act.large_image_url
+                    elif hasattr(act, "small_image_url"):
+                        game_icon_url = act.small_image_url
+                    
                     break
             except Exception:
                 continue
@@ -53,18 +81,27 @@ class StatsCollector:
             # Таблица создаётся бэкендом, но upsert безопасен
             await conn.execute(
                 """
-                INSERT INTO discord_presence (discord_id, status, activity_name, activity_type, updated_at)
-                VALUES ($1, $2, $3, $4, NOW())
+                INSERT INTO discord_presence (
+                    discord_id, status, activity_name, activity_type,
+                    roles, activity_started_at, game_icon_url, updated_at
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
                 ON CONFLICT (discord_id) DO UPDATE SET
                     status = EXCLUDED.status,
                     activity_name = EXCLUDED.activity_name,
                     activity_type = EXCLUDED.activity_type,
+                    roles = EXCLUDED.roles,
+                    activity_started_at = EXCLUDED.activity_started_at,
+                    game_icon_url = EXCLUDED.game_icon_url,
                     updated_at = NOW()
                 """,
                 member.id,
                 status,
                 activity_name,
                 activity_type,
+                json.dumps(roles),
+                activity_started_at,
+                game_icon_url,
             )
 
             # Обновим users, чтобы имя/аватар были свежими

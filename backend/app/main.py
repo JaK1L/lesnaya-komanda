@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from .config import settings
 from .database import database
-from .routes import users, auth, discord_oauth, admin, content, websocket
+from .routes import users, auth, discord_oauth, admin, content, websocket, discord
 from .auth import get_password_hash
 
 # Инициализация приложения
@@ -49,6 +49,7 @@ app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(discord_oauth.router, prefix="/api", tags=["discord"])
 app.include_router(admin.router, prefix="/api", tags=["admin"])
 app.include_router(content.router, prefix="/api", tags=["content"])
+app.include_router(discord.router)
 
 # WebSocket endpoint
 @app.websocket("/ws/discord")
@@ -161,6 +162,16 @@ async def init_db():
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_presence_status ON discord_presence(status)')
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_presence_updated_at ON discord_presence(updated_at)')
             print("✅ Таблица discord_presence создана или уже существует")
+            
+            # Добавляем новые колонки для расширенных данных присутствия (миграция)
+            await conn.execute('''
+                ALTER TABLE discord_presence 
+                ADD COLUMN IF NOT EXISTS roles JSONB DEFAULT '[]',
+                ADD COLUMN IF NOT EXISTS activity_started_at TIMESTAMP,
+                ADD COLUMN IF NOT EXISTS game_icon_url TEXT
+            ''')
+            await conn.execute('CREATE INDEX IF NOT EXISTS idx_presence_activity_started ON discord_presence(activity_started_at DESC)')
+            print("✅ Расширенные колонки discord_presence добавлены (roles, activity_started_at, game_icon_url)")
 
             # Таблица контент-ленты (посты и достижения для главной)
             await conn.execute('''
