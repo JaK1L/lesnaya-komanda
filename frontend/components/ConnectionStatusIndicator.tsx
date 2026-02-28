@@ -29,12 +29,6 @@ export function ConnectionStatusIndicator({ status }: ConnectionStatusIndicatorP
           icon: '◐',
           text: 'ПЕРЕПОДКЛЮЧЕНИЕ'
         }
-      case 'disconnected':
-        return {
-          color: '#ff6b6b',  // красный
-          icon: '○',
-          text: 'OFFLINE'
-        }
     }
   }
   
