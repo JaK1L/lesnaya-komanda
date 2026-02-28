@@ -117,13 +117,13 @@ async def get_common_settings(db: asyncpg.Connection = Depends(get_db)):
     if not row:
         # значения по умолчанию: локальная разработка
         return CommonSettings(
-            discord_join_url="https://discord.gg/",
+            discord_join_url="https://discord.gg/YgX4RQZ",
             maintenance_enabled=False,
             maintenance_message=None,
         )
     data = row["value"] or {}
     return CommonSettings(
-        discord_join_url=data.get("discord_join_url", "https://discord.gg/"),
+        discord_join_url=data.get("discord_join_url", "https://discord.gg/YgX4RQZ"),
         maintenance_enabled=bool(data.get("maintenance_enabled", False)),
         maintenance_message=data.get("maintenance_message"),
     )

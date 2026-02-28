@@ -237,13 +237,13 @@ async def get_admin_common_settings(
     row = await db.fetchrow("SELECT value FROM site_settings WHERE key = 'common'")
     if not row:
         return CommonSettings(
-            discord_join_url="https://discord.gg/",
+            discord_join_url="https://discord.gg/YgX4RQZ",
             maintenance_enabled=False,
             maintenance_message=None,
         )
     data = row["value"] or {}
     return CommonSettings(
-        discord_join_url=data.get("discord_join_url", "https://discord.gg/"),
+        discord_join_url=data.get("discord_join_url", "https://discord.gg/YgX4RQZ"),
         maintenance_enabled=bool(data.get("maintenance_enabled", False)),
         maintenance_message=data.get("maintenance_message"),
     )

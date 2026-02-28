@@ -169,7 +169,7 @@ export default function Home() {
                 className="lunacy-button"
                 style={{ marginTop: '2rem' }}
               >
-                ВСТУПИТЬ В СТАЮ{' '}
+                ВОЙТИ В ЛЕС{' '}
                 <ChevronRight
                   size={16}
                   style={{ marginLeft: '0.5rem', display: 'inline' }}
