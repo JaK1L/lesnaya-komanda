@@ -2,7 +2,7 @@
 // Vercel build: no unused imports
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Gamepad2, Trophy, Calendar, TreePine, Sword, Target, Shield, ChevronRight } from 'lucide-react'
+import { Gamepad2, TreePine, Sword, Target, Shield, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface Player {
