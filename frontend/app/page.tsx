@@ -97,11 +97,9 @@ export default function Home() {
 
   // Обработчик WebSocket сообщений
   const handleWebSocketMessage = useCallback((update: DiscordUpdate) => {
-    if (!discordOverview) return
-
     switch (update.type) {
       case 'initial_state':
-        // Применяем начальное состояние
+        // Применяем начальное состояние (даже если discordOverview еще null)
         if (update.data) {
           setDiscordOverview({
             online: update.data.activity?.length || 0,
@@ -168,7 +166,7 @@ export default function Home() {
         }
         break
     }
-  }, [discordOverview])
+  }, [])
 
   // WebSocket подключение (только если есть токен)
   const { status: wsStatus } = useWebSocket({
