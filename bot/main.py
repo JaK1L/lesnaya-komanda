@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 import asyncpg
 import aiohttp
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
 
 load_dotenv()
@@ -68,6 +68,10 @@ class StatsCollector:
             )
 
             # Обновим users, чтобы имя/аватар были свежими
+            joined_at = member.joined_at or datetime.utcnow()
+            if joined_at.tzinfo is not None:
+                joined_at = joined_at.astimezone(timezone.utc).replace(tzinfo=None)
+
             await conn.execute(
                 """
                 INSERT INTO users (discord_id, discord_username, joined_at, avatar_url, last_seen)
@@ -79,7 +83,7 @@ class StatsCollector:
                 """,
                 member.id,
                 member.display_name or str(member),
-                member.joined_at or datetime.utcnow(),
+                joined_at,
                 avatar_url,
             )
     
@@ -126,15 +130,25 @@ async def on_ready():
             if member.bot:
                 continue
             avatar_url = str(member.display_avatar.url) if member.display_avatar else None
+            joined_at = member.joined_at or datetime.utcnow()
+            if joined_at.tzinfo is not None:
+                joined_at = joined_at.astimezone(timezone.utc).replace(tzinfo=None)
+
             async with stats.db_pool.acquire() as conn:
-                await conn.execute('''
+                await conn.execute(
+                    '''
                     INSERT INTO users (discord_id, discord_username, joined_at, avatar_url, last_seen)
                     VALUES ($1, $2, $3, $4, NOW())
                     ON CONFLICT (discord_id) DO UPDATE SET
                         discord_username = EXCLUDED.discord_username,
                         avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
                         last_seen = NOW()
-                ''', member.id, member.display_name or str(member), member.joined_at or datetime.utcnow(), avatar_url)
+                ''',
+                    member.id,
+                    member.display_name or str(member),
+                    joined_at,
+                    avatar_url,
+                )
 
         # Первичная синхронизация presence/активностей
         print("🟢 Синхронизация статусов и активностей (presence)...")
