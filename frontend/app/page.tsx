@@ -14,6 +14,8 @@ interface Player {
   message_count?: number
   voice_hours?: number
   avatar_url?: string | null
+  status?: string
+  is_online?: boolean
 }
 
 interface Stats {
@@ -50,6 +52,7 @@ const TOKEN_KEY = 'lesnaya_token'
 
 export default function Home() {
   const [players, setPlayers] = useState<Player[]>([])
+  const [elitePlayers, setElitePlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
@@ -90,22 +93,25 @@ export default function Home() {
     try {
       setLoading(true)
       setError(null)
-      const [playersRes, statsRes, eventsRes, feedRes, commonRes] = await Promise.all([
+      const [playersRes, statsRes, eventsRes, feedRes, commonRes, eliteRes] = await Promise.all([
         axios.get<Player[]>(`${API_URL}/api/players?limit=6`),
         axios.get<Stats>(`${API_URL}/api/stats`),
         axios.get<EventItem[]>(`${API_URL}/api/events`),
         axios.get<FeedItem[]>(`${API_URL}/api/feed`),
         axios.get<CommonSettings>(`${API_URL}/api/settings/common`),
+        axios.get<Player[]>(`${API_URL}/api/discord/elite`),
       ])
       setPlayers(playersRes.data)
       setStats(statsRes.data)
       setEvents(eventsRes.data)
       setFeed(feedRes.data)
       setCommonSettings(commonRes.data)
+      setElitePlayers(eliteRes.data)
     } catch (err) {
       console.error('Error fetching data:', err)
       setError('Не удалось загрузить данные')
       setPlayers([])
+      setElitePlayers([])
     } finally {
       setLoading(false)
     }
@@ -177,7 +183,7 @@ export default function Home() {
 
         {/* Новости стаи */}
         <section style={{ marginTop: '4rem' }}>
-          <h2>ЧТО ПРОИСХОДИТ В СТАЕ</h2>
+          <h2>ЧТО ПРОИСХОДИТ В ЛЕСУ</h2>
           <div
             style={{
               display: 'grid',
@@ -298,47 +304,74 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Игроки */}
+        {/* Элита леса - пользователи с ролью ПИТУХ */}
         <section id="players" style={{ marginTop: '6rem' }}>
-          <h2>АКТИВНЫЕ ВОЛКИ</h2>
+          <h2>ЭЛИТА ЛЕСА</h2>
           <div className="players-grid">
-            {players.length === 0 && (
+            {elitePlayers.length === 0 && (
               <div className="game-card" style={{ background: 'var(--gray)' }}>
                 <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
                   Пока никого
                 </div>
                 <div className="game-players">
-                  Как только бот соберёт данные с Discord, здесь появятся реальные волки.
+                  Как только бот соберёт данные с Discord, здесь появится элита.
                 </div>
               </div>
             )}
-            {players.map((player: Player, index) => (
-              <div key={player.discord_id ?? index} className="player-card">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <div className="player-avatar">
-                    {player.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={player.avatar_url}
-                        alt={player.discord_username}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                      />
-                    ) : (
-                      player.discord_username?.[0] || '🐺'
-                    )}
+            {elitePlayers.map((player: Player, index) => {
+                const isOnline = player.is_online || false
+                return (
+                  <div key={player.discord_id ?? index} className="player-card">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <div className="player-avatar" style={{ position: 'relative' }}>
+                        {player.avatar_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={player.avatar_url}
+                            alt={player.discord_username}
+                            style={{ 
+                              width: '100%', 
+                              height: '100%', 
+                              objectFit: 'cover', 
+                              borderRadius: '50%',
+                              opacity: isOnline ? 1 : 0.5
+                            }}
+                          />
+                        ) : (
+                          <span style={{ opacity: isOnline ? 1 : 0.5 }}>
+                            {player.discord_username?.[0] || '🐺'}
+                          </span>
+                        )}
+                        {/* Индикатор онлайн/оффлайн */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: '2px',
+                            right: '2px',
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            backgroundColor: isOnline ? '#4aff75' : '#747f8d',
+                            border: '2px solid var(--bg)',
+                          }}
+                        />
+                      </div>
+                      <div className="player-info">
+                        <div className="player-name">{player.discord_username}</div>
+                        <div className="player-rank">{player.forest_rank}</div>
+                        <div style={{ fontSize: '0.75rem', color: isOnline ? '#4aff75' : '#747f8d', marginTop: '0.25rem' }}>
+                          {isOnline ? 'Онлайн' : 'Оффлайн'}
+                        </div>
+                      </div>
+                      <div className="player-rating">{player.rating}</div>
+                    </motion.div>
                   </div>
-                  <div className="player-info">
-                    <div className="player-name">{player.discord_username}</div>
-                    <div className="player-rank">{player.forest_rank}</div>
-                  </div>
-                  <div className="player-rating">{player.rating}</div>
-                </motion.div>
-              </div>
-            ))}
+                )
+              })}
           </div>
         </section>
 
