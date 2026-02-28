@@ -42,7 +42,7 @@ async def get_presence_data(db: asyncpg.Connection = Depends(get_db)):
         SELECT
             p.discord_id,
             COALESCE(u.discord_username, 'Unknown') AS username,
-            u.avatar_url,
+            COALESCE(u.avatar_url, CONCAT('https://cdn.discordapp.com/embed/avatars/', (p.discord_id >> 22) % 6, '.png')) AS avatar_url,
             p.activity_name as game,
             p.status,
             p.roles,
