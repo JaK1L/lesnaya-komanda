@@ -18,3 +18,24 @@ node_modules/
 # IDE
 .idea/
 .vscode/
+
+# Python
+backend/venv/
+__pycache__/
+
+# Node
+frontend/node_modules/
+frontend/.next/
+
+# Env и секреты
+.env
+backend/.env
+secrets/
+*.log
+
+# Cursor/служебное
+.agents/
+skills-lock.json
+
+# Docker (ты им не пользуешься)
+Dockerfile.backend
