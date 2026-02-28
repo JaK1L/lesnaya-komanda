@@ -1,0 +1,156 @@
+import discord
+from discord.ext import commands
+import os
+from dotenv import load_dotenv
+import asyncpg
+import aiohttp
+from datetime import datetime
+import asyncio
+
+load_dotenv()
+
+TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+GUILD_ID = int(os.getenv('DISCORD_GUILD_ID', '236652227060563969'))
+DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/lesnaya')
+
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+class StatsCollector:
+    def __init__(self):
+        self.db_pool = None
+    
+    async def init_db(self):
+        self.db_pool = await asyncpg.create_pool(DATABASE_URL)
+    
+    async def log_message(self, message):
+        if message.author.bot:
+            return
+        
+        async with self.db_pool.acquire() as conn:
+            await conn.execute('''
+                INSERT INTO activity_log (discord_id, username, type, channel, content, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            ''', message.author.id, str(message.author), 'message', 
+                message.channel.name, message.content[:500], message.created_at)
+    
+    async def log_voice_state(self, member, before, after):
+        if before.channel != after.channel:
+            async with self.db_pool.acquire() as conn:
+                if after.channel:
+                    await conn.execute('''
+                        INSERT INTO voice_sessions (discord_id, channel, joined_at)
+                        VALUES ($1, $2, $3)
+                    ''', member.id, after.channel.name, datetime.utcnow())
+                
+                if before.channel:
+                    await conn.execute('''
+                        UPDATE voice_sessions 
+                        SET left_at = $3 
+                        WHERE discord_id = $1 AND left_at IS NULL
+                    ''', member.id, before.channel.name, datetime.utcnow())
+
+stats = StatsCollector()
+
+@bot.event
+async def on_ready():
+    print(f'✅ Бот {bot.user} запущен!')
+    await stats.init_db()
+    guild = bot.get_guild(GUILD_ID)
+    if guild:
+        print(f'🌲 Подключен к серверу: {guild.name}')
+        print(f'👥 Участников: {len(guild.members)}')
+        
+        # Синхронизируем участников сервера с БД (сайт показывает этих же пользователей)
+        for member in guild.members:
+            if member.bot:
+                continue
+            avatar_url = str(member.display_avatar.url) if member.display_avatar else None
+            async with stats.db_pool.acquire() as conn:
+                await conn.execute('''
+                    INSERT INTO users (discord_id, discord_username, joined_at, avatar_url, last_seen)
+                    VALUES ($1, $2, $3, $4, NOW())
+                    ON CONFLICT (discord_id) DO UPDATE SET
+                        discord_username = EXCLUDED.discord_username,
+                        avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
+                        last_seen = NOW()
+                ''', member.id, member.display_name or str(member), member.joined_at or datetime.utcnow(), avatar_url)
+    else:
+        print(f'❌ Сервер с ID {GUILD_ID} не найден!')
+
+@bot.event
+async def on_message(message):
+    await stats.log_message(message)
+    await bot.process_commands(message)
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    await stats.log_voice_state(member, before, after)
+
+@bot.command(name='лес')
+async def forest_info(ctx):
+    """Информация о Лесной Команде"""
+    guild = ctx.guild
+    online = sum(member.status != discord.Status.offline for member in guild.members)
+    
+    embed = discord.Embed(
+        title="🌲 ЛЕСНАЯ КОМАНДА",
+        description=f"**Участников:** {guild.member_count}\n**Онлайн:** {online}\n**ID:** {GUILD_ID}",
+        color=0x4aff75
+    )
+    embed.set_footer(text="🍃 Сайт: lesnaya-team.ru (скоро)")
+    await ctx.send(embed=embed)
+
+@bot.command(name='профиль')
+async def profile(ctx, member: discord.Member = None):
+    """Показать профиль игрока"""
+    if member is None:
+        member = ctx.author
+    
+    async with stats.db_pool.acquire() as conn:
+        # Получаем статистику из БД
+        messages = await conn.fetchval(
+            'SELECT COUNT(*) FROM activity_log WHERE discord_id = $1',
+            member.id
+        )
+        
+        voice_time = await conn.fetchval('''
+            SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (left_at - joined_at))), 0)
+            FROM voice_sessions 
+            WHERE discord_id = $1 AND left_at IS NOT NULL
+        ''', member.id)
+    
+    embed = discord.Embed(
+        title=f"🐺 Профиль {member.display_name}",
+        color=member.color
+    )
+    embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
+    embed.add_field(name="📅 В лесу с", value=member.joined_at.strftime("%d.%m.%Y"), inline=True)
+    embed.add_field(name="💬 Сообщений", value=messages or 0, inline=True)
+    embed.add_field(name="🎤 В голосе", value=f"{int(voice_time/3600)} часов" if voice_time else "0 часов", inline=True)
+    
+    roles = [role.name for role in member.roles[1:4]]
+    if roles:
+        embed.add_field(name="🏷️ Роли", value=", ".join(roles), inline=False)
+    
+    await ctx.send(embed=embed)
+
+@bot.command(name='топ')
+async def leaderboard(ctx, limit: int = 10):
+    """Топ игроков по активности"""
+    async with stats.db_pool.acquire() as conn:
+        rows = await conn.fetch('''
+            SELECT username, COUNT(*) as msg_count
+            FROM activity_log
+            GROUP BY discord_id, username
+            ORDER BY msg_count DESC
+            LIMIT $1
+        ''', limit)
+    
+    embed = discord.Embed(title="🏆 Топ по сообщениям", color=0xffd700)
+    for i, row in enumerate(rows, 1):
+        embed.add_field(name=f"{i}. {row['username']}", value=f"{row['msg_count']} сообщений", inline=False)
+    
+    await ctx.send(embed=embed)
+
+bot.run(TOKEN)

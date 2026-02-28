@@ -1,0 +1,20 @@
+# Секреты и конфиги с токенами
+.env
+backend/.env
+frontend/.env.local
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+bot/venv/
+
+# Node
+node_modules/
+.next/
+
+# IDE
+.idea/
+.vscode/

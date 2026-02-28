@@ -1,0 +1,307 @@
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  --accent: #4aff75;
+  --accent-dark: #2d5a2d;
+  --gray: #1a1a1a;
+  --gray-light: #2a2a2a;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+h1 {
+  font-size: clamp(4rem, 12vw, 8rem);
+}
+
+h2 {
+  font-size: clamp(3rem, 8vw, 5rem);
+  margin-bottom: 2rem;
+}
+
+h3 {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 800;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Lunacy-style block quotes и текстовые блоки */
+.hero-block {
+  border-left: 4px solid var(--accent);
+  padding-left: 2rem;
+  margin: 4rem 0;
+}
+
+.hero-block p {
+  font-size: 1.2rem;
+  color: #888;
+  max-width: 600px;
+}
+
+/* Карточки в стиле Lunacy */
+.lunacy-card {
+  background: var(--gray);
+  border: 1px solid var(--gray-light);
+  padding: 2rem;
+  transition: all 0.2s;
+}
+
+.lunacy-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* Кнопки */
+.lunacy-button {
+  background: transparent;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 1rem 2.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.lunacy-button:hover {
+  background: var(--accent);
+  color: var(--background);
+}
+
+/* Статистика */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin: 4rem 0;
+}
+
+.stat-item {
+  border-top: 1px solid var(--gray-light);
+  padding-top: 1rem;
+}
+
+.stat-number {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 3rem;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.stat-label {
+  color: #666;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+}
+
+/* Сетка игр */
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1px;
+  background: var(--gray-light);
+  border: 1px solid var(--gray-light);
+}
+
+.game-card {
+  background: var(--gray);
+  padding: 2rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card:hover {
+  background: var(--accent);
+  color: var(--background);
+}
+
+.game-card:hover .game-icon {
+  color: var(--background);
+}
+
+.game-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: var(--accent);
+  transition: all 0.2s;
+}
+
+.game-name {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.game-players {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.game-card:hover .game-players {
+  color: rgba(0,0,0,0.7);
+}
+
+/* Сетка игроков */
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1px;
+  background: var(--gray-light);
+  border: 1px solid var(--gray-light);
+  margin-top: 2rem;
+}
+
+.player-card {
+  background: var(--gray);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.player-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.player-info {
+  flex: 1;
+}
+
+.player-name {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.player-rank {
+  color: var(--accent);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.player-rating {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* Навигация */
+.nav {
+  border-bottom: 1px solid var(--gray-light);
+  padding: 1.5rem 0;
+  margin-bottom: 4rem;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 1.5rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: #666;
+  text-decoration: none;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--accent);
+}
+
+/* Футер */
+.footer {
+  border-top: 1px solid var(--gray-light);
+  margin-top: 6rem;
+  padding: 2rem 0;
+  text-align: center;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
