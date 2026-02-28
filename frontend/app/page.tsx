@@ -1,9 +1,11 @@
 'use client'
 // Vercel build: no unused imports
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { Gamepad2, TreePine, Sword, Target, Shield, ChevronRight, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useWebSocket, DiscordUpdate } from '../hooks/useWebSocket'
+import { ConnectionStatusIndicator } from '../components/ConnectionStatusIndicator'
 
 interface Player {
   discord_username: string
@@ -75,6 +77,7 @@ interface CommonSettings {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/discord'
 const TOKEN_KEY = 'lesnaya_token'
 
 export default function Home() {
@@ -91,6 +94,89 @@ export default function Home() {
   const [events, setEvents] = useState<EventItem[]>([])
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [commonSettings, setCommonSettings] = useState<CommonSettings | null>(null)
+
+  // Обработчик WebSocket сообщений
+  const handleWebSocketMessage = useCallback((update: DiscordUpdate) => {
+    if (!discordOverview) return
+
+    switch (update.type) {
+      case 'initial_state':
+        // Применяем начальное состояние
+        if (update.data) {
+          setDiscordOverview({
+            online: update.data.activity?.length || 0,
+            top_messages: update.data.statistics?.message_leaderboard || [],
+            top_voice: update.data.statistics?.voice_leaderboard || [],
+            now_playing: update.data.activity || []
+          })
+        }
+        break
+
+      case 'activity_update':
+        // Обновляем активность пользователя
+        if (update.data) {
+          setDiscordOverview(prev => {
+            if (!prev) return prev
+            
+            const newNowPlaying = [...prev.now_playing]
+            const existingIndex = newNowPlaying.findIndex(
+              p => p.discord_id.toString() === update.data.user_id
+            )
+            
+            if (update.data.event === 'game_stop' && existingIndex !== -1) {
+              // Удаляем пользователя из списка
+              newNowPlaying.splice(existingIndex, 1)
+            } else if (update.data.game) {
+              // Добавляем или обновляем пользователя
+              const newEntry = {
+                discord_id: parseInt(update.data.user_id),
+                discord_username: update.data.username,
+                status: update.data.status,
+                activity_type: null,
+                activity_name: update.data.game,
+                updated_at: update.timestamp,
+                avatar_url: null
+              }
+              
+              if (existingIndex !== -1) {
+                newNowPlaying[existingIndex] = newEntry
+              } else {
+                newNowPlaying.unshift(newEntry)
+              }
+            }
+            
+            return {
+              ...prev,
+              now_playing: newNowPlaying,
+              online: newNowPlaying.length
+            }
+          })
+        }
+        break
+
+      case 'statistics_update':
+        // Обновляем статистику
+        if (update.data) {
+          setDiscordOverview(prev => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              top_messages: update.data.message_leaderboard || prev.top_messages,
+              top_voice: update.data.voice_leaderboard || prev.top_voice
+            }
+          })
+        }
+        break
+    }
+  }, [discordOverview])
+
+  // WebSocket подключение (только если есть токен)
+  const { status: wsStatus } = useWebSocket({
+    url: WS_URL,
+    token: token || 'guest',  // используем 'guest' если нет токена
+    onMessage: handleWebSocketMessage,
+    enabled: true  // всегда включено для real-time обновлений
+  })
 
   // После входа через Discord бэкенд редиректит с ?token=... — сохраняем и убираем из URL
   useEffect(() => {
@@ -308,7 +394,10 @@ export default function Home() {
         {/* Discord статистика */}
         {discordOverview && (
           <section style={{ marginTop: '4rem' }}>
-            <h2>ЧТО ПРОИСХОДИТ В DISCORD</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 style={{ margin: 0 }}>ЧТО ПРОИСХОДИТ В DISCORD</h2>
+              <ConnectionStatusIndicator status={wsStatus} />
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: 'var(--gray-light)', border: '1px solid var(--gray-light)' }}>
               <div className="game-card" style={{ background: 'var(--gray)' }}>
                 <div className="game-name" style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>🎮 Кто во что играет</div>

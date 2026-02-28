@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from .config import settings
 from .database import database
-from .routes import users, auth, discord_oauth, admin, content
+from .routes import users, auth, discord_oauth, admin, content, websocket
 from .auth import get_password_hash
 
 # Инициализация приложения
@@ -49,6 +49,11 @@ app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(discord_oauth.router, prefix="/api", tags=["discord"])
 app.include_router(admin.router, prefix="/api", tags=["admin"])
 app.include_router(content.router, prefix="/api", tags=["content"])
+
+# WebSocket endpoint
+@app.websocket("/ws/discord")
+async def websocket_endpoint(ws: WebSocket, token: str = None):
+    await websocket.discord_websocket(ws, token)
 
 # Зависимость для получения соединения с БД
 async def get_db():
