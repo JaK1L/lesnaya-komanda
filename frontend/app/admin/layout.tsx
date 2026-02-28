@@ -1,14 +1,8 @@
 'use client'
 
-import type { Metadata } from 'next'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import '../globals.css'
-
-export const metadata: Metadata = {
-  title: 'Админка — Лесная Команда',
-  description: 'Админ-панель сообщества Лесная Команда',
-}
 
 const links = [
   { href: '/admin', label: 'Обзор' },
