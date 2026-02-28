@@ -89,23 +89,23 @@ async def get_elite_users(db: asyncpg.Connection = Depends(get_db)):
     """
     rows = await db.fetch("""
         SELECT
-            u.discord_id,
-            u.discord_username,
-            u.avatar_url,
-            u.forest_rank,
-            u.rating,
+            p.discord_id,
+            COALESCE(u.discord_username, 'Unknown') AS discord_username,
+            COALESCE(u.avatar_url, CONCAT('https://cdn.discordapp.com/embed/avatars/', (p.discord_id >> 22) % 6, '.png')) AS avatar_url,
+            COALESCE(u.forest_rank, 'Волк') AS forest_rank,
+            COALESCE(u.rating, 0) AS rating,
             u.last_seen,
             p.status,
             p.roles
-        FROM users u
-        LEFT JOIN discord_presence p ON p.discord_id = u.discord_id
+        FROM discord_presence p
+        LEFT JOIN users u ON u.discord_id = p.discord_id
         WHERE p.roles IS NOT NULL
         ORDER BY 
             CASE WHEN p.status = 'online' THEN 1
                  WHEN p.status = 'idle' THEN 2
                  WHEN p.status = 'dnd' THEN 3
                  ELSE 4 END,
-            u.rating DESC
+            COALESCE(u.rating, 0) DESC
     """)
     
     result = []
