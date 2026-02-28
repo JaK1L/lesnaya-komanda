@@ -12,6 +12,7 @@ interface Player {
   discord_id: number
   message_count?: number
   voice_hours?: number
+  avatar_url?: string | null
 }
 
 interface Stats {
@@ -40,6 +41,7 @@ interface DiscordNowPlayingRow {
   activity_type?: string | null
   activity_name: string
   updated_at: string
+  avatar_url?: string | null
 }
 
 interface DiscordOverview {
@@ -135,14 +137,7 @@ export default function Home() {
     } catch (err) {
       console.error('Error fetching data:', err)
       setError('Не удалось загрузить данные')
-      setPlayers([
-        { discord_username: 'JaK1L', forest_rank: '🐺 СТАРЫЙ ВОЛК', rating: 95, discord_id: 123456789 },
-        { discord_username: 'DIMA_DIMA', forest_rank: '🌲 ДЕРЕВО', rating: 45, discord_id: 987654321 },
-        { discord_username: 'ЛЕСНОЙ_ДУХ', forest_rank: '🔥 ЛЕСНОЙ ДУХ', rating: 72, discord_id: 111222333 },
-        { discord_username: 'СНАЙПЕР', forest_rank: '🌿 ТРАВА', rating: 28, discord_id: 444555666 },
-        { discord_username: 'СТРЕЛОК', forest_rank: '🪵 БРЕВНО', rating: 35, discord_id: 777888999 },
-        { discord_username: 'КОРОЛЬ ЛЕСА', forest_rank: '🔥 ЛЕСНОЙ ДУХ', rating: 88, discord_id: 999888777 },
-      ])
+      setPlayers([])
     } finally {
       setLoading(false)
     }
@@ -320,13 +315,86 @@ export default function Home() {
                 {discordOverview.now_playing.length === 0 ? (
                   <div className="game-players">Пока никто не играет</div>
                 ) : (
-                  <div style={{ display: 'grid', gap: '0.5rem' }}>
-                    {discordOverview.now_playing.slice(0, 5).map((row) => (
-                      <div key={row.discord_id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
-                        <span style={{ color: '#fff' }}>{row.discord_username}</span>
-                        <span style={{ color: '#aaa', textAlign: 'right' }}>{row.activity_name}</span>
-                      </div>
-                    ))}
+                  <div style={{ display: 'grid', gap: '0.75rem' }}>
+                    {discordOverview.now_playing.slice(0, 5).map((row) => {
+                      const nameLower = row.activity_name.toLowerCase()
+                      let Icon = Gamepad2
+                      let color = '#4aff75'
+
+                      if (nameLower.includes('cs') || nameLower.includes('counter-strike')) {
+                        Icon = Target
+                        color = '#ffaa00'
+                      } else if (nameLower.includes('dota')) {
+                        Icon = Sword
+                        color = '#ff4444'
+                      } else if (nameLower.includes('valorant')) {
+                        Icon = Shield
+                        color = '#ff6b6b'
+                      }
+
+                      return (
+                        <div
+                          key={row.discord_id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div
+                              style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: '50%',
+                                overflow: 'hidden',
+                                background: 'var(--accent-dark)',
+                                flexShrink: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.25rem',
+                              }}
+                            >
+                              {row.avatar_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={row.avatar_url}
+                                  alt={row.discord_username}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                row.discord_username?.[0] || '🐺'
+                              )}
+                            </div>
+                            <div>
+                              <div style={{ color: '#fff', fontSize: '0.95rem' }}>
+                                {row.discord_username}
+                              </div>
+                              <div style={{ color: '#666', fontSize: '0.75rem' }}>
+                                {row.status !== 'offline' ? row.status : 'offline'}
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              color,
+                              fontSize: '0.85rem',
+                              maxWidth: 160,
+                              textAlign: 'right',
+                              justifyContent: 'flex-end',
+                            }}
+                          >
+                            <Icon size={16} />
+                            <span>{row.activity_name}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -390,15 +458,34 @@ export default function Home() {
         <section id="players" style={{ marginTop: '6rem' }}>
           <h2>АКТИВНЫЕ ВОЛКИ</h2>
           <div className="players-grid">
+            {players.length === 0 && (
+              <div className="game-card" style={{ background: 'var(--gray)' }}>
+                <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+                  Пока никого
+                </div>
+                <div className="game-players">
+                  Как только бот соберёт данные с Discord, здесь появятся реальные волки.
+                </div>
+              </div>
+            )}
             {players.map((player: Player, index) => (
-              <div key={index} className="player-card">
+              <div key={player.discord_id ?? index} className="player-card">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
                   <div className="player-avatar">
-                    {player.discord_username?.[0] || '🐺'}
+                    {player.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={player.avatar_url}
+                        alt={player.discord_username}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                      />
+                    ) : (
+                      player.discord_username?.[0] || '🐺'
+                    )}
                   </div>
                   <div className="player-info">
                     <div className="player-name">{player.discord_username}</div>

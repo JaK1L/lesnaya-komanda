@@ -3,6 +3,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import '../globals.css'
 
 export const metadata: Metadata = {
   title: 'Админка — Лесная Команда',
@@ -26,8 +27,8 @@ export default function AdminLayout({
 
   return (
     <html lang="ru">
-      <body>
-        <div className="min-h-screen bg-black text-white">
+      <body className="bg-black text-white">
+        <div className="min-h-screen">
           <header className="border-b border-[var(--gray-light)]">
             <div className="container flex items-center justify-between py-4">
               <a href="/" className="nav-logo">

@@ -264,6 +264,7 @@ class UserService:
             SELECT
                 p.discord_id,
                 COALESCE(u.discord_username, 'Unknown') AS discord_username,
+                u.avatar_url,
                 p.status,
                 p.activity_type,
                 p.activity_name,

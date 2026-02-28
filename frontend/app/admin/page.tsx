@@ -107,23 +107,31 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-1">
+      {/* Верхний блок */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="text-xs uppercase tracking-[0.2em] text-gray-400">
             Панель администратора
           </div>
-          <h1 className="text-3xl">Привет, {me.username}</h1>
-          <div className="text-xs uppercase tracking-[0.2em] text-gray-500 mt-2">
+          <div className="text-4xl md:text-5xl font-black leading-tight">
+            Привет, <span style={{ color: 'var(--accent)' }}>{me.username}</span>
+          </div>
+          <div className="text-xs uppercase tracking-[0.2em] text-gray-500">
             Роль: {me.role}
           </div>
         </div>
-        <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-400">
+        <button
+          onClick={handleLogout}
+          className="lunacy-button text-xs px-4 py-2"
+          style={{ padding: '0.6rem 1.5rem' }}
+        >
           ВЫЙТИ
         </button>
       </div>
 
       {error && <div className="text-sm text-red-400">{error}</div>}
 
+      {/* Карточки со сводкой */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="lunacy-card flex flex-col gap-2">
           <div className="flex items-center gap-2 text-sm text-gray-400">
