@@ -75,3 +75,61 @@ async def get_presence_data(db: asyncpg.Connection = Depends(get_db)):
     _cache_timestamp = now
     
     return result
+
+
+@router.get("/elite", response_model=List[dict])
+async def get_elite_users(db: asyncpg.Connection = Depends(get_db)):
+    """
+    Получить пользователей с ролью "ПИТУХ" (элита леса)
+    
+    Возвращает список пользователей с ролью ПИТУХ, отсортированных по статусу (онлайн/оффлайн).
+    
+    Returns:
+        List[dict]: Список элитных пользователей
+    """
+    rows = await db.fetch("""
+        SELECT
+            u.discord_id,
+            u.discord_username,
+            u.avatar_url,
+            u.forest_rank,
+            u.rating,
+            u.last_seen,
+            p.status,
+            p.roles
+        FROM users u
+        LEFT JOIN discord_presence p ON p.discord_id = u.discord_id
+        WHERE p.roles IS NOT NULL
+        ORDER BY 
+            CASE WHEN p.status = 'online' THEN 1
+                 WHEN p.status = 'idle' THEN 2
+                 WHEN p.status = 'dnd' THEN 3
+                 ELSE 4 END,
+            u.rating DESC
+    """)
+    
+    result = []
+    for row in rows:
+        # Парсим роли
+        roles_data = row["roles"]
+        if isinstance(roles_data, str):
+            roles = json.loads(roles_data)
+        else:
+            roles = roles_data or []
+        
+        # Проверяем, есть ли роль "ПИТУХ"
+        has_pituh = any(role.get("name", "").upper() == "ПИТУХ" for role in roles)
+        
+        if has_pituh:
+            result.append({
+                "discord_id": row["discord_id"],
+                "discord_username": row["discord_username"],
+                "avatar_url": row["avatar_url"] or f"https://cdn.discordapp.com/embed/avatars/{(row['discord_id'] >> 22) % 6}.png",
+                "forest_rank": row["forest_rank"],
+                "rating": row["rating"],
+                "last_seen": row["last_seen"].isoformat() if row["last_seen"] else None,
+                "status": row["status"] or "offline",
+                "is_online": row["status"] in ['online', 'idle', 'dnd'] if row["status"] else False
+            })
+    
+    return result

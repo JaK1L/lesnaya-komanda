@@ -145,7 +145,7 @@ export default function AdminNewsPage() {
             className="w-full bg-black border border-[var(--gray-light)] rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--accent)] min-h-[120px]"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Пиши сюда, что происходит в стае..."
+            placeholder="Пиши сюда, что происходит в лесу..."
           />
         </div>
 

@@ -177,7 +177,7 @@ async def get_game_stats(db: asyncpg.Connection = Depends(get_db)):
 @router.get("/events")
 async def get_events(db: asyncpg.Connection = Depends(get_db)):
     """
-    Список событий для блока «Что происходит в стае».
+    Список событий для блока «Что происходит в лесу».
 
     Пока что возвращаем статический список мероприятий. В будущем
     можно вынести в отдельную таблицу events и админку.

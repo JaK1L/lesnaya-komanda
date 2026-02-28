@@ -118,7 +118,7 @@ export default function AdminFeedPage() {
         <div className="text-xs uppercase tracking-[0.2em] text-gray-400 mb-1">
           Лента
         </div>
-        <h1 className="text-3xl mb-2">Что происходит в стае</h1>
+        <h1 className="text-3xl mb-2">Что происходит в лесу</h1>
         <p className="text-sm text-gray-400 max-w-xl">
           Короткие посты и достижения, которые сразу попадают на главную: блок «Что происходит в
           стае» и «Достижения».
@@ -183,7 +183,7 @@ export default function AdminFeedPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-gray-400 mb-1">
-            <MessageCircle size={16} /> Посты «Что происходит в стае»
+            <MessageCircle size={16} /> Посты «Что происходит в лесу»
           </div>
           {loading && <div className="text-sm text-gray-500">Загружаем...</div>}
           {!loading && posts.length === 0 && (

@@ -51,7 +51,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const TOKEN_KEY = 'lesnaya_token'
 
 export default function Home() {
-  const [players, setPlayers] = useState<Player[]>([])
   const [elitePlayers, setElitePlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
@@ -93,15 +92,13 @@ export default function Home() {
     try {
       setLoading(true)
       setError(null)
-      const [playersRes, statsRes, eventsRes, feedRes, commonRes, eliteRes] = await Promise.all([
-        axios.get<Player[]>(`${API_URL}/api/players?limit=6`),
+      const [statsRes, eventsRes, feedRes, commonRes, eliteRes] = await Promise.all([
         axios.get<Stats>(`${API_URL}/api/stats`),
         axios.get<EventItem[]>(`${API_URL}/api/events`),
         axios.get<FeedItem[]>(`${API_URL}/api/feed`),
         axios.get<CommonSettings>(`${API_URL}/api/settings/common`),
         axios.get<Player[]>(`${API_URL}/api/discord/elite`),
       ])
-      setPlayers(playersRes.data)
       setStats(statsRes.data)
       setEvents(eventsRes.data)
       setFeed(feedRes.data)
@@ -110,7 +107,6 @@ export default function Home() {
     } catch (err) {
       console.error('Error fetching data:', err)
       setError('Не удалось загрузить данные')
-      setPlayers([])
       setElitePlayers([])
     } finally {
       setLoading(false)
