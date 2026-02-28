@@ -117,11 +117,15 @@ async def get_elite_users(db: asyncpg.Connection = Depends(get_db)):
         else:
             roles = roles_data or []
         
-        # Проверяем, есть ли роль "🐓ПИТУХ🐓" (с эмодзи или без)
-        has_pituh = any(
-            "ПИТУХ" in role.get("name", "").upper() 
-            for role in roles
-        )
+        # Проверяем, есть ли роль "🐓ПИТУХ🐓"
+        # Ищем роль, которая содержит эмодзи петуха (🐓) или точное название
+        has_pituh = False
+        for role in roles:
+            role_name = role.get("name", "")
+            # Проверяем наличие эмодзи петуха или слова ПИТУХ
+            if "🐓" in role_name or role_name == "🐓ПИТУХ🐓":
+                has_pituh = True
+                break
         
         if has_pituh:
             result.append({
