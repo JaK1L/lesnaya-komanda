@@ -3,6 +3,7 @@ REST API endpoints для Discord данных
 """
 from fastapi import APIRouter, Depends
 import asyncpg
+import json
 from typing import List, Optional
 from datetime import datetime, timedelta
 from ..models.websocket_messages import ActivityData, RoleData
@@ -62,7 +63,7 @@ async def get_presence_data(db: asyncpg.Connection = Depends(get_db)):
             avatar_url=row["avatar_url"],
             game=row["game"],
             status=row["status"],
-            roles=[RoleData(**r) for r in (row["roles"] or [])],
+            roles=[RoleData(**r) for r in (json.loads(row["roles"]) if isinstance(row["roles"], str) else (row["roles"] or []))],
             activity_started_at=row["activity_started_at"].isoformat() if row["activity_started_at"] else None,
             game_icon_url=row["game_icon_url"]
         )
