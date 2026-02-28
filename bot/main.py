@@ -76,6 +76,12 @@ class StatsCollector:
                 continue
 
         avatar_url = str(member.display_avatar.url) if member.display_avatar else None
+        
+        # Если аватар не найден, используем дефолтный Discord аватар
+        if not avatar_url:
+            # Дефолтный аватар Discord основан на user ID
+            default_avatar_index = (member.id >> 22) % 6
+            avatar_url = f"https://cdn.discordapp.com/embed/avatars/{default_avatar_index}.png"
 
         async with self.db_pool.acquire() as conn:
             # Таблица создаётся бэкендом, но upsert безопасен
@@ -115,7 +121,7 @@ class StatsCollector:
                 VALUES ($1, $2, $3, $4, NOW())
                 ON CONFLICT (discord_id) DO UPDATE SET
                     discord_username = EXCLUDED.discord_username,
-                    avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
+                    avatar_url = EXCLUDED.avatar_url,
                     last_seen = NOW()
                 """,
                 member.id,
