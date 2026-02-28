@@ -18,7 +18,7 @@ interface DiscordActivityCardProps {
 }
 
 export const DiscordActivityCard = React.memo(function DiscordActivityCard({
-  userId,
+  userId: _userId,
   username,
   avatarUrl,
   game,
