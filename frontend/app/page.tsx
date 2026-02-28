@@ -404,7 +404,7 @@ export default function Home() {
                 ) : (
                   <div style={{ display: 'grid', gap: '0.75rem' }}>
                     {discordOverview.now_playing.slice(0, 5).map((row) => {
-                      const nameLower = row.activity_name.toLowerCase()
+                      const nameLower = (row.activity_name || '').toLowerCase()
                       let Icon = Gamepad2
                       let color = '#4aff75'
 
@@ -477,7 +477,7 @@ export default function Home() {
                             }}
                           >
                             <Icon size={16} />
-                            <span>{row.activity_name}</span>
+                            <span>{row.activity_name || 'Неизвестно'}</span>
                           </div>
                         </div>
                       )
