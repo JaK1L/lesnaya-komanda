@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Users, Gamepad2, Trophy, Calendar, TreePine, Sword, Target, Shield, ChevronRight } from 'lucide-react'
+import { Gamepad2, Trophy, Calendar, TreePine, Sword, Target, Shield, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface Player {
