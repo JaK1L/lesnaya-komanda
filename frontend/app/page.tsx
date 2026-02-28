@@ -2,7 +2,7 @@
 // Vercel build: no unused imports
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Gamepad2, TreePine, Sword, Target, Shield, ChevronRight } from 'lucide-react'
+import { Gamepad2, TreePine, Sword, Target, Shield, ChevronRight, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface Player {
@@ -49,6 +49,14 @@ interface DiscordOverview {
   now_playing: DiscordNowPlayingRow[]
 }
 
+interface EventItem {
+  id: number
+  title: string
+  description: string
+  game: string
+  event_date: string | null
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const TOKEN_KEY = 'lesnaya_token'
 
@@ -63,6 +71,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [discordOverview, setDiscordOverview] = useState<DiscordOverview | null>(null)
+  const [events, setEvents] = useState<EventItem[]>([])
 
   // После входа через Discord бэкенд редиректит с ?token=... — сохраняем и убираем из URL
   useEffect(() => {
@@ -92,14 +101,16 @@ export default function Home() {
     try {
       setLoading(true)
       setError(null)
-      const [playersRes, statsRes, discordRes] = await Promise.all([
+      const [playersRes, statsRes, discordRes, eventsRes] = await Promise.all([
         axios.get<Player[]>(`${API_URL}/api/players?limit=6`),
         axios.get<Stats>(`${API_URL}/api/stats`),
         axios.get<DiscordOverview>(`${API_URL}/api/discord/overview`),
+        axios.get<EventItem[]>(`${API_URL}/api/events`),
       ])
       setPlayers(playersRes.data)
       setStats(statsRes.data)
       setDiscordOverview(discordRes.data)
+      setEvents(eventsRes.data)
     } catch (err) {
       console.error('Error fetching data:', err)
       setError('Не удалось загрузить данные')
@@ -166,6 +177,23 @@ export default function Home() {
               ВСТУПИТЬ В СТАЮ <ChevronRight size={16} style={{ marginLeft: '0.5rem', display: 'inline' }} />
             </a>
           </motion.div>
+
+        {/* Новости стаи */}
+        <section style={{ marginTop: '4rem' }}>
+          <h2>ЧТО ПРОИСХОДИТ В СТАЕ</h2>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '1px',
+              background: 'var(--gray-light)',
+              border: '1px solid var(--gray-light)',
+            }}
+          >
+            {/* Пока нет отдельного блока новостей на бэке, эту секцию легко расширить:
+               сейчас события в лесу уже редактируются из /admin/events */}
+          </div>
+        </section>
         </div>
 
         {/* Статистика */}
@@ -289,20 +317,66 @@ export default function Home() {
         <section style={{ marginTop: '6rem' }}>
           <h2>СОБЫТИЯ В ЛЕСУ</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: 'var(--gray-light)', border: '1px solid var(--gray-light)' }}>
-            {[
-              { date: 'СЕГОДНЯ', time: '20:00', title: 'CS2 КЛАТЧ-ТУРНИР', desc: 'Собираем 5 команд для вечерних замесов' },
-              { date: 'ЗАВТРА', time: '19:00', title: 'DOTA 2 ИНХАУС', desc: 'Играем 5х5, все уровни приветствуются' },
-              { date: 'СБ', time: '15:00', title: 'VALORANT ТУРНИР', desc: 'Приз — звание "Лесной Ас"' },
-            ].map((event, index) => (
-              <div key={index} className="game-card" style={{ background: 'var(--gray)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                  <span style={{ color: 'var(--accent)', fontFamily: 'Unbounded', fontWeight: 700, fontSize: '0.875rem' }}>{event.date}</span>
-                  <span style={{ color: '#666' }}>{event.time}</span>
+            {(events.length
+              ? events
+              : [
+                  {
+                    id: 0,
+                    title: 'CS2 КЛАТЧ-ТУРНИР',
+                    description: 'Собираем 5 команд для вечерних замесов',
+                    game: 'CS2',
+                    event_date: null,
+                  },
+                  {
+                    id: 1,
+                    title: 'DOTA 2 ИНХАУС',
+                    description: 'Играем 5х5, все уровни приветствуются',
+                    game: 'DOTA 2',
+                    event_date: null,
+                  },
+                  {
+                    id: 2,
+                    title: 'VALORANT ТУРНИР',
+                    description: 'Приз — звание "Лесной Ас"',
+                    game: 'VALORANT',
+                    event_date: null,
+                  },
+                ]
+            ).map((event, index) => {
+              const dateLabel = event.event_date
+                ? new Date(event.event_date).toLocaleString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : null
+
+              return (
+                <div key={event.id ?? index} className="game-card" style={{ background: 'var(--gray)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                    <span
+                      style={{
+                        color: 'var(--accent)',
+                        fontFamily: 'Unbounded',
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                      }}
+                    >
+                      {event.game || 'СОБЫТИЕ'}
+                    </span>
+                    <span style={{ color: '#666', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Calendar size={14} />
+                      {dateLabel ?? 'ВРЕМЯ УТОЧНЯЕТСЯ'}
+                    </span>
+                  </div>
+                  <div className="game-name" style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+                    {event.title}
+                  </div>
+                  <div className="game-players">{event.description}</div>
                 </div>
-                <div className="game-name" style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>{event.title}</div>
-                <div className="game-players">{event.desc}</div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
 

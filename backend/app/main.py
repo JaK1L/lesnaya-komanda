@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from .config import settings
 from .database import database
-from .routes import users, auth, discord_oauth
+from .routes import users, auth, discord_oauth, admin, content
 from .auth import get_password_hash
 
 # Инициализация приложения
@@ -47,6 +47,8 @@ app.add_middleware(
 app.include_router(users.router, prefix="/api", tags=["users"])
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(discord_oauth.router, prefix="/api", tags=["discord"])
+app.include_router(admin.router, prefix="/api", tags=["admin"])
+app.include_router(content.router, prefix="/api", tags=["content"])
 
 # Зависимость для получения соединения с БД
 async def get_db():
