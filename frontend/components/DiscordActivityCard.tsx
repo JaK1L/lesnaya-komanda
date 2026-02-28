@@ -67,7 +67,7 @@ export const DiscordActivityCard = React.memo(function DiscordActivityCard({
       {/* Аватар с индикатором статуса */}
       <div className="avatar-container">
         <Image
-          src={avatarUrl || '/default-avatar.png'}
+          src={avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png'}
           alt={username}
           width={64}
           height={64}
