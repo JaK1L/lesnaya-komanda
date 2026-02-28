@@ -172,3 +172,37 @@ async def get_game_stats(db: asyncpg.Connection = Depends(get_db)):
         return stats
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching game stats: {str(e)}")
+
+
+@router.get("/events")
+async def get_events(db: asyncpg.Connection = Depends(get_db)):
+    """
+    Список событий для блока «Что происходит в стае».
+
+    Пока что возвращаем статический список мероприятий. В будущем
+    можно вынести в отдельную таблицу events и админку.
+    """
+    # TODO: заменить на данные из таблицы events (см. init.sql)
+    return [
+        {
+            "id": 1,
+            "title": "CS2 КЛАТЧ-ТУРНИР",
+            "description": "Собираем 5 команд для вечерних замесов",
+            "game": "cs2",
+            "event_date": None,
+        },
+        {
+            "id": 2,
+            "title": "DOTA 2 ИНХАУС",
+            "description": "Играем 5х5, все уровни приветствуются",
+            "game": "dota2",
+            "event_date": None,
+        },
+        {
+            "id": 3,
+            "title": "VALORANT ТУРНИР",
+            "description": "Приз — звание «Лесной Ас»",
+            "game": "valorant",
+            "event_date": None,
+        },
+    ]
