@@ -17,6 +17,7 @@ class ActivityData(BaseModel):
     """Данные об активности пользователя"""
     user_id: str
     username: str
+    avatar_url: Optional[str] = None
     game: Optional[str] = None
     status: Literal["online", "offline", "idle", "dnd"]
     roles: List[RoleData] = []
