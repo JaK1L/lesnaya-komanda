@@ -120,20 +120,21 @@ export default function Home() {
       <main className="container">
         {error && <p style={{ color: '#ff6b6b', marginBottom: '1rem' }}>{error}</p>}
         {/* Hero секция в стиле Lunacy */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="hero-block"
-        >
-          <h1>ЛЕСНАЯ<br />КОМАНДА</h1>
-          <p>
-            Мы — своя стая. Играем в CS2, Dota 2, Valorant и всё, что под руку попадётся. 
-            Без понтов, без маркетологов в пиджаках. Просто геймеры, которые нашли друг друга.
-          </p>
-          <a href="#" className="lunacy-button" style={{ marginTop: '2rem' }}>
-            ВСТУПИТЬ В СТАЮ <ChevronRight size={16} style={{ marginLeft: '0.5rem', display: 'inline' }} />
-          </a>
-        </motion.div>
+        <div className="hero-block">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h1>ЛЕСНАЯ<br />КОМАНДА</h1>
+            <p>
+              Мы — своя стая. Играем в CS2, Dota 2, Valorant и всё, что под руку попадётся.
+              Без понтов, без маркетологов в пиджаках. Просто геймеры, которые нашли друг друга.
+            </p>
+            <a href="#" className="lunacy-button" style={{ marginTop: '2rem' }}>
+              ВСТУПИТЬ В СТАЮ <ChevronRight size={16} style={{ marginLeft: '0.5rem', display: 'inline' }} />
+            </a>
+          </motion.div>
+        </div>
 
         {/* Статистика */}
         <div className="stat-grid">
@@ -156,17 +157,17 @@ export default function Home() {
           <h2>ВО ЧТО ИГРАЕМ</h2>
           <div className="games-grid">
             {games.map((game, index) => (
-              <motion.div
-                key={index}
-                className="game-card"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <game.icon className="game-icon" size={32} style={{ color: game.color }} />
-                <div className="game-name">{game.name}</div>
-                <div className="game-players">{game.players} ИГРОКОВ</div>
-              </motion.div>
+              <div key={index} className="game-card">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <game.icon className="game-icon" size={32} style={{ color: game.color }} />
+                  <div className="game-name">{game.name}</div>
+                  <div className="game-players">{game.players} ИГРОКОВ</div>
+                </motion.div>
+              </div>
             ))}
           </div>
         </section>
@@ -176,22 +177,22 @@ export default function Home() {
           <h2>АКТИВНЫЕ ВОЛКИ</h2>
           <div className="players-grid">
             {players.map((player: Player, index) => (
-              <motion.div
-                key={index}
-                className="player-card"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <div className="player-avatar">
-                  {player.discord_username?.[0] || '🐺'}
-                </div>
-                <div className="player-info">
-                  <div className="player-name">{player.discord_username}</div>
-                  <div className="player-rank">{player.forest_rank}</div>
-                </div>
-                <div className="player-rating">{player.rating}</div>
-              </motion.div>
+              <div key={index} className="player-card">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <div className="player-avatar">
+                    {player.discord_username?.[0] || '🐺'}
+                  </div>
+                  <div className="player-info">
+                    <div className="player-name">{player.discord_username}</div>
+                    <div className="player-rank">{player.forest_rank}</div>
+                  </div>
+                  <div className="player-rating">{player.rating}</div>
+                </motion.div>
+              </div>
             ))}
           </div>
         </section>
