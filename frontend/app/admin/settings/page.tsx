@@ -96,7 +96,7 @@ export default function AdminSettingsPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="lunacy-card space-y-3">
           <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Link2 size={16} /> Ссылка «Вступить в стаю»
+            <Link2 size={16} /> https://discord.gg/YgX4RQZ «Вступить в стаю»
           </div>
           <p className="text-xs text-gray-500">
             Эта ссылка используется в кнопке «ВСТУПИТЬ В СТАЮ» на главной — обычно это инвайт на
