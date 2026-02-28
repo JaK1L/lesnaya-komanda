@@ -26,9 +26,9 @@ export interface UseWebSocketReturn {
   reconnect: () => void
 }
 
-const MAX_RECONNECT_ATTEMPTS = 10
-const INITIAL_RECONNECT_DELAY = 1000  // 1 секунда
-const MAX_RECONNECT_DELAY = 30000  // 30 секунд
+const MAX_RECONNECT_ATTEMPTS = 5  // уменьшено с 10 до 5
+const INITIAL_RECONNECT_DELAY = 2000  // увеличено с 1s до 2s
+const MAX_RECONNECT_DELAY = 15000  // уменьшено с 30s до 15s
 
 export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
   const { url, token, onMessage, onStatusChange, enabled = true } = options

@@ -9,6 +9,11 @@ interface ConnectionStatusIndicatorProps {
 }
 
 export function ConnectionStatusIndicator({ status }: ConnectionStatusIndicatorProps) {
+  // Не показываем индикатор, если статус disconnected (чтобы не пугать пользователей)
+  if (status === 'disconnected') {
+    return null
+  }
+  
   // Определяем цвет и иконку в зависимости от статуса
   const getStatusConfig = () => {
     switch (status) {
