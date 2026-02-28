@@ -207,3 +207,74 @@ class UserService:
         '''
         rows = await self.db.fetch(query)
         return [dict(row) for row in rows]
+
+    async def get_discord_online_count(self) -> int:
+        """Количество онлайн по данным presence (кроме offline)."""
+        return int(await self.db.fetchval(
+            "SELECT COUNT(*) FROM discord_presence WHERE status IS NOT NULL AND status <> 'offline'"
+        ) or 0)
+
+    async def get_discord_top_messages(self, limit: int = 3) -> List[dict]:
+        """Топ по сообщениям (всего)."""
+        rows = await self.db.fetch(
+            """
+            SELECT
+                al.discord_id,
+                COALESCE(u.discord_username, MAX(al.username)) AS discord_username,
+                COUNT(*)::int AS messages
+            FROM activity_log al
+            LEFT JOIN users u ON u.discord_id = al.discord_id
+            GROUP BY al.discord_id, u.discord_username
+            ORDER BY messages DESC
+            LIMIT $1
+            """,
+            limit,
+        )
+        return [dict(r) for r in rows]
+
+    async def get_discord_top_voice(self, limit: int = 3) -> List[dict]:
+        """Топ по времени в голосе (сумма завершённых сессий)."""
+        rows = await self.db.fetch(
+            """
+            SELECT
+                vs.discord_id,
+                COALESCE(u.discord_username, 'Unknown') AS discord_username,
+                COALESCE(SUM(EXTRACT(EPOCH FROM (vs.left_at - vs.joined_at))), 0)::bigint AS seconds
+            FROM voice_sessions vs
+            LEFT JOIN users u ON u.discord_id = vs.discord_id
+            WHERE vs.left_at IS NOT NULL
+            GROUP BY vs.discord_id, u.discord_username
+            ORDER BY seconds DESC
+            LIMIT $1
+            """,
+            limit,
+        )
+        # seconds -> hours (float, 1 decimal)
+        result: List[dict] = []
+        for r in rows:
+            d = dict(r)
+            d["hours"] = round((d.get("seconds", 0) or 0) / 3600, 1)
+            result.append(d)
+        return result
+
+    async def get_discord_now_playing(self, limit: int = 10) -> List[dict]:
+        """Кто во что играет сейчас (presence.activity_name)."""
+        rows = await self.db.fetch(
+            """
+            SELECT
+                p.discord_id,
+                COALESCE(u.discord_username, 'Unknown') AS discord_username,
+                p.status,
+                p.activity_type,
+                p.activity_name,
+                p.updated_at
+            FROM discord_presence p
+            LEFT JOIN users u ON u.discord_id = p.discord_id
+            WHERE p.status IS NOT NULL AND p.status <> 'offline'
+              AND p.activity_name IS NOT NULL AND p.activity_name <> ''
+            ORDER BY p.updated_at DESC
+            LIMIT $1
+            """,
+            limit,
+        )
+        return [dict(r) for r in rows]

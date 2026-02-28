@@ -22,6 +22,66 @@ class StatsCollector:
     
     async def init_db(self):
         self.db_pool = await asyncpg.create_pool(DATABASE_URL)
+
+    async def upsert_presence(self, member: discord.Member):
+        """Сохранить статус/активность участника (для сайта)."""
+        if member.bot:
+            return
+
+        status = str(member.status) if member.status else "offline"
+
+        activity_name = None
+        activity_type = None
+        # Берём первую "осмысленную" активность (игра/стрим/слушает/смотрит/соревнование/кастом)
+        for act in getattr(member, "activities", []) or []:
+            try:
+                if act is None:
+                    continue
+                # discord.ActivityType -> int enum, преобразуем в строку
+                atype = getattr(act, "type", None)
+                name = getattr(act, "name", None)
+                if name:
+                    activity_name = str(name)[:200]
+                    activity_type = str(atype).split(".")[-1] if atype is not None else None
+                    break
+            except Exception:
+                continue
+
+        avatar_url = str(member.display_avatar.url) if member.display_avatar else None
+
+        async with self.db_pool.acquire() as conn:
+            # Таблица создаётся бэкендом, но upsert безопасен
+            await conn.execute(
+                """
+                INSERT INTO discord_presence (discord_id, status, activity_name, activity_type, updated_at)
+                VALUES ($1, $2, $3, $4, NOW())
+                ON CONFLICT (discord_id) DO UPDATE SET
+                    status = EXCLUDED.status,
+                    activity_name = EXCLUDED.activity_name,
+                    activity_type = EXCLUDED.activity_type,
+                    updated_at = NOW()
+                """,
+                member.id,
+                status,
+                activity_name,
+                activity_type,
+            )
+
+            # Обновим users, чтобы имя/аватар были свежими
+            await conn.execute(
+                """
+                INSERT INTO users (discord_id, discord_username, joined_at, avatar_url, last_seen)
+                VALUES ($1, $2, $3, $4, NOW())
+                ON CONFLICT (discord_id) DO UPDATE SET
+                    discord_username = EXCLUDED.discord_username,
+                    avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
+                    last_seen = NOW()
+                """,
+                member.id,
+                member.display_name or str(member),
+                member.joined_at or datetime.utcnow(),
+                avatar_url,
+            )
     
     async def log_message(self, message):
         if message.author.bot:
@@ -75,6 +135,17 @@ async def on_ready():
                         avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
                         last_seen = NOW()
                 ''', member.id, member.display_name or str(member), member.joined_at or datetime.utcnow(), avatar_url)
+
+        # Первичная синхронизация presence/активностей
+        print("🟢 Синхронизация статусов и активностей (presence)...")
+        synced = 0
+        for member in guild.members:
+            try:
+                await stats.upsert_presence(member)
+                synced += 1
+            except Exception:
+                pass
+        print(f"✅ Presence синхронизирован: {synced} пользователей")
     else:
         print(f'❌ Сервер с ID {GUILD_ID} не найден!')
 
@@ -86,6 +157,15 @@ async def on_message(message):
 @bot.event
 async def on_voice_state_update(member, before, after):
     await stats.log_voice_state(member, before, after)
+
+
+@bot.event
+async def on_presence_update(before: discord.Member, after: discord.Member):
+    # Обновляем presence в БД при изменениях (онлайн/игра/статус)
+    try:
+        await stats.upsert_presence(after)
+    except Exception:
+        pass
 
 @bot.command(name='лес')
 async def forest_info(ctx):

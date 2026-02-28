@@ -23,13 +23,58 @@ async def root():
 @router.get("/stats", response_model=dict)
 async def get_stats(db: asyncpg.Connection = Depends(get_db)):
     """Сводная статистика для главной страницы: число участников, достижений, онлайн (пока 0)"""
+    service = UserService(db)
     members = await db.fetchval("SELECT COUNT(*) FROM users")
     achievements = await db.fetchval("SELECT COUNT(*) FROM achievements")
+    online = await service.get_discord_online_count()
     return {
         "members": members or 0,
-        "online": 0,  # TODO: считать по presence, когда будет Discord/WebSocket
+        "online": online,
         "achievements": achievements or 0,
     }
+
+
+@router.get("/discord/overview", response_model=dict)
+async def discord_overview(db: asyncpg.Connection = Depends(get_db)):
+    """Сводка по Discord: онлайн, кто во что играет, топы."""
+    service = UserService(db)
+    online = await service.get_discord_online_count()
+    top_messages = await service.get_discord_top_messages(3)
+    top_voice = await service.get_discord_top_voice(3)
+    now_playing = await service.get_discord_now_playing(10)
+    return {
+        "online": online,
+        "top_messages": top_messages,
+        "top_voice": top_voice,
+        "now_playing": now_playing,
+    }
+
+
+@router.get("/discord/top/messages", response_model=list)
+async def discord_top_messages(
+    limit: int = Query(default=3, ge=1, le=50),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    service = UserService(db)
+    return await service.get_discord_top_messages(limit)
+
+
+@router.get("/discord/top/voice", response_model=list)
+async def discord_top_voice(
+    limit: int = Query(default=3, ge=1, le=50),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    service = UserService(db)
+    return await service.get_discord_top_voice(limit)
+
+
+@router.get("/discord/now-playing", response_model=list)
+async def discord_now_playing(
+    limit: int = Query(default=10, ge=1, le=100),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    service = UserService(db)
+    return await service.get_discord_now_playing(limit)
 
 
 @router.get("/players", response_model=List[dict])

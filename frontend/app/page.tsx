@@ -20,6 +20,35 @@ interface Stats {
   achievements: number
 }
 
+interface DiscordTopMessagesRow {
+  discord_id: number
+  discord_username: string
+  messages: number
+}
+
+interface DiscordTopVoiceRow {
+  discord_id: number
+  discord_username: string
+  seconds: number
+  hours: number
+}
+
+interface DiscordNowPlayingRow {
+  discord_id: number
+  discord_username: string
+  status: string
+  activity_type?: string | null
+  activity_name: string
+  updated_at: string
+}
+
+interface DiscordOverview {
+  online: number
+  top_messages: DiscordTopMessagesRow[]
+  top_voice: DiscordTopVoiceRow[]
+  now_playing: DiscordNowPlayingRow[]
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const TOKEN_KEY = 'lesnaya_token'
 
@@ -33,6 +62,7 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
+  const [discordOverview, setDiscordOverview] = useState<DiscordOverview | null>(null)
 
   // После входа через Discord бэкенд редиректит с ?token=... — сохраняем и убираем из URL
   useEffect(() => {
@@ -62,12 +92,14 @@ export default function Home() {
     try {
       setLoading(true)
       setError(null)
-      const [playersRes, statsRes] = await Promise.all([
+      const [playersRes, statsRes, discordRes] = await Promise.all([
         axios.get<Player[]>(`${API_URL}/api/players?limit=6`),
         axios.get<Stats>(`${API_URL}/api/stats`),
+        axios.get<DiscordOverview>(`${API_URL}/api/discord/overview`),
       ])
       setPlayers(playersRes.data)
       setStats(statsRes.data)
+      setDiscordOverview(discordRes.data)
     } catch (err) {
       console.error('Error fetching data:', err)
       setError('Не удалось загрузить данные')
@@ -143,7 +175,7 @@ export default function Home() {
             <div className="stat-label">ВОЛКОВ В СТАЕ</div>
           </div>
           <div className="stat-item">
-            <div className="stat-number">{loading ? '…' : stats.online}</div>
+            <div className="stat-number">{loading ? '…' : (discordOverview?.online ?? stats.online)}</div>
             <div className="stat-label">ОНЛАЙН СЕЙЧАС</div>
           </div>
           <div className="stat-item">
@@ -151,6 +183,62 @@ export default function Home() {
             <div className="stat-label">ДОСТИЖЕНИЙ</div>
           </div>
         </div>
+
+        {/* Discord статистика */}
+        {discordOverview && (
+          <section style={{ marginTop: '4rem' }}>
+            <h2>ЧТО ПРОИСХОДИТ В DISCORD</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: 'var(--gray-light)', border: '1px solid var(--gray-light)' }}>
+              <div className="game-card" style={{ background: 'var(--gray)' }}>
+                <div className="game-name" style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>🎮 Кто во что играет</div>
+                {discordOverview.now_playing.length === 0 ? (
+                  <div className="game-players">Пока никто не играет</div>
+                ) : (
+                  <div style={{ display: 'grid', gap: '0.5rem' }}>
+                    {discordOverview.now_playing.slice(0, 5).map((row) => (
+                      <div key={row.discord_id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+                        <span style={{ color: '#fff' }}>{row.discord_username}</span>
+                        <span style={{ color: '#aaa', textAlign: 'right' }}>{row.activity_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="game-card" style={{ background: 'var(--gray)' }}>
+                <div className="game-name" style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>💬 Топ по сообщениям</div>
+                {discordOverview.top_messages.length === 0 ? (
+                  <div className="game-players">Нет данных</div>
+                ) : (
+                  <div style={{ display: 'grid', gap: '0.5rem' }}>
+                    {discordOverview.top_messages.slice(0, 3).map((row, i) => (
+                      <div key={row.discord_id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+                        <span style={{ color: '#fff' }}>{i + 1}. {row.discord_username}</span>
+                        <span style={{ color: '#aaa' }}>{row.messages}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="game-card" style={{ background: 'var(--gray)' }}>
+                <div className="game-name" style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>🎤 Топ по голосу</div>
+                {discordOverview.top_voice.length === 0 ? (
+                  <div className="game-players">Нет данных</div>
+                ) : (
+                  <div style={{ display: 'grid', gap: '0.5rem' }}>
+                    {discordOverview.top_voice.slice(0, 3).map((row, i) => (
+                      <div key={row.discord_id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+                        <span style={{ color: '#fff' }}>{i + 1}. {row.discord_username}</span>
+                        <span style={{ color: '#aaa' }}>{row.hours} ч</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Игры */}
         <section id="games" style={{ marginTop: '6rem' }}>

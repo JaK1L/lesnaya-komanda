@@ -140,6 +140,20 @@ async def init_db():
             ''')
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_voice_sessions_discord_id ON voice_sessions(discord_id)')
             print("✅ Таблица voice_sessions создана или уже существует")
+
+            # Таблица discord_presence (онлайн/статус/во что играет)
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS discord_presence (
+                    discord_id BIGINT PRIMARY KEY,
+                    status VARCHAR(20), -- online/idle/dnd/offline
+                    activity_name VARCHAR(200),
+                    activity_type VARCHAR(30), -- playing/streaming/listening/watching/custom/competing
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            ''')
+            await conn.execute('CREATE INDEX IF NOT EXISTS idx_presence_status ON discord_presence(status)')
+            await conn.execute('CREATE INDEX IF NOT EXISTS idx_presence_updated_at ON discord_presence(updated_at)')
+            print("✅ Таблица discord_presence создана или уже существует")
             
             # Добавляем тестовых игроков (если таблица была пуста)
             await conn.execute('''
