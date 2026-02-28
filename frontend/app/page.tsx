@@ -1,5 +1,5 @@
 'use client'
-
+// Vercel build: no unused imports
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Gamepad2, Trophy, Calendar, TreePine, Sword, Target, Shield, ChevronRight } from 'lucide-react'
