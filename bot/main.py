@@ -75,7 +75,12 @@ class StatsCollector:
             except Exception:
                 continue
 
-        avatar_url = str(member.display_avatar.url) if member.display_avatar else None
+        # Получаем аватар пользователя (приоритет: guild avatar > user avatar > default)
+        avatar_url = None
+        if member.guild_avatar:
+            avatar_url = str(member.guild_avatar.url)
+        elif member.avatar:
+            avatar_url = str(member.avatar.url)
         
         # Если аватар не найден, используем дефолтный Discord аватар
         if not avatar_url:
@@ -172,11 +177,23 @@ async def on_ready():
         for member in guild.members:
             if member.bot:
                 continue
-            avatar_url = str(member.display_avatar.url) if member.display_avatar else None
+            
+            # Получаем аватар пользователя (приоритет: guild avatar > user avatar > default)
+            avatar_url = None
+            if member.guild_avatar:
+                avatar_url = str(member.guild_avatar.url)
+            elif member.avatar:
+                avatar_url = str(member.avatar.url)
+            
+            # Если аватар не найден, используем дефолтный Discord аватар
+            if not avatar_url:
+                default_avatar_index = (member.id >> 22) % 6
+                avatar_url = f"https://cdn.discordapp.com/embed/avatars/{default_avatar_index}.png"
+            
             joined_at = member.joined_at or datetime.utcnow()
             if joined_at.tzinfo is not None:
                 joined_at = joined_at.astimezone(timezone.utc).replace(tzinfo=None)
-
+            
             async with stats.db_pool.acquire() as conn:
                 await conn.execute(
                     '''
@@ -184,7 +201,7 @@ async def on_ready():
                     VALUES ($1, $2, $3, $4, NOW())
                     ON CONFLICT (discord_id) DO UPDATE SET
                         discord_username = EXCLUDED.discord_username,
-                        avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
+                        avatar_url = EXCLUDED.avatar_url,
                         last_seen = NOW()
                 ''',
                     member.id,
