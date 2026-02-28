@@ -13,6 +13,8 @@ const links = [
   { href: '/admin', label: 'Обзор' },
   { href: '/admin/events', label: 'События' },
   { href: '/admin/news', label: 'Новости' },
+  { href: '/admin/feed', label: 'Лента' },
+  { href: '/admin/settings', label: 'Настройки' },
 ]
 
 export default function AdminLayout({

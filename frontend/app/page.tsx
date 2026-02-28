@@ -55,6 +55,21 @@ interface EventItem {
   description: string
   game: string
   event_date: string | null
+  status?: string | null
+}
+
+interface FeedItem {
+  id: number
+  kind: 'post' | 'achievement'
+  title: string
+  content: string | null
+  created_at: string
+}
+
+interface CommonSettings {
+  discord_join_url: string
+  maintenance_enabled: boolean
+  maintenance_message?: string | null
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -72,6 +87,8 @@ export default function Home() {
   const [token, setToken] = useState<string | null>(null)
   const [discordOverview, setDiscordOverview] = useState<DiscordOverview | null>(null)
   const [events, setEvents] = useState<EventItem[]>([])
+  const [feed, setFeed] = useState<FeedItem[]>([])
+  const [commonSettings, setCommonSettings] = useState<CommonSettings | null>(null)
 
   // После входа через Discord бэкенд редиректит с ?token=... — сохраняем и убираем из URL
   useEffect(() => {
@@ -101,16 +118,20 @@ export default function Home() {
     try {
       setLoading(true)
       setError(null)
-      const [playersRes, statsRes, discordRes, eventsRes] = await Promise.all([
+      const [playersRes, statsRes, discordRes, eventsRes, feedRes, commonRes] = await Promise.all([
         axios.get<Player[]>(`${API_URL}/api/players?limit=6`),
         axios.get<Stats>(`${API_URL}/api/stats`),
         axios.get<DiscordOverview>(`${API_URL}/api/discord/overview`),
         axios.get<EventItem[]>(`${API_URL}/api/events`),
+        axios.get<FeedItem[]>(`${API_URL}/api/feed`),
+        axios.get<CommonSettings>(`${API_URL}/api/settings/common`),
       ])
       setPlayers(playersRes.data)
       setStats(statsRes.data)
       setDiscordOverview(discordRes.data)
       setEvents(eventsRes.data)
+      setFeed(feedRes.data)
+      setCommonSettings(commonRes.data)
     } catch (err) {
       console.error('Error fetching data:', err)
       setError('Не удалось загрузить данные')
@@ -133,6 +154,9 @@ export default function Home() {
     { name: 'VALORANT', icon: Shield, players: 8, color: '#ff6b6b' },
     { name: 'ДРУГИЕ', icon: Gamepad2, players: 35, color: '#4aff75' },
   ]
+
+  const posts = feed.filter((item) => item.kind === 'post')
+  const achievementsFeed = feed.filter((item) => item.kind === 'achievement')
 
   return (
     <>
@@ -173,9 +197,19 @@ export default function Home() {
               Мы — своя стая. Играем в CS2, Dota 2, Valorant и всё, что под руку попадётся.
               Без понтов, без маркетологов в пиджаках. Просто геймеры, которые нашли друг друга.
             </p>
-            <a href="#" className="lunacy-button" style={{ marginTop: '2rem' }}>
-              ВСТУПИТЬ В СТАЮ <ChevronRight size={16} style={{ marginLeft: '0.5rem', display: 'inline' }} />
-            </a>
+              <a
+                href={commonSettings?.discord_join_url || '#'}
+                target="_blank"
+                rel="noreferrer"
+                className="lunacy-button"
+                style={{ marginTop: '2rem' }}
+              >
+                ВСТУПИТЬ В СТАЮ{' '}
+                <ChevronRight
+                  size={16}
+                  style={{ marginLeft: '0.5rem', display: 'inline' }}
+                />
+              </a>
           </motion.div>
 
         {/* Новости стаи */}
@@ -190,11 +224,75 @@ export default function Home() {
               border: '1px solid var(--gray-light)',
             }}
           >
-            {/* Пока нет отдельного блока новостей на бэке, эту секцию легко расширить:
-               сейчас события в лесу уже редактируются из /admin/events */}
+            {(posts.length ? posts : []).slice(0, 4).map((item) => {
+              const dateLabel = new Date(item.created_at).toLocaleString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+
+              return (
+                <div key={item.id} className="game-card" style={{ background: 'var(--gray)' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '0.75rem',
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: 'var(--accent)',
+                        fontFamily: 'Unbounded',
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      ЛЕНТА
+                    </span>
+                    <span style={{ color: '#666', fontSize: '0.75rem' }}>{dateLabel}</span>
+                  </div>
+                  <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+                    {item.title}
+                  </div>
+                  {item.content && (
+                    <div className="game-players" style={{ whiteSpace: 'pre-line' }}>
+                      {item.content}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {posts.length === 0 && (
+              <div className="game-card" style={{ background: 'var(--gray)' }}>
+                <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+                  В стае пока тихо
+                </div>
+                <div className="game-players">
+                  Как только админ напишет первый пост в /admin/feed, здесь появится живая лента.
+                </div>
+              </div>
+            )}
           </div>
         </section>
         </div>
+
+        {/* Баннер техработ */}
+        {commonSettings?.maintenance_enabled && (
+          <div className="stat-grid" style={{ marginTop: '0' }}>
+            <div className="stat-item" style={{ gridColumn: '1 / -1' }}>
+              <div className="stat-label" style={{ color: '#facc15' }}>
+                ТЕХНИЧЕСКИЕ РАБОТЫ
+              </div>
+              <div className="game-players">
+                {commonSettings.maintenance_message ||
+                  'Сейчас в стае идут техработы. Возможны лаги и вылеты.'}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Статистика */}
         <div className="stat-grid">
@@ -313,10 +411,81 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Достижения */}
+        <section id="achievements" style={{ marginTop: '6rem' }}>
+          <h2>ДОСТИЖЕНИЯ</h2>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '1px',
+              background: 'var(--gray-light)',
+              border: '1px solid var(--gray-light)',
+            }}
+          >
+            {(achievementsFeed.length ? achievementsFeed : []).slice(0, 4).map((item) => {
+              const dateLabel = new Date(item.created_at).toLocaleString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+              })
+              return (
+                <div key={item.id} className="game-card" style={{ background: 'var(--gray)' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '0.75rem',
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: 'var(--accent)',
+                        fontFamily: 'Unbounded',
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      ДОСТИЖЕНИЕ
+                    </span>
+                    <span style={{ color: '#666', fontSize: '0.75rem' }}>{dateLabel}</span>
+                  </div>
+                  <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+                    {item.title}
+                  </div>
+                  {item.content && (
+                    <div className="game-players" style={{ whiteSpace: 'pre-line' }}>
+                      {item.content}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {achievementsFeed.length === 0 && (
+              <div className="game-card" style={{ background: 'var(--gray)' }}>
+                <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+                  Тут скоро будут легенды
+                </div>
+                <div className="game-players">
+                  Заносите сюда клатчи, смешные моменты и победы через /admin/feed (тип «Достижение»).
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* События в стиле Lunacy */}
         <section style={{ marginTop: '6rem' }}>
           <h2>СОБЫТИЯ В ЛЕСУ</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1px', background: 'var(--gray-light)', border: '1px solid var(--gray-light)' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '1px',
+              background: 'var(--gray-light)',
+              border: '1px solid var(--gray-light)',
+            }}
+          >
             {(events.length
               ? events
               : [
@@ -326,6 +495,7 @@ export default function Home() {
                     description: 'Собираем 5 команд для вечерних замесов',
                     game: 'CS2',
                     event_date: null,
+                    status: 'Планируется',
                   },
                   {
                     id: 1,
@@ -333,6 +503,7 @@ export default function Home() {
                     description: 'Играем 5х5, все уровни приветствуются',
                     game: 'DOTA 2',
                     event_date: null,
+                    status: 'Идёт набор',
                   },
                   {
                     id: 2,
@@ -340,6 +511,7 @@ export default function Home() {
                     description: 'Приз — звание "Лесной Ас"',
                     game: 'VALORANT',
                     event_date: null,
+                    status: 'Скоро',
                   },
                 ]
             ).map((event, index) => {
@@ -353,8 +525,18 @@ export default function Home() {
                 : null
 
               return (
-                <div key={event.id ?? index} className="game-card" style={{ background: 'var(--gray)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div
+                  key={event.id ?? index}
+                  className="game-card"
+                  style={{ background: 'var(--gray)' }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '1rem',
+                    }}
+                  >
                     <span
                       style={{
                         color: 'var(--accent)',
@@ -365,12 +547,31 @@ export default function Home() {
                     >
                       {event.game || 'СОБЫТИЕ'}
                     </span>
-                    <span style={{ color: '#666', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <Calendar size={14} />
-                      {dateLabel ?? 'ВРЕМЯ УТОЧНЯЕТСЯ'}
+                    <span
+                      style={{
+                        color: '#666',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-end',
+                        gap: '0.1rem',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Calendar size={14} />
+                        {dateLabel ?? 'Скоро'}
+                      </span>
+                      {event.status && (
+                        <span style={{ color: '#facc15', textTransform: 'uppercase' }}>
+                          {event.status}
+                        </span>
+                      )}
                     </span>
                   </div>
-                  <div className="game-name" style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+                  <div
+                    className="game-name"
+                    style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}
+                  >
                     {event.title}
                   </div>
                   <div className="game-players">{event.description}</div>

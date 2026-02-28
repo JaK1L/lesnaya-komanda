@@ -156,6 +156,53 @@ async def init_db():
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_presence_status ON discord_presence(status)')
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_presence_updated_at ON discord_presence(updated_at)')
             print("✅ Таблица discord_presence создана или уже существует")
+
+            # Таблица контент-ленты (посты и достижения для главной)
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS home_feed (
+                    id SERIAL PRIMARY KEY,
+                    kind VARCHAR(20) NOT NULL, -- 'post' | 'achievement'
+                    title VARCHAR(200) NOT NULL,
+                    content TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            ''')
+            print("✅ Таблица home_feed создана или уже существует")
+
+            # Таблица настроек сайта (JSON по ключу)
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS site_settings (
+                    key VARCHAR(50) PRIMARY KEY,
+                    value JSONB NOT NULL
+                )
+            ''')
+            print("✅ Таблица site_settings создана или уже существует")
+
+            # Таблицы новостей и событий (на случай, если init.sql не запускали)
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS news (
+                    id SERIAL PRIMARY KEY,
+                    title VARCHAR(200) NOT NULL,
+                    content TEXT,
+                    author_id INTEGER REFERENCES admin_users(id),
+                    published BOOLEAN DEFAULT false,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP
+                )
+            ''')
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS events (
+                    id SERIAL PRIMARY KEY,
+                    title VARCHAR(200) NOT NULL,
+                    description TEXT,
+                    game VARCHAR(50),
+                    event_date TIMESTAMP,
+                    created_by INTEGER REFERENCES admin_users(id),
+                    participants INTEGER[] DEFAULT '{}',
+                    status VARCHAR(30) DEFAULT 'Планируется'
+                )
+            ''')
+            print("✅ Таблицы news и events созданы или уже существуют")
             
             # Добавляем тестовых игроков (если таблица была пуста)
             await conn.execute('''
