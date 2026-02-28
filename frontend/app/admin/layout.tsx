@@ -1,15 +1,27 @@
+'use client'
+
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export const metadata: Metadata = {
   title: 'Админка — Лесная Команда',
   description: 'Админ-панель сообщества Лесная Команда',
 }
 
+const links = [
+  { href: '/admin', label: 'Обзор' },
+  { href: '/admin/events', label: 'События' },
+  { href: '/admin/news', label: 'Новости' },
+]
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
+
   return (
     <html lang="ru">
       <body>
@@ -19,9 +31,23 @@ export default function AdminLayout({
               <a href="/" className="nav-logo">
                 <span>ЛЕСНАЯ КОМАНДА</span>
               </a>
-              <span className="text-xs uppercase tracking-[0.2em] text-gray-400">
-                Админ-панель
-              </span>
+              <nav className="admin-nav">
+                {links.map((link) => {
+                  const active =
+                    pathname === link.href || pathname?.startsWith(link.href + '/')
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`admin-nav-link${
+                        active ? ' admin-nav-link--active' : ''
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  )
+                })}
+              </nav>
             </div>
           </header>
           <main className="container py-10">{children}</main>
