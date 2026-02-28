@@ -4,19 +4,47 @@
  * Получает данные через WebSocket и обновляет их в реальном времени
  */
 import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import { DiscordActivityCard } from './DiscordActivityCard'
 import { useWebSocket, DiscordUpdate, ActivityData } from '../hooks/useWebSocket'
 import { ConnectionStatusIndicator } from './ConnectionStatusIndicator'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/discord'
+
 export function DiscordActivityGrid() {
   const [activities, setActivities] = useState<ActivityData[]>([])
   const [, setUpdateTrigger] = useState(0)
+  const [loading, setLoading] = useState(true)
+  
+  // Fallback: загрузка данных через REST API
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const response = await axios.get<ActivityData[]>(`${API_URL}/api/discord/presence`)
+        setActivities(response.data)
+        setLoading(false)
+      } catch (error) {
+        console.error('[DiscordActivityGrid] Failed to fetch activities:', error)
+        setLoading(false)
+      }
+    }
+    
+    // Загружаем данные сразу
+    fetchActivities()
+    
+    // Обновляем каждые 10 секунд как fallback
+    const interval = setInterval(fetchActivities, 10000)
+    
+    return () => clearInterval(interval)
+  }, [])
   
   // Обработка WebSocket сообщений
   const handleMessage = (update: DiscordUpdate) => {
     if (update.type === 'initial_state') {
       // Получаем начальное состояние при подключении
       setActivities(update.data?.activity || [])
+      setLoading(false)
     } else if (update.type === 'activity_update') {
       // Обновление конкретного пользователя
       const userId = update.data?.user_id
@@ -37,12 +65,12 @@ export function DiscordActivityGrid() {
     }
   }
   
-  // Подключение к WebSocket
+  // Подключение к WebSocket (опционально)
   const { status } = useWebSocket({
-    url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws',
+    url: WS_URL,
     token: 'public',
     onMessage: handleMessage,
-    enabled: true
+    enabled: !!process.env.NEXT_PUBLIC_WS_URL  // Включаем только если URL настроен
   })
   
   // Обновление относительного времени каждые 60 секунд
@@ -59,24 +87,35 @@ export function DiscordActivityGrid() {
     <div className="discord-activity-section">
       <div className="section-header">
         <h2>ЧТО ПРОИСХОДИТ В DISCORD</h2>
-        <ConnectionStatusIndicator status={status} />
+        {process.env.NEXT_PUBLIC_WS_URL && <ConnectionStatusIndicator status={status} />}
       </div>
       
-      <div className="activity-grid">
-        {activities.map(activity => (
-          <DiscordActivityCard
-            key={activity.user_id}
-            userId={activity.user_id}
-            username={activity.username}
-            {...(activity.avatar_url && { avatarUrl: activity.avatar_url })}
-            {...(activity.game && { game: activity.game })}
-            status={activity.status}
-            {...(activity.roles && { roles: activity.roles })}
-            {...(activity.activity_started_at && { activityStartedAt: activity.activity_started_at })}
-            {...(activity.game_icon_url && { gameIconUrl: activity.game_icon_url })}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="loading-message">Загрузка...</div>
+      ) : activities.length === 0 ? (
+        <div className="empty-message">
+          <p>Пока никто не играет</p>
+          <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
+            Как только кто-то из участников Discord начнет играть, здесь появится информация
+          </p>
+        </div>
+      ) : (
+        <div className="activity-grid">
+          {activities.map(activity => (
+            <DiscordActivityCard
+              key={activity.user_id}
+              userId={activity.user_id}
+              username={activity.username}
+              {...(activity.avatar_url && { avatarUrl: activity.avatar_url })}
+              {...(activity.game && { game: activity.game })}
+              status={activity.status}
+              {...(activity.roles && { roles: activity.roles })}
+              {...(activity.activity_started_at && { activityStartedAt: activity.activity_started_at })}
+              {...(activity.game_icon_url && { gameIconUrl: activity.game_icon_url })}
+            />
+          ))}
+        </div>
+      )}
       
       <style jsx>{`
         .discord-activity-section {
@@ -95,6 +134,18 @@ export function DiscordActivityGrid() {
           font-size: 1.5rem;
           font-weight: 700;
           color: #4aff75;
+          margin: 0;
+        }
+        
+        .loading-message,
+        .empty-message {
+          text-align: center;
+          padding: 3rem 2rem;
+          color: #b9bbbe;
+          font-size: 1rem;
+        }
+        
+        .empty-message p {
           margin: 0;
         }
         
