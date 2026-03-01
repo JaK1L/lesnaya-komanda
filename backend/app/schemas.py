@@ -128,3 +128,44 @@ class APIResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     details: Optional[str] = None
+
+
+# Модели для профиля пользователя
+class ProfileResponse(BaseModel):
+    """Response model for user profile data"""
+    site_nickname: Optional[str] = None
+    discord_username: str
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    is_hidden: bool = False
+    forest_rank: str
+    rating: float
+    joined_at: Optional[datetime] = None
+
+
+class ProfileUpdate(BaseModel):
+    """Request model for updating user profile"""
+    site_nickname: Optional[str] = Field(None, max_length=50)
+    avatar_url: Optional[str] = Field(None, max_length=500)
+    bio: Optional[str] = Field(None, max_length=500)
+    is_hidden: bool = False
+    
+    @field_validator('site_nickname')
+    @classmethod
+    def validate_nickname(cls, v: Optional[str]) -> Optional[str]:
+        """Trim whitespace and return None for empty strings"""
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                return None
+        return v
+    
+    @field_validator('bio')
+    @classmethod
+    def validate_bio(cls, v: Optional[str]) -> Optional[str]:
+        """Trim whitespace from bio"""
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                return None
+        return v

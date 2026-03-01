@@ -83,6 +83,7 @@ async def get_elite_users(db: asyncpg.Connection = Depends(get_db)):
     Получить пользователей с ролью "ПИТУХ" (элита леса)
     
     Возвращает список пользователей с ролью ПИТУХ, отсортированных по статусу (онлайн/оффлайн).
+    Скрытые пользователи (is_hidden=true) исключаются из списка.
     
     Returns:
         List[dict]: Список элитных пользователей
@@ -95,11 +96,12 @@ async def get_elite_users(db: asyncpg.Connection = Depends(get_db)):
             COALESCE(u.forest_rank, 'Волк') AS forest_rank,
             COALESCE(u.rating, 0) AS rating,
             u.last_seen,
+            u.is_hidden,
             p.status,
             p.roles
         FROM discord_presence p
         LEFT JOIN users u ON u.discord_id = p.discord_id
-        WHERE p.roles IS NOT NULL
+        WHERE p.roles IS NOT NULL AND (u.is_hidden = false OR u.is_hidden IS NULL)
         ORDER BY 
             CASE WHEN p.status = 'online' THEN 1
                  WHEN p.status = 'idle' THEN 2

@@ -20,6 +20,7 @@ class UserService:
             FROM users u
             LEFT JOIN achievements a ON u.id = a.user_id
             LEFT JOIN game_profiles gp ON u.id = gp.user_id
+            WHERE u.is_hidden = false OR u.is_hidden IS NULL
             GROUP BY u.id
             ORDER BY u.rating DESC
             LIMIT $1 OFFSET $2
@@ -81,7 +82,7 @@ class UserService:
                        gp.rank as game_rank, gp.stats
                 FROM users u
                 JOIN game_profiles gp ON u.id = gp.user_id
-                WHERE gp.game = $1
+                WHERE gp.game = $1 AND (u.is_hidden = false OR u.is_hidden IS NULL)
                 ORDER BY u.rating DESC
                 LIMIT $2
             '''
@@ -90,6 +91,7 @@ class UserService:
             query = '''
                 SELECT discord_id, discord_username, forest_rank, rating
                 FROM users
+                WHERE is_hidden = false OR is_hidden IS NULL
                 ORDER BY rating DESC
                 LIMIT $1
             '''

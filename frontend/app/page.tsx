@@ -137,9 +137,12 @@ export default function Home() {
             <a href="#players" className="nav-link">ИГРОКИ</a>
             <a href="#achievements" className="nav-link">ДОСТИЖЕНИЯ</a>
             {token ? (
-              <button type="button" onClick={handleLogout} className="lunacy-button" style={{ padding: '0.75rem 1.5rem' }}>
-                ВЫЙТИ
-              </button>
+              <>
+                <a href="/profile" className="nav-link">ПРОФИЛЬ</a>
+                <button type="button" onClick={handleLogout} className="lunacy-button" style={{ padding: '0.75rem 1.5rem' }}>
+                  ВЫЙТИ
+                </button>
+              </>
             ) : (
               <a href={`${API_URL}/api/auth/discord`} className="lunacy-button" style={{ padding: '0.75rem 1.5rem' }}>
                 ВОЙТИ ЧЕРЕЗ DISCORD
