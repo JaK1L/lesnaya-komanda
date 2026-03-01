@@ -133,9 +133,10 @@ export default function Home() {
             <span>ЛЕСНАЯ КОМАНДА</span>
           </a>
           <div className="nav-links">
-            <a href="#games" className="nav-link">ИГРЫ</a>
-            <a href="#players" className="nav-link">ИГРОКИ</a>
-            <a href="#achievements" className="nav-link">ДОСТИЖЕНИЯ</a>
+            <a href="/" className="nav-link">ГЛАВНАЯ</a>
+            <a href="/merch" className="nav-link">МЕРЧ</a>
+            <a href="/streams" className="nav-link">СТРИМЫ</a>
+            <a href="/social" className="nav-link">СОЦ.СЕТИ</a>
             {token ? (
               <>
                 <a href="/profile" className="nav-link">ПРОФИЛЬ</a>
