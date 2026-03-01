@@ -144,11 +144,33 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     return current_user
 
 
-async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    """Получение администратора"""
-    if current_user.role != "admin":
+async def get_current_admin_user(
+    current_user: User = Depends(get_current_user),
+    db = Depends(get_db)
+) -> User:
+    """
+    Получение администратора
+    
+    Проверяет права администратора:
+    - Для Discord пользователей (role="user"): проверяет is_admin в таблице users
+    - Для admin_users (role="admin"): использует существующую логику
+    """
+    # Для Discord пользователей проверяем is_admin в users
+    if current_user.role == "user":
+        is_admin = await db.fetchval(
+            "SELECT is_admin FROM users WHERE id = $1",
+            current_user.id
+        )
+        if not is_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions"
+            )
+    # Для admin_users оставляем старую логику
+    elif current_user.role != "admin":
         raise HTTPException(
             status_code=403,
             detail="Insufficient permissions"
         )
+    
     return current_user

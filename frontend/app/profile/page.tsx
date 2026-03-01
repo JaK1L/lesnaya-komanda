@@ -14,6 +14,7 @@ interface ProfileData {
   forest_rank: string
   rating: number
   joined_at: string | null
+  is_admin: boolean
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -290,6 +291,43 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Admin Panel */}
+        {profile.is_admin && (
+          <div className="lunacy-card" style={{ marginBottom: '3rem' }}>
+            <h3 style={{ marginBottom: '2rem' }}>АДМИНКА</h3>
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              <a 
+                href="/admin/news" 
+                className="lunacy-button" 
+                style={{ textAlign: 'center', display: 'block', padding: '1rem' }}
+              >
+                УПРАВЛЕНИЕ НОВОСТЯМИ
+              </a>
+              <a 
+                href="/admin/feed" 
+                className="lunacy-button" 
+                style={{ textAlign: 'center', display: 'block', padding: '1rem' }}
+              >
+                УПРАВЛЕНИЕ ЛЕНТОЙ
+              </a>
+              <a 
+                href="/admin/events" 
+                className="lunacy-button" 
+                style={{ textAlign: 'center', display: 'block', padding: '1rem' }}
+              >
+                УПРАВЛЕНИЕ СОБЫТИЯМИ
+              </a>
+              <a 
+                href="/admin/settings" 
+                className="lunacy-button" 
+                style={{ textAlign: 'center', display: 'block', padding: '1rem' }}
+              >
+                НАСТРОЙКИ
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Profile Form */}
         <div className="lunacy-card" style={{ marginBottom: '3rem' }}>

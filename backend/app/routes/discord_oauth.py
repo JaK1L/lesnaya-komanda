@@ -12,7 +12,11 @@ from datetime import datetime
 from ..config import settings
 from ..database import get_db
 from ..auth import create_access_token
+from ..services.admin_service import AdminService
 from datetime import timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -103,6 +107,15 @@ async def discord_callback(
         username,
         avatar_url,
     )
+
+    # Синхронизировать статус администратора на основе Discord роли
+    try:
+        admin_service = AdminService(db)
+        is_admin = await admin_service.sync_admin_status_on_login(discord_id)
+    except Exception as e:
+        # Логируем ошибку, но продолжаем OAuth процесс
+        logger.error(f"Failed to sync admin status for discord_id={discord_id}: {e}")
+        is_admin = False
 
     # JWT для сайта (sub = discord_id, type = discord)
     token = create_access_token(

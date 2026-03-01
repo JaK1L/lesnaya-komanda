@@ -141,6 +141,7 @@ class ProfileResponse(BaseModel):
     forest_rank: str
     rating: float
     joined_at: Optional[datetime] = None
+    is_admin: bool = False
 
 
 class ProfileUpdate(BaseModel):

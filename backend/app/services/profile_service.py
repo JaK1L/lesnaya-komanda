@@ -44,7 +44,8 @@ class ProfileService:
                 is_hidden,
                 forest_rank,
                 rating,
-                joined_at
+                joined_at,
+                is_admin
             FROM users
             WHERE id = $1
         """
@@ -62,7 +63,8 @@ class ProfileService:
             is_hidden=row['is_hidden'] or False,
             forest_rank=row['forest_rank'],
             rating=row['rating'],
-            joined_at=row['joined_at']
+            joined_at=row['joined_at'],
+            is_admin=row['is_admin'] or False
         )
     
     async def update_user_profile(
@@ -111,7 +113,8 @@ class ProfileService:
                     is_hidden,
                     forest_rank,
                     rating,
-                    joined_at
+                    joined_at,
+                    is_admin
             """
             
             row = await self.db.fetchrow(
@@ -134,7 +137,8 @@ class ProfileService:
                 is_hidden=row['is_hidden'] or False,
                 forest_rank=row['forest_rank'],
                 rating=row['rating'],
-                joined_at=row['joined_at']
+                joined_at=row['joined_at'],
+                is_admin=row['is_admin'] or False
             )
     
     async def save_avatar_file(

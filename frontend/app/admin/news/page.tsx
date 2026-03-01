@@ -7,6 +7,7 @@ import { Newspaper, Trash2, Plus } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const ADMIN_TOKEN_KEY = 'lesnaya_admin_token'
+const TOKEN_KEY = 'lesnaya_token'
 
 interface NewsItem {
   id: number
@@ -26,15 +27,38 @@ export default function AdminNewsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const getToken = () =>
-    typeof window !== 'undefined' ? localStorage.getItem(ADMIN_TOKEN_KEY) : null
+  const getToken = () => {
+    if (typeof window === 'undefined') return null
+    // Try Discord OAuth token first, then admin token
+    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY)
+  }
 
   useEffect(() => {
     const token = getToken()
     if (!token) {
-      router.replace('/admin/login')
+      router.replace('/')
       return
     }
+
+    // Check admin access
+    const checkAdminAccess = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        
+        if (!response.data.is_admin) {
+          router.replace('/profile')
+          return
+        }
+      } catch (err) {
+        console.error('Admin check error:', err)
+        router.replace('/')
+        return
+      }
+    }
+
+    checkAdminAccess()
 
     const load = async () => {
       try {
