@@ -5,6 +5,7 @@ import axios from 'axios'
 import { Gamepad2, TreePine, Sword, Target, Shield, ChevronRight, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { DiscordActivityGrid } from '../components/DiscordActivityGrid'
+import './mobile-styles.css'
 
 interface Player {
   discord_username: string

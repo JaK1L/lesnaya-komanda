@@ -1,0 +1,157 @@
+/* Mobile Responsive Styles for Profile Page */
+
+/* Tablets and below (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .profile-container {
+    padding: 2rem 1.5rem !important;
+  }
+
+  .profile-header {
+    font-size: 1.75rem !important;
+  }
+
+  .profile-form {
+    padding: 1.5rem !important;
+  }
+}
+
+/* Mobile devices (max-width: 768px) */
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 1.5rem 1rem !important;
+    min-height: 100vh !important;
+  }
+
+  .profile-header {
+    font-size: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .profile-form {
+    padding: 1.25rem !important;
+    border-radius: 12px !important;
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem !important;
+  }
+
+  .form-label {
+    font-size: 0.875rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .form-input,
+  .form-textarea {
+    padding: 0.75rem !important;
+    font-size: 1rem !important;
+  }
+
+  .form-textarea {
+    min-height: 120px !important;
+  }
+
+  .avatar-preview {
+    width: 100px !important;
+    height: 100px !important;
+  }
+
+  .avatar-upload-button {
+    padding: 0.625rem 1rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  .character-counter {
+    font-size: 0.75rem !important;
+  }
+
+  .checkbox-label {
+    font-size: 0.875rem !important;
+  }
+
+  .form-buttons {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .save-button,
+  .cancel-button {
+    width: 100% !important;
+    padding: 0.875rem !important;
+    font-size: 1rem !important;
+  }
+
+  .message {
+    padding: 0.875rem !important;
+    font-size: 0.875rem !important;
+    border-radius: 8px !important;
+  }
+
+  /* Admin Panel */
+  .admin-panel {
+    padding: 1.25rem !important;
+    margin-top: 1.5rem !important;
+  }
+
+  .admin-panel h3 {
+    font-size: 1.25rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .admin-buttons {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .admin-button {
+    padding: 0.875rem !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+/* Small mobile devices (max-width: 480px) */
+@media (max-width: 480px) {
+  .profile-container {
+    padding: 1rem !important;
+  }
+
+  .profile-header {
+    font-size: 1.25rem !important;
+  }
+
+  .profile-form {
+    padding: 1rem !important;
+  }
+
+  .form-input,
+  .form-textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+
+  .avatar-preview {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  .admin-panel h3 {
+    font-size: 1.125rem !important;
+  }
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+  .form-input,
+  .form-textarea,
+  .avatar-upload-button,
+  .save-button,
+  .cancel-button,
+  .admin-button {
+    min-height: 44px !important;
+  }
+
+  .checkbox-label {
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+}

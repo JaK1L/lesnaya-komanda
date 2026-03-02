@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import '../globals.css'
+import './mobile-admin.css'
 
 const links = [
   { href: '/admin', label: 'Обзор' },

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { TreePine, Upload, Loader2 } from 'lucide-react'
+import './mobile-profile.css'
 
 interface ProfileData {
   site_nickname: string | null

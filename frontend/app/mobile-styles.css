@@ -1,0 +1,407 @@
+/* Mobile Responsive Styles for Lesnaya Komanda */
+
+/* Tablets and below (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .hero-section {
+    padding: 3rem 1.5rem !important;
+  }
+
+  .hero-title {
+    font-size: 2.5rem !important;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1rem !important;
+  }
+
+  .section {
+    padding: 2rem 1.5rem !important;
+  }
+
+  .section-title {
+    font-size: 1.75rem !important;
+  }
+
+  .players-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .events-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Mobile devices (max-width: 768px) */
+@media (max-width: 768px) {
+  /* Header */
+  .header {
+    padding: 1rem !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  .header-logo {
+    font-size: 1.25rem !important;
+  }
+
+  .header-nav {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
+  }
+
+  .header-nav a,
+  .header-nav button {
+    width: 100% !important;
+    text-align: center !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  /* Hero Section */
+  .hero-section {
+    padding: 2rem 1rem !important;
+    min-height: 60vh !important;
+  }
+
+  .hero-title {
+    font-size: 2rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .hero-subtitle {
+    font-size: 0.875rem !important;
+  }
+
+  .hero-buttons {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.75rem !important;
+  }
+
+  .hero-buttons button,
+  .hero-buttons a {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Stats Grid */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .stat-card {
+    padding: 1rem !important;
+  }
+
+  .stat-value {
+    font-size: 2rem !important;
+  }
+
+  .stat-label {
+    font-size: 0.75rem !important;
+  }
+
+  /* Sections */
+  .section {
+    padding: 1.5rem 1rem !important;
+  }
+
+  .section-title {
+    font-size: 1.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Players Grid (Elite) */
+  .players-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .player-card {
+    padding: 1rem !important;
+  }
+
+  .player-avatar {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .player-name {
+    font-size: 0.875rem !important;
+  }
+
+  .player-rank {
+    font-size: 0.75rem !important;
+  }
+
+  .player-rating {
+    font-size: 0.875rem !important;
+  }
+
+  /* Events Grid */
+  .events-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .event-card {
+    padding: 1rem !important;
+  }
+
+  .event-title {
+    font-size: 1rem !important;
+  }
+
+  .event-description {
+    font-size: 0.8125rem !important;
+  }
+
+  .event-meta {
+    font-size: 0.75rem !important;
+  }
+
+  /* Feed */
+  .feed-container {
+    gap: 0.75rem !important;
+  }
+
+  .feed-item {
+    padding: 1rem !important;
+  }
+
+  .feed-title {
+    font-size: 1rem !important;
+  }
+
+  .feed-content {
+    font-size: 0.8125rem !important;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 2rem 1rem !important;
+  }
+
+  .footer-content {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+    text-align: center !important;
+  }
+
+  .footer-section {
+    width: 100% !important;
+  }
+
+  .footer-links {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Discord Activity Cards */
+  .discord-activity-section {
+    padding: 1.5rem 1rem !important;
+  }
+
+  .section-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .section-header h2 {
+    font-size: 1.25rem !important;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    padding: 0.5rem !important;
+  }
+
+  .modal-content {
+    max-height: 95vh !important;
+    border-radius: 12px !important;
+  }
+
+  .profile-banner {
+    height: 80px !important;
+  }
+
+  .profile-avatar-large {
+    width: 80px !important;
+    height: 80px !important;
+    bottom: -40px !important;
+    left: 16px !important;
+  }
+
+  .avatar-large {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  .status-indicator-large {
+    width: 18px !important;
+    height: 18px !important;
+    border-width: 3px !important;
+  }
+
+  .profile-info {
+    padding: 52px 16px 16px !important;
+  }
+
+  .profile-username {
+    font-size: 1.25rem !important;
+  }
+
+  .profile-status {
+    font-size: 0.8125rem !important;
+  }
+
+  .custom-status {
+    font-size: 0.8125rem !important;
+    padding: 0.625rem 0.875rem !important;
+  }
+
+  .section-title {
+    font-size: 0.6875rem !important;
+  }
+
+  .bio-text,
+  .date-text {
+    font-size: 0.8125rem !important;
+  }
+
+  .role-badge-large {
+    font-size: 0.8125rem !important;
+    padding: 3px 10px !important;
+  }
+
+  .activity-details {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .game-icon-large,
+  .game-icon-placeholder-large {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .activity-game {
+    font-size: 0.875rem !important;
+  }
+
+  .activity-time {
+    font-size: 0.8125rem !important;
+  }
+
+  .close-button {
+    padding: 0.625rem !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+/* Small mobile devices (max-width: 480px) */
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.75rem !important;
+  }
+
+  .hero-subtitle {
+    font-size: 0.8125rem !important;
+  }
+
+  .section-title {
+    font-size: 1.25rem !important;
+  }
+
+  .stat-value {
+    font-size: 1.75rem !important;
+  }
+
+  .player-card {
+    padding: 0.875rem !important;
+  }
+
+  .event-card {
+    padding: 0.875rem !important;
+  }
+
+  .feed-item {
+    padding: 0.875rem !important;
+  }
+
+  .profile-username {
+    font-size: 1.125rem !important;
+  }
+
+  .modal-content {
+    border-radius: 8px !important;
+  }
+}
+
+/* Landscape mobile (max-height: 500px and orientation: landscape) */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero-section {
+    min-height: auto !important;
+    padding: 1.5rem 1rem !important;
+  }
+
+  .modal-content {
+    max-height: 90vh !important;
+  }
+
+  .profile-banner {
+    height: 60px !important;
+  }
+
+  .profile-avatar-large {
+    width: 60px !important;
+    height: 60px !important;
+    bottom: -30px !important;
+  }
+
+  .avatar-large {
+    width: 60px !important;
+    height: 60px !important;
+  }
+
+  .profile-info {
+    padding: 42px 16px 16px !important;
+  }
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets */
+  button,
+  a,
+  .player-card,
+  .event-card,
+  .feed-item,
+  .discord-activity-card {
+    min-height: 44px !important;
+  }
+
+  /* Remove hover effects on touch devices */
+  .player-card:hover,
+  .event-card:hover,
+  .feed-item:hover,
+  .discord-activity-card:hover {
+    transform: none !important;
+  }
+
+  /* Add active state instead */
+  .player-card:active,
+  .event-card:active,
+  .feed-item:active,
+  .discord-activity-card:active {
+    transform: scale(0.98) !important;
+    opacity: 0.9 !important;
+  }
+}
