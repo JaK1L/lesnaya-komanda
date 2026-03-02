@@ -51,23 +51,40 @@ class ProfileService:
             WHERE id = $1
         """
         
-        row = await self.db.fetchrow(query, user_id)
-        
-        if not row:
-            return None
-        
-        return ProfileResponse(
-            site_nickname=row['site_nickname'],
-            discord_username=row['discord_username'],
-            avatar_url=row['avatar_url'],
-            bio=row['bio'],
-            is_hidden=row['is_hidden'] or False,
-            forest_rank=row['forest_rank'],
-            rating=row['rating'],
-            joined_at=row['joined_at'],
-            is_admin=row['is_admin'] or False,
-            game_preferences=row['game_preferences']
-        )
+        try:
+            row = await self.db.fetchrow(query, user_id)
+            
+            if not row:
+                return None
+            
+            # Safely extract game_preferences
+            game_prefs = row['game_preferences']
+            if game_prefs is None:
+                game_prefs = None
+            elif isinstance(game_prefs, str):
+                import json
+                try:
+                    game_prefs = json.loads(game_prefs)
+                except:
+                    game_prefs = None
+            
+            return ProfileResponse(
+                site_nickname=row['site_nickname'],
+                discord_username=row['discord_username'],
+                avatar_url=row['avatar_url'],
+                bio=row['bio'],
+                is_hidden=row['is_hidden'] or False,
+                forest_rank=row['forest_rank'],
+                rating=row['rating'],
+                joined_at=row['joined_at'],
+                is_admin=row['is_admin'] or False,
+                game_preferences=game_prefs
+            )
+        except Exception as e:
+            print(f"[ERROR] get_user_profile failed for user_id {user_id}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
     
     async def update_user_profile(
         self, 
