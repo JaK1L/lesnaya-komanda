@@ -65,8 +65,17 @@ class ProfileService:
                 import json
                 try:
                     game_prefs = json.loads(game_prefs)
+                    # Ensure it's a list
+                    if game_prefs and not isinstance(game_prefs, list):
+                        game_prefs = [game_prefs]
                 except:
                     game_prefs = None
+            elif isinstance(game_prefs, dict):
+                # If it's a dict, wrap it in a list
+                game_prefs = [game_prefs]
+            elif not isinstance(game_prefs, list):
+                # If it's not a list, set to None
+                game_prefs = None
             
             return ProfileResponse(
                 site_nickname=row['site_nickname'],
