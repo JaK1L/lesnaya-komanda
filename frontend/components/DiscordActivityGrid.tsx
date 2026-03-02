@@ -16,6 +16,7 @@ export function DiscordActivityGrid() {
   const [activities, setActivities] = useState<ActivityData[]>([])
   const [, setUpdateTrigger] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [openModalUserId, setOpenModalUserId] = useState<string | null>(null)
   
   // Fallback: загрузка данных через REST API
   useEffect(() => {
@@ -112,6 +113,13 @@ export function DiscordActivityGrid() {
               {...(activity.roles && { roles: activity.roles })}
               {...(activity.activity_started_at && { activityStartedAt: activity.activity_started_at })}
               {...(activity.game_icon_url && { gameIconUrl: activity.game_icon_url })}
+              {...(activity.custom_status && { customStatus: activity.custom_status })}
+              {...(activity.bio && { bio: activity.bio })}
+              {...(activity.created_at && { createdAt: activity.created_at })}
+              {...(activity.joined_at && { joinedAt: activity.joined_at })}
+              isModalOpen={openModalUserId === activity.user_id}
+              onOpenModal={() => setOpenModalUserId(activity.user_id)}
+              onCloseModal={() => setOpenModalUserId(null)}
             />
           ))}
         </div>

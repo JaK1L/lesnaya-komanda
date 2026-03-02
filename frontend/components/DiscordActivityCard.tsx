@@ -16,6 +16,13 @@ interface DiscordActivityCardProps {
   roles?: Role[]
   activityStartedAt?: string
   gameIconUrl?: string
+  customStatus?: string
+  bio?: string
+  createdAt?: string
+  joinedAt?: string
+  isModalOpen: boolean
+  onOpenModal: () => void
+  onCloseModal: () => void
 }
 
 export const DiscordActivityCard = React.memo(function DiscordActivityCard({
@@ -26,9 +33,15 @@ export const DiscordActivityCard = React.memo(function DiscordActivityCard({
   status,
   roles = [],
   activityStartedAt,
-  gameIconUrl
+  gameIconUrl,
+  customStatus,
+  bio,
+  createdAt,
+  joinedAt,
+  isModalOpen,
+  onOpenModal,
+  onCloseModal
 }: DiscordActivityCardProps) {
-  const [showModal, setShowModal] = useState(false)
   
   // Вычисление относительного времени
   const relativeTime = useMemo(() => {
@@ -73,16 +86,23 @@ export const DiscordActivityCard = React.memo(function DiscordActivityCard({
     dnd: 'Не беспокоить'
   }[status]
   
+  // Форматирование дат
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return null
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+  }
+  
   return (
     <>
       <div 
         className="discord-activity-card"
-        onClick={() => setShowModal(true)}
+        onClick={onOpenModal}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
-            setShowModal(true)
+            onOpenModal()
           }
         }}
       >
@@ -308,10 +328,10 @@ export const DiscordActivityCard = React.memo(function DiscordActivityCard({
     </div>
     
     {/* Модальное окно с мини-профилем */}
-    {showModal && (
+    {isModalOpen && (
       <div 
         className="modal-overlay"
-        onClick={() => setShowModal(false)}
+        onClick={onCloseModal}
       >
         <div 
           className="modal-content"
@@ -339,10 +359,43 @@ export const DiscordActivityCard = React.memo(function DiscordActivityCard({
             <h2 className="profile-username">{username}</h2>
             <p className="profile-status">{statusText}</p>
             
+            {/* Custom Status */}
+            {customStatus && (
+              <div className="profile-section">
+                <div className="custom-status">
+                  💭 {customStatus}
+                </div>
+              </div>
+            )}
+            
+            {/* Описание (bio) */}
+            {bio && (
+              <div className="profile-section">
+                <h3 className="section-title">О себе</h3>
+                <p className="bio-text">{bio}</p>
+              </div>
+            )}
+            
+            {/* Участник с */}
+            <div className="profile-section">
+              <h3 className="section-title">Участник Discord с</h3>
+              <p className="date-text">
+                {formatDate(createdAt) || 'Неизвестно'}
+              </p>
+              {joinedAt && (
+                <>
+                  <h3 className="section-title" style={{ marginTop: '0.75rem' }}>Присоединился к серверу</h3>
+                  <p className="date-text">
+                    {formatDate(joinedAt)}
+                  </p>
+                </>
+              )}
+            </div>
+            
             {/* Все роли */}
             {roles.length > 0 && (
               <div className="profile-section">
-                <h3 className="section-title">Роли</h3>
+                <h3 className="section-title">Роли — {roles.length}</h3>
                 <div className="roles-list">
                   {roles.map((role, idx) => (
                     <span
@@ -394,7 +447,7 @@ export const DiscordActivityCard = React.memo(function DiscordActivityCard({
             
             <button 
               className="close-button"
-              onClick={() => setShowModal(false)}
+              onClick={onCloseModal}
             >
               Закрыть
             </button>
@@ -494,6 +547,29 @@ export const DiscordActivityCard = React.memo(function DiscordActivityCard({
               font-size: 0.875rem;
               color: #b9bbbe;
               margin: 0 0 1.5rem 0;
+            }
+            
+            .custom-status {
+              background: rgba(255, 255, 255, 0.05);
+              padding: 0.75rem 1rem;
+              border-radius: 8px;
+              font-size: 0.875rem;
+              color: #ffffff;
+              margin-bottom: 1rem;
+            }
+            
+            .bio-text {
+              font-size: 0.875rem;
+              color: #dcddde;
+              line-height: 1.5;
+              margin: 0;
+              white-space: pre-wrap;
+            }
+            
+            .date-text {
+              font-size: 0.875rem;
+              color: #dcddde;
+              margin: 0;
             }
             
             .profile-section {

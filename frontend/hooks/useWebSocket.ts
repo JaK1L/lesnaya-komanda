@@ -19,6 +19,10 @@ export interface ActivityData {
   roles: Role[]
   activity_started_at?: string  // ISO 8601 timestamp
   game_icon_url?: string
+  custom_status?: string
+  bio?: string
+  created_at?: string  // ISO 8601 timestamp
+  joined_at?: string  // ISO 8601 timestamp
 }
 
 export interface LeaderboardEntry {
