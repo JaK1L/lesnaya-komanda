@@ -2,220 +2,200 @@
 
 /* Tablets and below (max-width: 1024px) */
 @media (max-width: 1024px) {
-  .hero-section {
-    padding: 3rem 1.5rem !important;
+  .container {
+    padding: 0 1.5rem !important;
   }
 
-  .hero-title {
+  h1 {
+    font-size: 3.5rem !important;
+  }
+
+  h2 {
     font-size: 2.5rem !important;
+    margin-bottom: 1.5rem !important;
   }
 
-  .hero-subtitle {
-    font-size: 1rem !important;
+  .hero-block {
+    margin: 3rem 0 !important;
+    padding-left: 1.5rem !important;
   }
 
-  .stats-grid {
+  .hero-block p {
+    font-size: 1.1rem !important;
+  }
+
+  .stat-grid {
     grid-template-columns: repeat(3, 1fr) !important;
-    gap: 1rem !important;
+    gap: 1.5rem !important;
+    margin: 3rem 0 !important;
   }
 
-  .section {
-    padding: 2rem 1.5rem !important;
-  }
-
-  .section-title {
-    font-size: 1.75rem !important;
-  }
-
-  .players-grid {
+  .games-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
-  .events-grid {
+  .players-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
 /* Mobile devices (max-width: 768px) */
 @media (max-width: 768px) {
-  /* Header */
-  .header {
-    padding: 1rem !important;
-    flex-direction: column !important;
-    gap: 1rem !important;
+  /* Container */
+  .container {
+    padding: 0 1rem !important;
   }
 
-  .header-logo {
+  /* Typography */
+  h1 {
+    font-size: 2.5rem !important;
+    line-height: 1.1 !important;
+  }
+
+  h2 {
+    font-size: 1.75rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  h3 {
     font-size: 1.25rem !important;
   }
 
-  .header-nav {
+  /* Hero Block */
+  .hero-block {
+    margin: 2rem 0 !important;
+    padding-left: 1rem !important;
+    border-left-width: 3px !important;
+  }
+
+  .hero-block p {
+    font-size: 1rem !important;
+    line-height: 1.6 !important;
+  }
+
+  /* Navigation */
+  .nav {
+    padding: 1rem 0 !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .nav-container {
     flex-direction: column !important;
-    width: 100% !important;
-    gap: 0.5rem !important;
+    gap: 1rem !important;
+    align-items: stretch !important;
   }
 
-  .header-nav a,
-  .header-nav button {
-    width: 100% !important;
-    text-align: center !important;
-    padding: 0.75rem 1rem !important;
-  }
-
-  /* Hero Section */
-  .hero-section {
-    padding: 2rem 1rem !important;
-    min-height: 60vh !important;
-  }
-
-  .hero-title {
-    font-size: 2rem !important;
-    line-height: 1.2 !important;
-  }
-
-  .hero-subtitle {
-    font-size: 0.875rem !important;
-  }
-
-  .hero-buttons {
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 0.75rem !important;
-  }
-
-  .hero-buttons button,
-  .hero-buttons a {
-    width: 100% !important;
+  .nav-logo {
+    font-size: 1.25rem !important;
     justify-content: center !important;
   }
 
-  /* Stats Grid */
-  .stats-grid {
-    grid-template-columns: 1fr !important;
+  .nav-links {
+    flex-direction: column !important;
     gap: 0.75rem !important;
+    width: 100% !important;
   }
 
-  .stat-card {
+  .nav-link {
+    text-align: center !important;
+    padding: 0.75rem !important;
+    display: block !important;
+    background: var(--gray) !important;
+    border: 1px solid var(--gray-light) !important;
+  }
+
+  .lunacy-button {
+    width: 100% !important;
+    text-align: center !important;
+    padding: 0.875rem 1.5rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* Stats Grid */
+  .stat-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    margin: 2rem 0 !important;
+  }
+
+  .stat-item {
     padding: 1rem !important;
+    background: var(--gray) !important;
+    border: 1px solid var(--gray-light) !important;
+    border-top: 2px solid var(--accent) !important;
   }
 
-  .stat-value {
-    font-size: 2rem !important;
+  .stat-number {
+    font-size: 2.5rem !important;
   }
 
   .stat-label {
     font-size: 0.75rem !important;
+    margin-top: 0.5rem !important;
   }
 
-  /* Sections */
-  .section {
-    padding: 1.5rem 1rem !important;
+  /* Games Grid */
+  .games-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1px !important;
   }
 
-  .section-title {
-    font-size: 1.5rem !important;
-    margin-bottom: 1rem !important;
+  .game-card {
+    padding: 1.5rem !important;
   }
 
-  /* Players Grid (Elite) */
+  .game-icon {
+    font-size: 1.75rem !important;
+  }
+
+  .game-name {
+    font-size: 1.25rem !important;
+  }
+
+  .game-players {
+    font-size: 0.8125rem !important;
+  }
+
+  /* Players Grid */
   .players-grid {
     grid-template-columns: 1fr !important;
-    gap: 0.75rem !important;
+    gap: 1px !important;
   }
 
   .player-card {
-    padding: 1rem !important;
+    padding: 1.25rem !important;
   }
 
   .player-avatar {
-    width: 48px !important;
-    height: 48px !important;
+    width: 56px !important;
+    height: 56px !important;
+    font-size: 1.75rem !important;
   }
 
   .player-name {
-    font-size: 0.875rem !important;
+    font-size: 1rem !important;
   }
 
   .player-rank {
-    font-size: 0.75rem !important;
+    font-size: 0.8125rem !important;
   }
 
   .player-rating {
-    font-size: 0.875rem !important;
-  }
-
-  /* Events Grid */
-  .events-grid {
-    grid-template-columns: 1fr !important;
-    gap: 0.75rem !important;
-  }
-
-  .event-card {
-    padding: 1rem !important;
-  }
-
-  .event-title {
     font-size: 1rem !important;
-  }
-
-  .event-description {
-    font-size: 0.8125rem !important;
-  }
-
-  .event-meta {
-    font-size: 0.75rem !important;
-  }
-
-  /* Feed */
-  .feed-container {
-    gap: 0.75rem !important;
-  }
-
-  .feed-item {
-    padding: 1rem !important;
-  }
-
-  .feed-title {
-    font-size: 1rem !important;
-  }
-
-  .feed-content {
-    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
   }
 
   /* Footer */
   .footer {
-    padding: 2rem 1rem !important;
+    margin-top: 4rem !important;
+    padding: 1.5rem 0 !important;
+    font-size: 0.8125rem !important;
   }
 
-  .footer-content {
-    flex-direction: column !important;
-    gap: 1.5rem !important;
-    text-align: center !important;
-  }
-
-  .footer-section {
-    width: 100% !important;
-  }
-
-  .footer-links {
-    flex-direction: column !important;
-    gap: 0.5rem !important;
-  }
-
-  /* Discord Activity Cards */
-  .discord-activity-section {
-    padding: 1.5rem 1rem !important;
-  }
-
-  .section-header {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 0.75rem !important;
-  }
-
-  .section-header h2 {
-    font-size: 1.25rem !important;
+  /* Discord Activity Grid */
+  .discord-activity-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
   }
 
   /* Modal */
@@ -308,32 +288,33 @@
 
 /* Small mobile devices (max-width: 480px) */
 @media (max-width: 480px) {
-  .hero-title {
-    font-size: 1.75rem !important;
+  h1 {
+    font-size: 2rem !important;
   }
 
-  .hero-subtitle {
-    font-size: 0.8125rem !important;
+  h2 {
+    font-size: 1.5rem !important;
   }
 
-  .section-title {
-    font-size: 1.25rem !important;
+  .hero-block p {
+    font-size: 0.9375rem !important;
   }
 
-  .stat-value {
-    font-size: 1.75rem !important;
+  .stat-number {
+    font-size: 2rem !important;
+  }
+
+  .game-card {
+    padding: 1.25rem !important;
   }
 
   .player-card {
-    padding: 0.875rem !important;
+    padding: 1rem !important;
   }
 
-  .event-card {
-    padding: 0.875rem !important;
-  }
-
-  .feed-item {
-    padding: 0.875rem !important;
+  .player-avatar {
+    width: 48px !important;
+    height: 48px !important;
   }
 
   .profile-username {
@@ -343,13 +324,17 @@
   .modal-content {
     border-radius: 8px !important;
   }
+
+  .lunacy-button {
+    font-size: 0.8125rem !important;
+    padding: 0.75rem 1.25rem !important;
+  }
 }
 
 /* Landscape mobile (max-height: 500px and orientation: landscape) */
 @media (max-height: 500px) and (orientation: landscape) {
-  .hero-section {
-    min-height: auto !important;
-    padding: 1.5rem 1rem !important;
+  .hero-block {
+    margin: 1.5rem 0 !important;
   }
 
   .modal-content {
@@ -379,29 +364,28 @@
 /* Touch device improvements */
 @media (hover: none) and (pointer: coarse) {
   /* Increase touch targets */
-  button,
-  a,
+  .nav-link,
+  .lunacy-button,
   .player-card,
-  .event-card,
-  .feed-item,
-  .discord-activity-card {
+  .game-card {
     min-height: 44px !important;
   }
 
   /* Remove hover effects on touch devices */
   .player-card:hover,
-  .event-card:hover,
-  .feed-item:hover,
-  .discord-activity-card:hover {
+  .game-card:hover,
+  .lunacy-card:hover {
     transform: none !important;
   }
 
   /* Add active state instead */
   .player-card:active,
-  .event-card:active,
-  .feed-item:active,
-  .discord-activity-card:active {
+  .game-card:active {
     transform: scale(0.98) !important;
     opacity: 0.9 !important;
+  }
+
+  .lunacy-button:active {
+    transform: scale(0.97) !important;
   }
 }
