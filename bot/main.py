@@ -47,9 +47,23 @@ class StatsCollector:
         activity_type = None
         activity_started_at = None
         game_icon_url = None
+        custom_status = None
         
-        # Берём только игры (ActivityType.playing) и соревнования (ActivityType.competing)
-        # Игнорируем Custom Status, Streaming, Listening, Watching
+        # Сначала ищем Custom Status отдельно
+        for act in getattr(member, "activities", []) or []:
+            try:
+                if act is None:
+                    continue
+                atype = getattr(act, "type", None)
+                if atype is not None:
+                    type_value = atype.value if hasattr(atype, 'value') else atype
+                    if type_value == 4:  # Custom Status
+                        custom_status = getattr(act, "name", None) or getattr(act, "state", None)
+                        break
+            except Exception:
+                continue
+        
+        # Теперь ищем игры (ActivityType.playing) и соревнования (ActivityType.competing)
         for act in getattr(member, "activities", []) or []:
             try:
                 if act is None:
@@ -58,7 +72,6 @@ class StatsCollector:
                 atype = getattr(act, "type", None)
                 
                 # Фильтруем только игры (playing = 0) и соревнования (competing = 5)
-                # Игнорируем: custom (4), streaming (1), listening (2), watching (3)
                 if atype is not None:
                     type_value = atype.value if hasattr(atype, 'value') else atype
                     if type_value not in [0, 5]:  # 0 = playing, 5 = competing
@@ -103,9 +116,9 @@ class StatsCollector:
                 """
                 INSERT INTO discord_presence (
                     discord_id, status, activity_name, activity_type,
-                    roles, activity_started_at, game_icon_url, updated_at
+                    roles, activity_started_at, game_icon_url, custom_status, updated_at
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
                 ON CONFLICT (discord_id) DO UPDATE SET
                     status = EXCLUDED.status,
                     activity_name = EXCLUDED.activity_name,
@@ -113,6 +126,7 @@ class StatsCollector:
                     roles = EXCLUDED.roles,
                     activity_started_at = EXCLUDED.activity_started_at,
                     game_icon_url = EXCLUDED.game_icon_url,
+                    custom_status = EXCLUDED.custom_status,
                     updated_at = NOW()
                 """,
                 member.id,
@@ -122,6 +136,7 @@ class StatsCollector:
                 json.dumps(roles),
                 activity_started_at,
                 game_icon_url,
+                custom_status,
             )
 
             # Обновим users, чтобы имя/аватар были свежими

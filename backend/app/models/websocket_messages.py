@@ -23,6 +23,10 @@ class ActivityData(BaseModel):
     roles: List[RoleData] = []
     activity_started_at: Optional[str] = None
     game_icon_url: Optional[str] = None
+    custom_status: Optional[str] = None
+    bio: Optional[str] = None
+    created_at: Optional[str] = None
+    joined_at: Optional[str] = None
 
 
 class LeaderboardEntry(BaseModel):

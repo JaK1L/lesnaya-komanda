@@ -40,6 +40,15 @@ UPDATE users SET is_admin = FALSE WHERE is_admin IS NULL;
 COMMENT ON COLUMN users.is_admin IS 'Flag indicating if user has Discord role "🐓ПИТУХ🐓" and should have admin access';
 """
 
+MIGRATION_3 = """
+-- Add custom_status column to discord_presence table
+ALTER TABLE discord_presence 
+ADD COLUMN IF NOT EXISTS custom_status TEXT;
+
+-- Comments for documentation
+COMMENT ON COLUMN discord_presence.custom_status IS 'User custom status text from Discord';
+"""
+
 
 async def apply_migrations():
     """Применить миграции к базе данных"""
@@ -66,6 +75,12 @@ async def apply_migrations():
         print("✅ Миграция 2 применена успешно!")
         print()
         
+        # Миграция 3
+        print("📝 Применение миграции 3: add_custom_status")
+        await conn.execute(MIGRATION_3)
+        print("✅ Миграция 3 применена успешно!")
+        print()
+        
         # Проверка
         print("🔍 Проверка результата...")
         result = await conn.fetch("""
@@ -76,8 +91,19 @@ async def apply_migrations():
             ORDER BY column_name
         """)
         
-        print("Созданные колонки:")
+        print("Созданные колонки в users:")
         for row in result:
+            print(f"  - {row['column_name']}: {row['data_type']}")
+        
+        result2 = await conn.fetch("""
+            SELECT column_name, data_type
+            FROM information_schema.columns 
+            WHERE table_name = 'discord_presence' 
+            AND column_name = 'custom_status'
+        """)
+        
+        print("\nСозданные колонки в discord_presence:")
+        for row in result2:
             print(f"  - {row['column_name']}: {row['data_type']}")
         
         await conn.close()

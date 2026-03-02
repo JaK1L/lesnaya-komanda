@@ -47,7 +47,11 @@ async def get_presence_data(db: asyncpg.Connection = Depends(get_db)):
             p.status,
             p.roles,
             p.activity_started_at,
-            p.game_icon_url
+            p.game_icon_url,
+            p.custom_status,
+            u.bio,
+            u.created_at,
+            u.joined_at
         FROM discord_presence p
         LEFT JOIN users u ON u.discord_id = p.discord_id
         WHERE p.status IS NOT NULL AND p.status <> 'offline'
@@ -65,7 +69,11 @@ async def get_presence_data(db: asyncpg.Connection = Depends(get_db)):
             status=row["status"],
             roles=[RoleData(**r) for r in (json.loads(row["roles"]) if isinstance(row["roles"], str) else (row["roles"] or []))],
             activity_started_at=row["activity_started_at"].isoformat() if row["activity_started_at"] else None,
-            game_icon_url=row["game_icon_url"]
+            game_icon_url=row["game_icon_url"],
+            custom_status=row["custom_status"],
+            bio=row["bio"],
+            created_at=row["created_at"].isoformat() if row["created_at"] else None,
+            joined_at=row["joined_at"].isoformat() if row["joined_at"] else None
         )
         for row in rows
     ]
