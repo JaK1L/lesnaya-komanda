@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from .config import settings
 from .database import database
-from .routes import users, auth, discord_oauth, admin, content, websocket, discord, profile, migration
+from .routes import users, auth, discord_oauth, admin, content, websocket, discord, profile, migration, game_preferences
 from .auth import get_password_hash
 
 # Инициализация приложения
@@ -51,6 +51,7 @@ app.include_router(discord.router, tags=["discord"])  # Discord presence API
 app.include_router(admin.router, prefix="/api", tags=["admin"])
 app.include_router(content.router, prefix="/api", tags=["content"])
 app.include_router(profile.router, prefix="/api", tags=["profile"])
+app.include_router(game_preferences.router, tags=["game_preferences"])  # Game preferences API
 app.include_router(migration.router, tags=["migration"])  # Temporary migration endpoint
 
 # WebSocket endpoint

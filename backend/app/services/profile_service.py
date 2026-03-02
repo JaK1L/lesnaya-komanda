@@ -45,7 +45,8 @@ class ProfileService:
                 forest_rank,
                 rating,
                 joined_at,
-                is_admin
+                is_admin,
+                game_preferences
             FROM users
             WHERE id = $1
         """
@@ -64,7 +65,8 @@ class ProfileService:
             forest_rank=row['forest_rank'],
             rating=row['rating'],
             joined_at=row['joined_at'],
-            is_admin=row['is_admin'] or False
+            is_admin=row['is_admin'] or False,
+            game_preferences=row['game_preferences']
         )
     
     async def update_user_profile(

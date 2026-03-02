@@ -142,6 +142,10 @@ class ProfileResponse(BaseModel):
     rating: float
     joined_at: Optional[datetime] = None
     is_admin: bool = False
+    level: int = 1
+    current_xp: int = 0
+    total_xp: int = 0
+    game_preferences: Optional[List[Dict[str, Any]]] = None
 
 
 class ProfileUpdate(BaseModel):
@@ -170,3 +174,66 @@ class ProfileUpdate(BaseModel):
             if len(v) == 0:
                 return None
         return v
+
+
+# Модели для игровых предпочтений
+class GamePreferenceItem(BaseModel):
+    """Single game preference item"""
+    game: str
+    custom_name: Optional[str] = None
+    
+    @field_validator("game")
+    @classmethod
+    def validate_game(cls, v: str) -> str:
+        """Validate game is one of the allowed values"""
+        valid_games = [
+            "CS2", "DOTA 2", "VALORANT", "PUBG", 
+            "Apex Legends", "League of Legends", 
+            "Overwatch 2", "Fortnite", "Minecraft", 
+            "GTA V", "Другое"
+        ]
+        if v not in valid_games:
+            raise ValueError(f"Game must be one of: {', '.join(valid_games)}")
+        return v
+    
+    @field_validator("custom_name")
+    @classmethod
+    def validate_custom_name(cls, v: Optional[str], info) -> Optional[str]:
+        """Validate custom_name based on game selection"""
+        game = info.data.get("game")
+        
+        # If game is "Другое", custom_name is required
+        if game == "Другое":
+            if not v or len(v.strip()) == 0:
+                raise ValueError("custom_name is required when game is 'Другое'")
+            v = v.strip()
+            if len(v) > 50:
+                raise ValueError("custom_name must be 50 characters or less")
+            return v
+        
+        # For other games, custom_name must be None
+        return None
+
+
+class GamePreferencesRequest(BaseModel):
+    """Request model for saving/updating game preferences"""
+    preferences: List[GamePreferenceItem] = Field(..., max_length=15)
+    
+    @field_validator("preferences")
+    @classmethod
+    def validate_preferences_not_empty(cls, v: List[GamePreferenceItem]) -> List[GamePreferenceItem]:
+        """Ensure at least one game is selected"""
+        if len(v) == 0:
+            raise ValueError("At least one game must be selected")
+        return v
+
+
+class GameStatistics(BaseModel):
+    """Response model for game statistics"""
+    CS2: int = 0
+    DOTA_2: int = Field(default=0, alias="DOTA 2")
+    VALORANT: int = 0
+    OTHER: int = Field(default=0, alias="ДРУГИЕ")
+    
+    class Config:
+        populate_by_name = True
