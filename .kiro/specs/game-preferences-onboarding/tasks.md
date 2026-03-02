@@ -121,35 +121,35 @@ Implement a game preferences onboarding system that displays a modal questionnai
     - Create constants array for 11 valid game names
     - _Requirements: 1.2, 3.2_
 
-- [-] 7. Frontend GamePreferencesModal component
-  - [ ] 7.1 Create GamePreferencesModal component structure
+- [x] 7. Frontend GamePreferencesModal component
+  - [x] 7.1 Create GamePreferencesModal component structure
     - Create component with props: isOpen, onClose, onSave, onSkip
     - Set up state: selectedGames (Set<string>), customGameName, isSubmitting, error
     - Implement overlay with backdrop blur
     - Add modal container with responsive width
     - _Requirements: 1.1, 1.6, 9.1, 9.6_
   
-  - [ ] 7.2 Implement game selection UI
+  - [x] 7.2 Implement game selection UI
     - Render 11 game checkboxes in grid layout (2-3 columns desktop, 1-2 mobile)
     - Add visual styling for selected/unselected states
     - Implement checkbox onChange handlers to update selectedGames Set
     - _Requirements: 1.2, 9.2, 9.3_
   
-  - [ ] 7.3 Implement custom game input for "Другое"
+  - [x] 7.3 Implement custom game input for "Другое"
     - Show/hide text input based on "Другое" checkbox state
     - Add smooth animation (Framer Motion) when showing/hiding
     - Bind input value to customGameName state
     - Add placeholder text and styling
     - _Requirements: 1.3, 9.4_
   
-  - [ ] 7.4 Implement save and skip buttons
+  - [x] 7.4 Implement save and skip buttons
     - Create "Сохранить" button, disabled when selectedGames is empty
     - Create "Пропустить" button, always enabled
     - Add loading state during submission
     - Style buttons according to site design
     - _Requirements: 1.4, 1.5, 9.5_
   
-  - [ ] 7.5 Implement save handler with API integration
+  - [x] 7.5 Implement save handler with API integration
     - Build GamePreference[] array from selectedGames and customGameName
     - Send POST request to /api/users/game-preferences
     - Handle success: call onSave callback, close modal
@@ -157,7 +157,7 @@ Implement a game preferences onboarding system that displays a modal questionnai
     - Handle network errors, 400, 401, 500 status codes
     - _Requirements: 2.1, 2.3, 2.4_
   
-  - [ ] 7.6 Implement skip handler
+  - [x] 7.6 Implement skip handler
     - Call onSkip callback without sending API request
     - Close modal
     - _Requirements: 2.5_
@@ -171,20 +171,20 @@ Implement a game preferences onboarding system that displays a modal questionnai
     - Test onSkip called without data
     - Test error message display
 
-- [ ] 8. Frontend modal display logic integration
-  - [ ] 8.1 Add modal display logic to main layout or auth callback
+- [x] 8. Frontend modal display logic integration
+  - [x] 8.1 Add modal display logic to main layout or auth callback
     - Fetch user data from /api/users/me after Discord OAuth
     - Check if game_preferences === null
     - Show GamePreferencesModal if game_preferences is null
     - Do not show modal if game_preferences is [] or has values
     - _Requirements: 1.1, 6.1, 6.3, 6.4_
   
-  - [ ] 8.2 Implement onSave callback
+  - [x] 8.2 Implement onSave callback
     - Close modal after successful save
     - Optionally refresh user data or update local state
     - _Requirements: 2.2_
   
-  - [ ] 8.3 Implement onSkip callback to set empty array
+  - [x] 8.3 Implement onSkip callback to set empty array
     - Send request to backend to set game_preferences to []
     - Close modal
     - Ensure modal doesn't show on next login
@@ -226,14 +226,14 @@ Implement a game preferences onboarding system that displays a modal questionnai
     - Test save sends PUT request
     - Test cancel exits edit mode without saving
 
-- [ ] 10. Frontend game statistics integration
-  - [ ] 10.1 Create API client function for fetching statistics
+- [x] 10. Frontend game statistics integration
+  - [x] 10.1 Create API client function for fetching statistics
     - Implement fetchGameStatistics function
     - Call GET /api/games/statistics
     - Parse response into GameStatistics type
     - _Requirements: 4.1, 4.5_
   
-  - [ ] 10.2 Update Game_Statistics_Block component
+  - [x] 10.2 Update Game_Statistics_Block component
     - Fetch statistics on component mount
     - Display CS2, DOTA 2, VALORANT, ДРУГИЕ counts
     - Handle loading and error states

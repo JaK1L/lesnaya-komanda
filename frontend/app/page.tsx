@@ -5,7 +5,8 @@ import axios from 'axios'
 import { Gamepad2, TreePine, Sword, Target, Shield, ChevronRight, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { DiscordActivityGrid } from '../components/DiscordActivityGrid'
-import { MinecraftXPBar } from '../components/MinecraftXPBar'
+import { GamePreferencesModal } from '../components/GamePreferencesModal'
+import { GameStatistics } from '../types/gamePreferences'
 import './mobile-styles.css'
 
 interface Player {
@@ -65,6 +66,8 @@ export default function Home() {
     online: 12,
     achievements: 150
   })
+  const [showGamePreferencesModal, setShowGamePreferencesModal] = useState(false)
+  const [gameStats, setGameStats] = useState<GameStatistics | null>(null)
 
   // После входа через Discord бэкенд редиректит с ?token=... — сохраняем и убираем из URL
   useEffect(() => {
@@ -76,14 +79,56 @@ export default function Home() {
       localStorage.setItem(TOKEN_KEY, t)
       setToken(t)
       window.history.replaceState({}, '', window.location.pathname)
+      // Check if user needs to fill game preferences
+      checkGamePreferences(t)
     } else {
-      setToken(localStorage.getItem(TOKEN_KEY))
+      const storedToken = localStorage.getItem(TOKEN_KEY)
+      setToken(storedToken)
+      if (storedToken) {
+        checkGamePreferences(storedToken)
+      }
     }
   }, [])
 
   useEffect(() => {
     fetchData()
+    fetchGameStatistics()
   }, [])
+
+  const checkGamePreferences = async (authToken: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/profile`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      })
+      
+      // Show modal if game_preferences is null
+      if (response.data.game_preferences === null) {
+        setShowGamePreferencesModal(true)
+      }
+    } catch (err) {
+      console.error('Error checking game preferences:', err)
+    }
+  }
+
+  const fetchGameStatistics = async () => {
+    try {
+      const response = await axios.get<GameStatistics>(`${API_URL}/api/games/statistics`)
+      setGameStats(response.data)
+    } catch (err) {
+      console.error('Error fetching game statistics:', err)
+    }
+  }
+
+  const handleGamePreferencesSaved = () => {
+    // Refresh game statistics after saving preferences
+    fetchGameStatistics()
+  }
+
+  const handleGamePreferencesSkipped = () => {
+    // Just close modal, statistics remain unchanged
+  }
 
   const handleLogout = () => {
     localStorage.removeItem(TOKEN_KEY)
@@ -116,10 +161,10 @@ export default function Home() {
   }
 
   const games = [
-    { name: 'CS2', icon: Target, players: 15, color: '#ffaa00' },
-    { name: 'DOTA 2', icon: Sword, players: 12, color: '#ff4444' },
-    { name: 'VALORANT', icon: Shield, players: 8, color: '#ff6b6b' },
-    { name: 'ДРУГИЕ', icon: Gamepad2, players: 35, color: '#4aff75' },
+    { name: 'CS2', icon: Target, players: gameStats?.CS2 ?? 0, color: '#ffaa00' },
+    { name: 'DOTA 2', icon: Sword, players: gameStats?.['DOTA 2'] ?? 0, color: '#ff4444' },
+    { name: 'VALORANT', icon: Shield, players: gameStats?.VALORANT ?? 0, color: '#ff6b6b' },
+    { name: 'ДРУГИЕ', icon: Gamepad2, players: gameStats?.['ДРУГИЕ'] ?? 0, color: '#4aff75' },
   ]
 
   const posts = feed.filter((item) => item.kind === 'post')
@@ -127,8 +172,13 @@ export default function Home() {
 
   return (
     <>
-      {/* Minecraft XP Bar */}
-      <MinecraftXPBar currentXP={350} maxXP={1000} level={5} />
+      {/* Game Preferences Modal */}
+      <GamePreferencesModal
+        isOpen={showGamePreferencesModal}
+        onClose={() => setShowGamePreferencesModal(false)}
+        onSave={handleGamePreferencesSaved}
+        onSkip={handleGamePreferencesSkipped}
+      />
       
       {/* Навигация */}
       <nav className="nav">
