@@ -28,16 +28,20 @@ async def get_profile(
     service = ProfileService(db)
     
     try:
+        print(f"[DEBUG] Getting profile for user_id: {current_user.id}")
         profile = await service.get_user_profile(current_user.id)
         
         if not profile:
+            print(f"[DEBUG] Profile not found for user_id: {current_user.id}")
             raise HTTPException(status_code=404, detail="Profile not found")
         
+        print(f"[DEBUG] Profile found: {profile.discord_username}")
         return profile
         
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[ERROR] Error fetching profile: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching profile: {str(e)}"
