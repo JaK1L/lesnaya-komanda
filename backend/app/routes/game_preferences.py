@@ -3,7 +3,7 @@ API routes for game preferences management
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import ValidationError
-from app.database import get_db_connection
+from app.database import database
 from app.auth import get_current_user
 from app.schemas import GamePreferencesRequest, APIResponse, GameStatistics
 from app.services.game_preferences_service import GamePreferencesService
@@ -33,7 +33,7 @@ async def save_game_preferences(
                 detail="User ID not found in token"
             )
         
-        async with get_db_connection() as conn:
+        async with database.get_connection() as conn:
             await GamePreferencesService.save_preferences(
                 conn,
                 user_id,
@@ -89,7 +89,7 @@ async def update_game_preferences(
                 detail="User ID not found in token"
             )
         
-        async with get_db_connection() as conn:
+        async with database.get_connection() as conn:
             await GamePreferencesService.update_preferences(
                 conn,
                 user_id,
@@ -144,7 +144,7 @@ async def skip_game_preferences(
                 detail="User ID not found in token"
             )
         
-        async with get_db_connection() as conn:
+        async with database.get_connection() as conn:
             await GamePreferencesService.skip_preferences(conn, user_id)
         
         return APIResponse(
@@ -175,7 +175,7 @@ async def get_game_statistics():
     No authentication required.
     """
     try:
-        async with get_db_connection() as conn:
+        async with database.get_connection() as conn:
             stats = await GamePreferencesService.get_game_statistics(conn)
         
         return GameStatistics(
