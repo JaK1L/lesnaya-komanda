@@ -14,6 +14,33 @@ from ..auth import get_current_user, User
 router = APIRouter()
 
 
+@router.get("/profile/debug")
+async def debug_profile(
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db)
+):
+    """Debug endpoint to check user authentication"""
+    try:
+        # Check if user exists in database
+        row = await db.fetchrow(
+            "SELECT id, discord_id, discord_username FROM users WHERE id = $1",
+            current_user.id
+        )
+        
+        return {
+            "current_user_id": current_user.id,
+            "current_user_username": current_user.username,
+            "current_user_role": current_user.role,
+            "db_user": dict(row) if row else None
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "current_user_id": current_user.id,
+            "current_user_username": current_user.username
+        }
+
+
 @router.get("/profile", response_model=ProfileResponse)
 async def get_profile(
     current_user: User = Depends(get_current_user),
