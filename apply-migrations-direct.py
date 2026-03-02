@@ -49,6 +49,27 @@ ADD COLUMN IF NOT EXISTS custom_status TEXT;
 COMMENT ON COLUMN discord_presence.custom_status IS 'User custom status text from Discord';
 """
 
+MIGRATION_4 = """
+-- Add game_preferences field to users table
+-- Migration: add_game_preferences
+-- Date: 2026-03-03
+
+-- Add JSONB column for storing game preferences
+ALTER TABLE users 
+  ADD COLUMN IF NOT EXISTS game_preferences JSONB DEFAULT NULL;
+
+-- Create GIN index for efficient JSONB queries
+CREATE INDEX IF NOT EXISTS idx_users_game_preferences 
+  ON users USING GIN (game_preferences);
+
+-- Comments for documentation
+COMMENT ON COLUMN users.game_preferences IS 
+  'Array of game preference objects with structure: 
+   [{"game": "CS2", "custom_name": null}, {"game": "Другое", "custom_name": "Minecraft"}]
+   NULL = user has not completed survey
+   [] = user skipped survey';
+"""
+
 
 async def apply_migrations():
     """Применить миграции к базе данных"""
@@ -81,13 +102,19 @@ async def apply_migrations():
         print("✅ Миграция 3 применена успешно!")
         print()
         
+        # Миграция 4
+        print("📝 Применение миграции 4: add_game_preferences")
+        await conn.execute(MIGRATION_4)
+        print("✅ Миграция 4 применена успешно!")
+        print()
+        
         # Проверка
         print("🔍 Проверка результата...")
         result = await conn.fetch("""
             SELECT column_name, data_type, is_nullable, column_default
             FROM information_schema.columns 
             WHERE table_name = 'users' 
-            AND column_name IN ('site_nickname', 'bio', 'is_hidden', 'is_admin')
+            AND column_name IN ('site_nickname', 'bio', 'is_hidden', 'is_admin', 'game_preferences')
             ORDER BY column_name
         """)
         
