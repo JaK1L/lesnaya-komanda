@@ -65,7 +65,22 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
       onClose()
     } catch (err: any) {
       console.error('Error saving preferences:', err)
-      setError(err.response?.data?.detail?.message || 'Не удалось сохранить предпочтения')
+      console.error('Error response:', err.response?.data)
+      
+      // Extract error message
+      let errorMessage = 'Не удалось сохранить предпочтения'
+      if (err.response?.data) {
+        const detail = err.response.data.detail
+        if (typeof detail === 'string') {
+          errorMessage = detail
+        } else if (detail?.message) {
+          errorMessage = detail.message
+        } else if (detail?.error) {
+          errorMessage = detail.error
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
