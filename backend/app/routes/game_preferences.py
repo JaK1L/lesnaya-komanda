@@ -4,7 +4,7 @@ API routes for game preferences management
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import ValidationError
 from app.database import database
-from app.auth import get_current_user
+from app.auth import get_current_user, User
 from app.schemas import GamePreferencesRequest, APIResponse, GameStatistics
 from app.services.game_preferences_service import GamePreferencesService
 from asyncpg import PostgresError
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api", tags=["game_preferences"])
 @router.post("/users/game-preferences", response_model=APIResponse)
 async def save_game_preferences(
     request: GamePreferencesRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Save user game preferences
@@ -26,7 +26,8 @@ async def save_game_preferences(
     Requires authentication. Saves the selected games to the user's profile.
     """
     try:
-        user_id = current_user.get("user_id")
+        # current_user is a User object, not a dict
+        user_id = current_user.id
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -74,7 +75,7 @@ async def save_game_preferences(
 @router.put("/users/game-preferences", response_model=APIResponse)
 async def update_game_preferences(
     request: GamePreferencesRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Update user game preferences
@@ -82,7 +83,8 @@ async def update_game_preferences(
     Requires authentication. Updates the selected games in the user's profile.
     """
     try:
-        user_id = current_user.get("user_id")
+        # current_user is a User object, not a dict
+        user_id = current_user.id
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -129,7 +131,7 @@ async def update_game_preferences(
 
 @router.post("/users/game-preferences/skip", response_model=APIResponse)
 async def skip_game_preferences(
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Skip game preferences survey
@@ -137,7 +139,8 @@ async def skip_game_preferences(
     Requires authentication. Sets game_preferences to empty array to prevent modal from showing again.
     """
     try:
-        user_id = current_user.get("user_id")
+        # current_user is a User object, not a dict
+        user_id = current_user.id
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
