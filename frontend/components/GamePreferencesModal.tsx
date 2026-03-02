@@ -103,12 +103,14 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
     <AnimatePresence>
       <div className="modal-overlay" onClick={onClose}>
         <motion.div
-          className="modal-container"
-          onClick={(e) => e.stopPropagation()}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
         >
+          <div
+            className="modal-container"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
           <h2 className="modal-title">Выберите игры, в которые вы играете</h2>
           <p className="modal-subtitle">Это поможет нам показывать актуальную статистику</p>
 
@@ -138,8 +140,8 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="custom-game-input"
               >
+                <div className="custom-game-input">
                 <input
                   type="text"
                   value={customGameName}
@@ -149,6 +151,7 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
                   disabled={isSubmitting}
                   className="custom-input"
                 />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -168,6 +171,7 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
             >
               Пропустить
             </button>
+          </div>
           </div>
         </motion.div>
 
