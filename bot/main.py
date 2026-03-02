@@ -48,13 +48,22 @@ class StatsCollector:
         activity_started_at = None
         game_icon_url = None
         
-        # Берём первую "осмысленную" активность (игра/стрим/слушает/смотрит/соревнование/кастом)
+        # Берём только игры (ActivityType.playing) и соревнования (ActivityType.competing)
+        # Игнорируем Custom Status, Streaming, Listening, Watching
         for act in getattr(member, "activities", []) or []:
             try:
                 if act is None:
                     continue
-                # discord.ActivityType -> int enum, преобразуем в строку
+                
                 atype = getattr(act, "type", None)
+                
+                # Фильтруем только игры (playing = 0) и соревнования (competing = 5)
+                # Игнорируем: custom (4), streaming (1), listening (2), watching (3)
+                if atype is not None:
+                    type_value = atype.value if hasattr(atype, 'value') else atype
+                    if type_value not in [0, 5]:  # 0 = playing, 5 = competing
+                        continue
+                
                 name = getattr(act, "name", None)
                 if name:
                     activity_name = str(name)[:200]
