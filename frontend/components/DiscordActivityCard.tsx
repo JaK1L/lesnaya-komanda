@@ -3,7 +3,7 @@
  * Отображает аватар, никнейм, статус, роли, игровую активность и относительное время
  * Кликабельная карточка с модальным мини-профилем
  */
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
 import Image from 'next/image'
 import { Role } from '../hooks/useWebSocket'
 
