@@ -16,6 +16,10 @@ interface ProfileData {
   rating: number
   joined_at: string | null
   is_admin: boolean
+  level: number
+  current_xp: number
+  total_xp: number
+  points: number
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -289,6 +293,65 @@ export default function ProfilePage() {
             <div className="stat-item">
               <div className="stat-label">РЕЙТИНГ</div>
               <div className="stat-number" style={{ fontSize: '1.5rem' }}>{profile.rating}</div>
+            </div>
+          </div>
+
+          {/* XP and Points Section */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '1rem',
+            marginTop: '2rem',
+            padding: '1.5rem',
+            background: 'var(--gray)',
+            border: '1px solid var(--gray-light)',
+            borderRadius: '8px'
+          }}>
+            <div className="stat-item">
+              <div className="stat-label">УРОВЕНЬ</div>
+              <div className="stat-number" style={{ 
+                fontSize: '2.5rem',
+                background: 'linear-gradient(135deg, #4aff75 0%, #2d5a2d 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                {profile.level}
+              </div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-label">ОПЫТ</div>
+              <div className="stat-number" style={{ fontSize: '1.5rem', color: 'var(--accent)' }}>
+                {profile.current_xp} / {profile.level * 100}
+              </div>
+              <div style={{ 
+                width: '100%', 
+                height: '8px', 
+                background: 'var(--gray-light)',
+                borderRadius: '4px',
+                marginTop: '0.5rem',
+                overflow: 'hidden'
+              }}>
+                <div style={{ 
+                  width: `${(profile.current_xp / (profile.level * 100)) * 100}%`,
+                  height: '100%',
+                  background: 'linear-gradient(to right, #4aff75, #5fff88)',
+                  transition: 'width 0.3s',
+                  boxShadow: '0 0 10px rgba(74, 255, 117, 0.5)'
+                }} />
+              </div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-label">ВСЕГО XP</div>
+              <div className="stat-number" style={{ fontSize: '1.5rem', color: 'var(--accent)' }}>
+                {profile.total_xp.toLocaleString()}
+              </div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-label">ПОИНТЫ</div>
+              <div className="stat-number" style={{ fontSize: '1.5rem', color: '#ff6b6b' }}>
+                {profile.points.toLocaleString()}
+              </div>
             </div>
           </div>
         </div>

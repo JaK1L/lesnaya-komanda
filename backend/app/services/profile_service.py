@@ -46,7 +46,11 @@ class ProfileService:
                 rating,
                 joined_at,
                 is_admin,
-                game_preferences
+                game_preferences,
+                level,
+                current_xp,
+                total_xp,
+                points
             FROM users
             WHERE id = $1
         """
@@ -87,7 +91,11 @@ class ProfileService:
                 rating=row['rating'],
                 joined_at=row['joined_at'],
                 is_admin=row['is_admin'] or False,
-                game_preferences=game_prefs
+                game_preferences=game_prefs,
+                level=row.get('level', 1),
+                current_xp=row.get('current_xp', 0),
+                total_xp=row.get('total_xp', 0),
+                points=row.get('points', 0)
             )
         except Exception as e:
             print(f"[ERROR] get_user_profile failed for user_id {user_id}: {str(e)}")
@@ -142,7 +150,11 @@ class ProfileService:
                     forest_rank,
                     rating,
                     joined_at,
-                    is_admin
+                    is_admin,
+                    level,
+                    current_xp,
+                    total_xp,
+                    points
             """
             
             row = await self.db.fetchrow(
@@ -166,7 +178,11 @@ class ProfileService:
                 forest_rank=row['forest_rank'],
                 rating=row['rating'],
                 joined_at=row['joined_at'],
-                is_admin=row['is_admin'] or False
+                is_admin=row['is_admin'] or False,
+                level=row.get('level', 1),
+                current_xp=row.get('current_xp', 0),
+                total_xp=row.get('total_xp', 0),
+                points=row.get('points', 0)
             )
     
     async def save_avatar_file(

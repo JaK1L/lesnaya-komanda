@@ -10,6 +10,7 @@ const links = [
   { href: '/admin/events', label: 'События' },
   { href: '/admin/news', label: 'Новости' },
   { href: '/admin/feed', label: 'Лента' },
+  { href: '/admin/xp', label: 'Опыт и Поинты' },
   { href: '/admin/settings', label: 'Настройки' },
 ]
 

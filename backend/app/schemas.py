@@ -145,6 +145,49 @@ class ProfileResponse(BaseModel):
     level: int = 1
     current_xp: int = 0
     total_xp: int = 0
+    points: int = 0
+
+
+class XPTransaction(BaseModel):
+    """Model for XP/Points transaction"""
+    id: int
+    user_id: int
+    discord_id: int
+    type: str  # 'xp' or 'points'
+    amount: int
+    reason: str
+    source: Optional[str] = None
+    created_at: datetime
+    created_by: Optional[int] = None
+
+
+class XPTransactionCreate(BaseModel):
+    """Request model for creating XP/Points transaction"""
+    discord_id: int
+    type: str = Field(..., pattern='^(xp|points)$')
+    amount: int
+    reason: str = Field(..., min_length=1, max_length=200)
+    source: Optional[str] = Field(None, max_length=100)
+
+
+class PointsPurchase(BaseModel):
+    """Model for points purchase"""
+    id: int
+    user_id: int
+    discord_id: int
+    item_name: str
+    cost: int
+    expires_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class UserXPUpdate(BaseModel):
+    """Request model for admin to update user XP/Level"""
+    discord_id: int
+    level: Optional[int] = Field(None, ge=1, le=100)
+    current_xp: Optional[int] = Field(None, ge=0)
+    total_xp: Optional[int] = Field(None, ge=0)
+    points: Optional[int] = Field(None, ge=0)
     game_preferences: Optional[List[Dict[str, Any]]] = None
 
 
