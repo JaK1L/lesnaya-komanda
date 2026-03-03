@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Award, TrendingUp, Coins, Users, Search, Plus, Minus } from 'lucide-react'
+import { Award, TrendingUp, Coins, Users, Search } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
