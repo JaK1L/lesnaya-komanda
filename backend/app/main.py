@@ -276,23 +276,61 @@ async def init_db():
                 
                 if not level_exists:
                     print("📝 Применение миграции XP системы...")
-                    from pathlib import Path
                     
-                    # Ищем файл миграции
-                    migration_file = Path(__file__).parent.parent / 'migrations' / 'add_xp_and_level.sql'
+                    # SQL миграции встроен в код (не зависит от файлов)
+                    migration_sql = """
+                    -- Добавление полей для системы опыта, уровней и поинтов
+                    ALTER TABLE users 
+                    ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1,
+                    ADD COLUMN IF NOT EXISTS current_xp INTEGER DEFAULT 0,
+                    ADD COLUMN IF NOT EXISTS total_xp INTEGER DEFAULT 0,
+                    ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0;
+
+                    -- Индексы для сортировки
+                    CREATE INDEX IF NOT EXISTS idx_users_level ON users(level DESC, current_xp DESC);
+                    CREATE INDEX IF NOT EXISTS idx_users_points ON users(points DESC);
+
+                    -- Таблица истории начисления опыта и поинтов
+                    CREATE TABLE IF NOT EXISTS xp_transactions (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        discord_id BIGINT,
+                        type VARCHAR(20) NOT NULL,
+                        amount INTEGER NOT NULL,
+                        reason VARCHAR(200) NOT NULL,
+                        source VARCHAR(100),
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        created_by INTEGER REFERENCES admin_users(id)
+                    );
+
+                    -- Индексы для истории
+                    CREATE INDEX IF NOT EXISTS idx_xp_transactions_user ON xp_transactions(user_id);
+                    CREATE INDEX IF NOT EXISTS idx_xp_transactions_discord ON xp_transactions(discord_id);
+                    CREATE INDEX IF NOT EXISTS idx_xp_transactions_created ON xp_transactions(created_at DESC);
+
+                    -- Таблица покупок за поинты
+                    CREATE TABLE IF NOT EXISTS points_purchases (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        discord_id BIGINT,
+                        item_name VARCHAR(200) NOT NULL,
+                        cost INTEGER NOT NULL,
+                        expires_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    );
+
+                    -- Индекс для покупок
+                    CREATE INDEX IF NOT EXISTS idx_points_purchases_user ON points_purchases(user_id);
+                    """
                     
-                    if migration_file.exists():
-                        with open(migration_file, 'r', encoding='utf-8') as f:
-                            migration_sql = f.read()
-                        
-                        await conn.execute(migration_sql)
-                        print("✅ Миграция XP системы успешно применена!")
-                    else:
-                        print(f"⚠️ Файл миграции не найден: {migration_file}")
+                    await conn.execute(migration_sql)
+                    print("✅ Миграция XP системы успешно применена!")
                 else:
                     print("✅ Миграция XP системы уже применена")
             except Exception as migration_error:
                 print(f"⚠️ Ошибка при применении миграции XP: {migration_error}")
+                import traceback
+                traceback.print_exc()
                 # Не прерываем запуск, если миграция не применилась
             
             print("\n✅ База данных полностью готова к работе!")
