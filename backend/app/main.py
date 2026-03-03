@@ -263,7 +263,39 @@ async def init_db():
             achievements_count = await conn.fetchval("SELECT COUNT(*) FROM achievements")
             print(f"📊 В базе: {users_count} игроков, {games_count} игровых профилей, {achievements_count} достижений")
             
-            print("✅ База данных полностью готова к работе!")
+            # Применяем миграцию XP системы (если еще не применена)
+            print("\n🔄 Проверка миграции XP системы...")
+            try:
+                # Проверяем есть ли колонка level
+                level_exists = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'users' AND column_name = 'level'
+                    )
+                """)
+                
+                if not level_exists:
+                    print("📝 Применение миграции XP системы...")
+                    from pathlib import Path
+                    
+                    # Ищем файл миграции
+                    migration_file = Path(__file__).parent.parent / 'migrations' / 'add_xp_and_level.sql'
+                    
+                    if migration_file.exists():
+                        with open(migration_file, 'r', encoding='utf-8') as f:
+                            migration_sql = f.read()
+                        
+                        await conn.execute(migration_sql)
+                        print("✅ Миграция XP системы успешно применена!")
+                    else:
+                        print(f"⚠️ Файл миграции не найден: {migration_file}")
+                else:
+                    print("✅ Миграция XP системы уже применена")
+            except Exception as migration_error:
+                print(f"⚠️ Ошибка при применении миграции XP: {migration_error}")
+                # Не прерываем запуск, если миграция не применилась
+            
+            print("\n✅ База данных полностью готова к работе!")
             
     except Exception as e:
         print(f"❌ Ошибка при инициализации БД: {e}")
