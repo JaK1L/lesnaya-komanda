@@ -147,6 +147,7 @@ class ProfileResponse(BaseModel):
     current_xp: int = 0
     total_xp: int = 0
     points: int = 0
+    game_preferences: Optional[List[Dict[str, Any]]] = None
 
 
 class XPTransaction(BaseModel):

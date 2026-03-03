@@ -186,7 +186,8 @@ class ProfileService:
                 level=row.get('level', 1),
                 current_xp=row.get('current_xp', 0),
                 total_xp=row.get('total_xp', 0),
-                points=row.get('points', 0)
+                points=row.get('points', 0),
+                game_preferences=None
             )
     
     async def save_avatar_file(
