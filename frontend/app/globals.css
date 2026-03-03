@@ -200,6 +200,13 @@ h3 {
   display: flex;
   align-items: center;
   gap: 1rem;
+  transition: all 0.2s;
+}
+
+.player-card:hover {
+  background: var(--gray-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 255, 117, 0.2);
 }
 
 .player-avatar {

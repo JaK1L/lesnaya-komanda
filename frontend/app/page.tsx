@@ -380,7 +380,12 @@ export default function Home() {
             {elitePlayers.map((player: Player, index) => {
                 const isOnline = player.is_online || false
                 return (
-                  <div key={player.discord_id ?? index} className="player-card">
+                  <a 
+                    key={player.discord_id ?? index} 
+                    href={`/profile/${player.discord_id}`}
+                    className="player-card"
+                    style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+                  >
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
@@ -428,7 +433,7 @@ export default function Home() {
                       </div>
                       <div className="player-rating">{player.rating}</div>
                     </motion.div>
-                  </div>
+                  </a>
                 )
               })}
           </div>

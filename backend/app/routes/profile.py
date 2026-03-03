@@ -14,6 +14,74 @@ from ..auth import get_current_user, User
 router = APIRouter()
 
 
+@router.get("/profile/public/{discord_id}")
+async def get_public_profile(
+    discord_id: int,
+    db: asyncpg.Connection = Depends(get_db)
+):
+    """
+    Get public profile by Discord ID
+    
+    No authentication required.
+    Returns profile if user exists and hasn't hidden their profile.
+    """
+    try:
+        # Fetch user profile
+        row = await db.fetchrow(
+            """
+            SELECT 
+                discord_id,
+                site_nickname,
+                discord_username,
+                avatar_url,
+                bio,
+                is_hidden,
+                forest_rank,
+                rating,
+                joined_at,
+                level,
+                current_xp,
+                total_xp,
+                points
+            FROM users
+            WHERE discord_id = $1
+            """,
+            discord_id
+        )
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        
+        # Check if profile is hidden
+        if row['is_hidden']:
+            raise HTTPException(status_code=403, detail="This profile is hidden")
+        
+        return {
+            "discord_id": row['discord_id'],
+            "site_nickname": row['site_nickname'],
+            "discord_username": row['discord_username'],
+            "avatar_url": row['avatar_url'],
+            "bio": row['bio'],
+            "is_hidden": row['is_hidden'],
+            "forest_rank": row['forest_rank'],
+            "rating": row['rating'],
+            "joined_at": row['joined_at'],
+            "level": row.get('level', 1),
+            "current_xp": row.get('current_xp', 0),
+            "total_xp": row.get('total_xp', 0),
+            "points": row.get('points', 0)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Error fetching public profile: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching profile: {str(e)}"
+        )
+
+
 @router.get("/profile/debug")
 async def debug_profile(
     current_user: User = Depends(get_current_user),

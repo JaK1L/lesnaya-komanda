@@ -7,6 +7,7 @@ import { TreePine, Upload, Loader2 } from 'lucide-react'
 import './mobile-profile.css'
 
 interface ProfileData {
+  discord_id: number
   site_nickname: string | null
   discord_username: string
   avatar_url: string | null
@@ -250,8 +251,26 @@ export default function ProfilePage() {
 
       <main className="container">
         <div className="hero-block">
-          <h1>ПРОФИЛЬ</h1>
-          <p>Управляйте своими данными на сайте</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h1>ПРОФИЛЬ</h1>
+              <p>Управляйте своими данными на сайте</p>
+            </div>
+            {profile && (
+              <button
+                onClick={() => {
+                  const profileUrl = `${window.location.origin}/profile/${profile.discord_id}`
+                  navigator.clipboard.writeText(profileUrl)
+                  setSuccess('Ссылка на профиль скопирована!')
+                  setTimeout(() => setSuccess(null), 3000)
+                }}
+                className="lunacy-button"
+                style={{ padding: '0.75rem 1.5rem' }}
+              >
+                ПОДЕЛИТЬСЯ ПРОФИЛЕМ
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Messages */}

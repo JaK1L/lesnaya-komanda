@@ -37,6 +37,7 @@ class ProfileService:
         """
         query = """
             SELECT 
+                discord_id,
                 site_nickname,
                 discord_username,
                 avatar_url,
@@ -82,6 +83,7 @@ class ProfileService:
                 game_prefs = None
             
             return ProfileResponse(
+                discord_id=row['discord_id'],
                 site_nickname=row['site_nickname'],
                 discord_username=row['discord_username'],
                 avatar_url=row['avatar_url'],
@@ -142,6 +144,7 @@ class ProfileService:
                     is_hidden = $4
                 WHERE id = $5
                 RETURNING 
+                    discord_id,
                     site_nickname,
                     discord_username,
                     avatar_url,
@@ -170,6 +173,7 @@ class ProfileService:
                 raise HTTPException(status_code=500, detail="Failed to update profile")
             
             return ProfileResponse(
+                discord_id=row['discord_id'],
                 site_nickname=row['site_nickname'],
                 discord_username=row['discord_username'],
                 avatar_url=row['avatar_url'],
