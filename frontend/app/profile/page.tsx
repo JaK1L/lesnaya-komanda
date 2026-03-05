@@ -137,9 +137,15 @@ export default function ProfilePage() {
     if (!token) return
 
     try {
+      // Validate: if "Другое" is selected, custom_name must be filled
+      if (selectedGames.has('Другое') && !customGameName.trim()) {
+        setError('Введите название игры для "Другое"')
+        return
+      }
+
       const preferences: GamePreference[] = Array.from(selectedGames).map(game => ({
         game,
-        custom_name: game === 'Другое' ? customGameName.trim() || null : null
+        custom_name: game === 'Другое' ? customGameName.trim() : null
       }))
 
       await axios.put(
@@ -153,9 +159,21 @@ export default function ProfilePage() {
       setGamePreferencesChanged(false)
       setSuccess('Игровые предпочтения обновлены')
       setTimeout(() => setSuccess(null), 3000)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving game preferences:', err)
-      setError('Не удалось сохранить игровые предпочтения')
+      console.error('Error response:', err.response?.data)
+      
+      let errorMessage = 'Не удалось сохранить игровые предпочтения'
+      if (err.response?.data?.detail) {
+        const detail = err.response.data.detail
+        if (typeof detail === 'string') {
+          errorMessage = detail
+        } else if (Array.isArray(detail)) {
+          errorMessage = detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
+        }
+      }
+      
+      setError(errorMessage)
     }
   }
 
@@ -656,7 +674,7 @@ export default function ProfilePage() {
                 fontSize: '0.875rem',
                 color: '#888'
               }}>
-                Название игры:
+                Название игры: <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="text"
@@ -670,7 +688,7 @@ export default function ProfilePage() {
                 style={{
                   width: '100%',
                   background: 'var(--gray)',
-                  border: '2px solid var(--gray-light)',
+                  border: `2px solid ${!customGameName.trim() ? '#ff6b6b' : 'var(--gray-light)'}`,
                   color: 'white',
                   padding: '0.75rem',
                   fontSize: '1rem',
@@ -678,8 +696,13 @@ export default function ProfilePage() {
                   outline: 'none'
                 }}
                 onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--gray-light)'}
+                onBlur={(e) => e.target.style.borderColor = !customGameName.trim() ? '#ff6b6b' : 'var(--gray-light)'}
               />
+              {!customGameName.trim() && (
+                <div style={{ fontSize: '0.75rem', color: '#ff6b6b', marginTop: '0.5rem' }}>
+                  Обязательное поле для игры "Другое"
+                </div>
+              )}
             </div>
           )}
 
@@ -688,12 +711,24 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={saveGamePreferences}
-              disabled={saving || selectedGames.size === 0}
+              disabled={
+                saving || 
+                selectedGames.size === 0 || 
+                (selectedGames.has('Другое') && !customGameName.trim())
+              }
               className="lunacy-button"
               style={{ 
                 padding: '0.75rem 1.5rem',
-                opacity: (saving || selectedGames.size === 0) ? 0.5 : 1,
-                cursor: (saving || selectedGames.size === 0) ? 'not-allowed' : 'pointer',
+                opacity: (
+                  saving || 
+                  selectedGames.size === 0 || 
+                  (selectedGames.has('Другое') && !customGameName.trim())
+                ) ? 0.5 : 1,
+                cursor: (
+                  saving || 
+                  selectedGames.size === 0 || 
+                  (selectedGames.has('Другое') && !customGameName.trim())
+                ) ? 'not-allowed' : 'pointer',
                 marginBottom: '1rem'
               }}
             >
