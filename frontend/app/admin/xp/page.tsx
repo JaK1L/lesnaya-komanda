@@ -65,6 +65,7 @@ export default function XPManagementPage() {
     setAmount(0)
     setReason('')
     setEditMode(false)
+    setTransactionType('xp')
     setShowModal(true)
   }
 
@@ -84,15 +85,19 @@ export default function XPManagementPage() {
       const token = localStorage.getItem(ADMIN_TOKEN_KEY)
       const endpoint = transactionType === 'xp' ? '/api/xp/add-xp' : '/api/xp/add-points'
       
+      const payload = {
+        discord_id: selectedUser.discord_id,
+        type: transactionType,
+        amount: amount,
+        reason: reason,
+        source: 'admin'
+      }
+      
+      console.log('Sending XP transaction:', payload)
+      
       await axios.post(
         `${API_URL}${endpoint}`,
-        {
-          discord_id: selectedUser.discord_id,
-          type: transactionType,
-          amount: amount,
-          reason: reason,
-          source: 'admin'
-        },
+        payload,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
