@@ -44,14 +44,19 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
         custom_name: game === 'Другое' ? customGameName.trim() || null : null
       }))
 
+      console.log('Saving preferences:', preferences)
+
       // Get token
       const token = localStorage.getItem('lesnaya_token')
       if (!token) {
-        throw new Error('Not authenticated')
+        setError('Вы не авторизованы. Войдите через Discord.')
+        return
       }
 
+      console.log('Token found, sending request to:', `${API_URL}/api/users/game-preferences`)
+
       // Send to API
-      await axios.post(
+      const response = await axios.post(
         `${API_URL}/api/users/game-preferences`,
         { preferences },
         {
@@ -61,15 +66,21 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
         }
       )
 
+      console.log('Success response:', response.data)
       onSave()
       onClose()
     } catch (err: any) {
       console.error('Error saving preferences:', err)
-      console.error('Error response:', err.response?.data)
+      console.error('Error response:', err.response)
+      console.error('Error status:', err.response?.status)
+      console.error('Error data:', err.response?.data)
       
       // Extract error message
       let errorMessage = 'Не удалось сохранить предпочтения'
-      if (err.response?.data) {
+      
+      if (err.response?.status === 401) {
+        errorMessage = 'Сессия истекла. Перезайдите через Discord.'
+      } else if (err.response?.data) {
         const detail = err.response.data.detail
         if (typeof detail === 'string') {
           errorMessage = detail
@@ -77,7 +88,11 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
           errorMessage = detail.message
         } else if (detail?.error) {
           errorMessage = detail.error
+        } else if (Array.isArray(detail)) {
+          errorMessage = detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
         }
+      } else if (err.message) {
+        errorMessage = err.message
       }
       
       setError(errorMessage)
