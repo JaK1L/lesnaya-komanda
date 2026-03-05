@@ -5,7 +5,6 @@ import axios from 'axios'
 import { Gamepad2, TreePine, Sword, Target, Shield, ChevronRight, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { DiscordActivityGrid } from '../components/DiscordActivityGrid'
-import { MinecraftXPBar } from '../components/MinecraftXPBar'
 import { GamePreferencesModal } from '../components/GamePreferencesModal'
 import { GameStatistics } from '../types/gamePreferences'
 import './mobile-styles.css'
@@ -173,9 +172,6 @@ export default function Home() {
 
   return (
     <>
-      {/* Minecraft XP Bar - только для авторизованных */}
-      {token && <MinecraftXPBar currentXP={0} maxXP={100} level={0} />}
-      
       {/* Game Preferences Modal */}
       <GamePreferencesModal
         isOpen={showGamePreferencesModal}
