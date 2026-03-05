@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-import { TreePine, Upload, Loader2 } from 'lucide-react'
+import { TreePine, Upload, Loader2, Gamepad2 } from 'lucide-react'
+import { VALID_GAMES, GamePreference } from '../../types/gamePreferences'
 import './mobile-profile.css'
 
 interface ProfileData {
@@ -38,6 +39,11 @@ export default function ProfilePage() {
   const [isHidden, setIsHidden] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  
+  // Game preferences state
+  const [selectedGames, setSelectedGames] = useState<Set<string>>(new Set())
+  const [customGameName, setCustomGameName] = useState('')
+  const [gamePreferencesChanged, setGamePreferencesChanged] = useState(false)
 
   useEffect(() => {
     const storedToken = localStorage.getItem(TOKEN_KEY)
@@ -68,6 +74,9 @@ export default function ProfilePage() {
       setIsHidden(data.is_hidden)
       setAvatarPreview(data.avatar_url)
       
+      // Load game preferences
+      await loadGamePreferences(authToken)
+      
     } catch (err) {
       console.error('Error loading profile:', err)
       if (axios.isAxiosError(err) && err.response?.status === 401) {
@@ -78,6 +87,75 @@ export default function ProfilePage() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadGamePreferences = async (authToken: string) => {
+    try {
+      const response = await axios.get<{ preferences: GamePreference[] }>(
+        `${API_URL}/api/profile`,
+        {
+          headers: { Authorization: `Bearer ${authToken}` }
+        }
+      )
+      
+      // Extract game names from preferences
+      const games = new Set<string>()
+      let customName = ''
+      
+      if (response.data && Array.isArray((response.data as any).game_preferences)) {
+        (response.data as any).game_preferences.forEach((pref: GamePreference) => {
+          games.add(pref.game)
+          if (pref.game === 'Другое' && pref.custom_name) {
+            customName = pref.custom_name
+          }
+        })
+      }
+      
+      setSelectedGames(games)
+      setCustomGameName(customName)
+    } catch (err) {
+      console.error('Error loading game preferences:', err)
+    }
+  }
+
+  const handleGameToggle = (game: string) => {
+    const newSelected = new Set(selectedGames)
+    if (newSelected.has(game)) {
+      newSelected.delete(game)
+      if (game === 'Другое') {
+        setCustomGameName('')
+      }
+    } else {
+      newSelected.add(game)
+    }
+    setSelectedGames(newSelected)
+    setGamePreferencesChanged(true)
+  }
+
+  const saveGamePreferences = async () => {
+    if (!token) return
+
+    try {
+      const preferences: GamePreference[] = Array.from(selectedGames).map(game => ({
+        game,
+        custom_name: game === 'Другое' ? customGameName.trim() || null : null
+      }))
+
+      await axios.put(
+        `${API_URL}/api/users/game-preferences`,
+        { preferences },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+
+      setGamePreferencesChanged(false)
+      setSuccess('Игровые предпочтения обновлены')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      console.error('Error saving game preferences:', err)
+      setError('Не удалось сохранить игровые предпочтения')
     }
   }
 
@@ -506,6 +584,127 @@ export default function ProfilePage() {
               Ваш профиль останется доступен по прямой ссылке
             </div>
           </div>
+        </div>
+
+        {/* Game Preferences Section */}
+        <div className="lunacy-card" style={{ marginBottom: '3rem' }}>
+          <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Gamepad2 size={24} style={{ color: 'var(--accent)' }} />
+            ИГРОВЫЕ ПРЕДПОЧТЕНИЯ
+          </h3>
+          <p style={{ color: '#888', marginBottom: '2rem', fontSize: '0.875rem' }}>
+            Выберите игры, в которые вы играете. Это поможет показывать актуальную статистику.
+          </p>
+
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
+            gap: '1rem',
+            marginBottom: '1.5rem'
+          }}>
+            {VALID_GAMES.map((game) => (
+              <label 
+                key={game}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer',
+                  padding: '0.75rem',
+                  background: 'var(--gray-light)',
+                  border: `2px solid ${selectedGames.has(game) ? 'var(--accent)' : 'transparent'}`,
+                  transition: 'all 0.2s',
+                  userSelect: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (!selectedGames.has(game)) {
+                    e.currentTarget.style.borderColor = 'var(--gray-light)'
+                    e.currentTarget.style.opacity = '0.8'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!selectedGames.has(game)) {
+                    e.currentTarget.style.borderColor = 'transparent'
+                    e.currentTarget.style.opacity = '1'
+                  }
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedGames.has(game)}
+                  onChange={() => handleGameToggle(game)}
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    cursor: 'pointer',
+                    accentColor: 'var(--accent)'
+                  }}
+                />
+                <span style={{ fontSize: '0.875rem', color: 'white' }}>
+                  {game}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {/* Custom game name input */}
+          {selectedGames.has('Другое') && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '0.5rem', 
+                fontSize: '0.875rem',
+                color: '#888'
+              }}>
+                Название игры:
+              </label>
+              <input
+                type="text"
+                value={customGameName}
+                onChange={(e) => {
+                  setCustomGameName(e.target.value)
+                  setGamePreferencesChanged(true)
+                }}
+                placeholder="Введите название игры"
+                maxLength={50}
+                style={{
+                  width: '100%',
+                  background: 'var(--gray)',
+                  border: '2px solid var(--gray-light)',
+                  color: 'white',
+                  padding: '0.75rem',
+                  fontSize: '1rem',
+                  fontFamily: 'Inter',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--gray-light)'}
+              />
+            </div>
+          )}
+
+          {/* Save game preferences button */}
+          {gamePreferencesChanged && (
+            <button
+              type="button"
+              onClick={saveGamePreferences}
+              disabled={saving || selectedGames.size === 0}
+              className="lunacy-button"
+              style={{ 
+                padding: '0.75rem 1.5rem',
+                opacity: (saving || selectedGames.size === 0) ? 0.5 : 1,
+                cursor: (saving || selectedGames.size === 0) ? 'not-allowed' : 'pointer',
+                marginBottom: '1rem'
+              }}
+            >
+              СОХРАНИТЬ ИГРЫ
+            </button>
+          )}
+        </div>
+
+        {/* Profile Save Section */}
+        <div className="lunacy-card" style={{ marginBottom: '3rem' }}>
+          <h3 style={{ marginBottom: '2rem' }}>СОХРАНИТЬ ИЗМЕНЕНИЯ ПРОФИЛЯ</h3>
 
           {/* Save Button */}
           <button
@@ -525,8 +724,36 @@ export default function ProfilePage() {
                 СОХРАНЕНИЕ...
               </>
             ) : (
-              'СОХРАНИТЬ'
+              'СОХРАНИТЬ ПРОФИЛЬ'
             )}
+          </button>
+        </div>
+
+        {/* Logout Button */}
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <button
+            onClick={handleLogout}
+            style={{
+              background: 'transparent',
+              border: '2px solid #666',
+              color: '#666',
+              padding: '0.75rem 2rem',
+              cursor: 'pointer',
+              fontFamily: 'Unbounded',
+              fontSize: '0.875rem',
+              fontWeight: 700,
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'white'
+              e.currentTarget.style.color = 'white'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#666'
+              e.currentTarget.style.color = '#666'
+            }}
+          >
+            ВЫЙТИ
           </button>
         </div>
 
