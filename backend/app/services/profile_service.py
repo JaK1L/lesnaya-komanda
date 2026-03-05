@@ -94,7 +94,7 @@ class ProfileService:
                 joined_at=row['joined_at'],
                 is_admin=row['is_admin'] or False,
                 game_preferences=game_prefs,
-                level=row.get('level', 1),
+                level=row.get('level', 0),
                 current_xp=row.get('current_xp', 0),
                 total_xp=row.get('total_xp', 0),
                 points=row.get('points', 0)
@@ -183,7 +183,7 @@ class ProfileService:
                 rating=row['rating'],
                 joined_at=row['joined_at'],
                 is_admin=row['is_admin'] or False,
-                level=row.get('level', 1),
+                level=row.get('level', 0),
                 current_xp=row.get('current_xp', 0),
                 total_xp=row.get('total_xp', 0),
                 points=row.get('points', 0),

@@ -281,7 +281,7 @@ async def init_db():
                     migration_sql = """
                     -- Добавление полей для системы опыта, уровней и поинтов
                     ALTER TABLE users 
-                    ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1,
+                    ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 0,
                     ADD COLUMN IF NOT EXISTS current_xp INTEGER DEFAULT 0,
                     ADD COLUMN IF NOT EXISTS total_xp INTEGER DEFAULT 0,
                     ADD COLUMN IF NOT EXISTS points INTEGER DEFAULT 0;

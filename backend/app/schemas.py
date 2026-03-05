@@ -143,7 +143,7 @@ class ProfileResponse(BaseModel):
     rating: float
     joined_at: Optional[datetime] = None
     is_admin: bool = False
-    level: int = 1
+    level: int = 0
     current_xp: int = 0
     total_xp: int = 0
     points: int = 0
