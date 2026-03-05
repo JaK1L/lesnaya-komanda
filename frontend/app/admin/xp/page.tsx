@@ -76,38 +76,66 @@ export default function XPManagementPage() {
   }
 
   const handleAddTransaction = async () => {
-    if (!selectedUser || !reason.trim() || amount === 0) {
-      alert('Заполните все поля')
+    if (!selectedUser) {
+      alert('Пользователь не выбран')
+      return
+    }
+    
+    if (!reason.trim()) {
+      alert('Введите причину')
+      return
+    }
+    
+    if (amount === 0 || isNaN(amount)) {
+      alert('Введите корректное количество')
       return
     }
 
     try {
       const token = localStorage.getItem(ADMIN_TOKEN_KEY)
+      if (!token) {
+        alert('Токен не найден. Перелогиньтесь в админку.')
+        return
+      }
+      
       const endpoint = transactionType === 'xp' ? '/api/xp/add-xp' : '/api/xp/add-points'
       
+      // Убеждаемся что discord_id это число
+      const discordId = parseInt(String(selectedUser.discord_id))
+      if (isNaN(discordId)) {
+        alert(`Неверный discord_id: ${selectedUser.discord_id}`)
+        console.error('Invalid discord_id:', selectedUser)
+        return
+      }
+      
       const payload = {
-        discord_id: selectedUser.discord_id,
+        discord_id: discordId,
         type: transactionType,
-        amount: amount,
-        reason: reason,
+        amount: parseInt(String(amount)),
+        reason: reason.trim(),
         source: 'admin'
       }
       
       console.log('Sending XP transaction:', payload)
+      console.log('Selected user:', selectedUser)
+      console.log('Endpoint:', `${API_URL}${endpoint}`)
       
-      await axios.post(
+      const response = await axios.post(
         `${API_URL}${endpoint}`,
         payload,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       )
-
+      
+      console.log('Success response:', response.data)
       alert(`Успешно добавлено ${amount} ${transactionType === 'xp' ? 'опыта' : 'поинтов'}`)
       closeModal()
       fetchUsers()
     } catch (error: any) {
       console.error('Error adding transaction:', error)
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
       alert(`Ошибка: ${error.response?.data?.detail || error.message}`)
     }
   }
