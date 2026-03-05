@@ -173,8 +173,8 @@ export default function Home() {
 
   return (
     <>
-      {/* Minecraft XP Bar */}
-      <MinecraftXPBar currentXP={350} maxXP={1000} level={5} />
+      {/* Minecraft XP Bar - только для авторизованных */}
+      {token && <MinecraftXPBar currentXP={350} maxXP={1000} level={5} />}
       
       {/* Game Preferences Modal */}
       <GamePreferencesModal
