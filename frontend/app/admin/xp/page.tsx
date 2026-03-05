@@ -5,6 +5,7 @@ import axios from 'axios'
 import { Award, TrendingUp, Coins, Users, Search } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const ADMIN_TOKEN_KEY = 'lesnaya_admin_token'
 
 interface User {
   discord_id: number
@@ -43,7 +44,7 @@ export default function XPManagementPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('admin_token')
+      const token = localStorage.getItem(ADMIN_TOKEN_KEY)
       const response = await axios.get<User[]>(`${API_URL}/api/xp/leaderboard?by=level&limit=100`, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -80,7 +81,7 @@ export default function XPManagementPage() {
     }
 
     try {
-      const token = localStorage.getItem('admin_token')
+      const token = localStorage.getItem(ADMIN_TOKEN_KEY)
       const endpoint = transactionType === 'xp' ? '/api/xp/add-xp' : '/api/xp/add-points'
       
       await axios.post(
@@ -110,7 +111,7 @@ export default function XPManagementPage() {
     if (!selectedUser) return
 
     try {
-      const token = localStorage.getItem('admin_token')
+      const token = localStorage.getItem(ADMIN_TOKEN_KEY)
       
       await axios.put(
         `${API_URL}/api/xp/update-user`,
