@@ -367,18 +367,26 @@ export default function Home() {
         <section id="players" style={{ marginTop: '6rem' }}>
           <h2>ЭЛИТА ЛЕСА</h2>
           <div className="players-grid">
-            {elitePlayers.length === 0 && (
-              <div className="game-card" style={{ background: 'var(--gray)' }}>
-                <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                  Пока никого
-                </div>
-                <div className="game-players">
-                  Как только бот соберёт данные с Discord, здесь появится элита.
-                </div>
-              </div>
-            )}
-            {elitePlayers.map((player: Player, index) => {
-                const isOnline = player.is_online || false
+            {(() => {
+              // Фильтруем только онлайн пользователей
+              const onlinePlayers = elitePlayers.filter(player => player.is_online)
+              
+              // Если никого онлайн нет
+              if (onlinePlayers.length === 0) {
+                return (
+                  <div className="game-card" style={{ background: 'var(--gray)', gridColumn: '1 / -1', textAlign: 'center', padding: '3rem' }}>
+                    <div className="game-name" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+                      💤
+                    </div>
+                    <div className="game-players" style={{ fontSize: '1.2rem' }}>
+                      Тише Боссы спят....
+                    </div>
+                  </div>
+                )
+              }
+              
+              // Показываем только онлайн игроков
+              return onlinePlayers.map((player: Player, index) => {
                 return (
                   <a 
                     key={player.discord_id ?? index} 
@@ -401,16 +409,15 @@ export default function Home() {
                               width: '100%', 
                               height: '100%', 
                               objectFit: 'cover', 
-                              borderRadius: '50%',
-                              opacity: isOnline ? 1 : 0.5
+                              borderRadius: '50%'
                             }}
                           />
                         ) : (
-                          <span style={{ opacity: isOnline ? 1 : 0.5 }}>
+                          <span>
                             {player.discord_username?.[0] || '🐺'}
                           </span>
                         )}
-                        {/* Индикатор онлайн/оффлайн */}
+                        {/* Индикатор онлайн */}
                         <div
                           style={{
                             position: 'absolute',
@@ -419,7 +426,7 @@ export default function Home() {
                             width: '12px',
                             height: '12px',
                             borderRadius: '50%',
-                            backgroundColor: isOnline ? '#4aff75' : '#747f8d',
+                            backgroundColor: '#4aff75',
                             border: '2px solid var(--bg)',
                           }}
                         />
@@ -427,15 +434,16 @@ export default function Home() {
                       <div className="player-info">
                         <div className="player-name">{player.discord_username}</div>
                         <div className="player-rank">{player.forest_rank}</div>
-                        <div style={{ fontSize: '0.75rem', color: isOnline ? '#4aff75' : '#747f8d', marginTop: '0.25rem' }}>
-                          {isOnline ? 'Онлайн' : 'Оффлайн'}
+                        <div style={{ fontSize: '0.75rem', color: '#4aff75', marginTop: '0.25rem' }}>
+                          Онлайн
                         </div>
                       </div>
                       <div className="player-rating">{player.rating}</div>
                     </motion.div>
                   </a>
                 )
-              })}
+              })
+            })()}
           </div>
         </section>
 
