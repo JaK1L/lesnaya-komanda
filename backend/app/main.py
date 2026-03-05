@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from .config import settings
 from .database import database
-from .routes import users, auth, discord_oauth, admin, content, websocket, discord, profile, migration, game_preferences, xp_routes
+from .routes import users, auth, discord_oauth, content, websocket, discord, profile, migration, game_preferences, xp_routes
 from .auth import get_password_hash
 
 # Инициализация приложения
@@ -48,7 +48,6 @@ app.include_router(users.router, prefix="/api", tags=["users"])
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(discord_oauth.router, prefix="/api", tags=["discord"])
 app.include_router(discord.router, tags=["discord"])  # Discord presence API
-app.include_router(admin.router, prefix="/api", tags=["admin"])
 app.include_router(content.router, prefix="/api", tags=["content"])
 app.include_router(profile.router, prefix="/api", tags=["profile"])
 app.include_router(xp_routes.router, tags=["xp"])  # XP and Points system
