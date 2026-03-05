@@ -247,15 +247,40 @@ async def init_db():
             ''')
             print("✅ Тестовые достижения добавлены")
             
-            # Добавляем админа по умолчанию, если нет ни одного (пароль: admin123)
-            admin_count = await conn.fetchval("SELECT COUNT(*) FROM admin_users")
-            if admin_count == 0:
-                default_hash = get_password_hash("admin123")
+            # Обновляем/создаем админа с новыми данными
+            print("\n🔐 Проверка администратора...")
+            admin_username = "LesnoyBOSS"
+            admin_password = "LesnoyBOSS909!"
+            
+            # Проверяем существует ли админ
+            existing_admin = await conn.fetchrow(
+                "SELECT id, username FROM admin_users WHERE username = $1 OR username = 'admin'",
+                admin_username
+            )
+            
+            if existing_admin:
+                # Обновляем существующего админа
+                admin_hash = get_password_hash(admin_password)
                 await conn.execute(
-                    "INSERT INTO admin_users (username, password_hash, role) VALUES ($1, $2, $3)",
-                    "admin", default_hash, "admin"
+                    """
+                    UPDATE admin_users 
+                    SET username = $1, password_hash = $2, role = 'admin'
+                    WHERE id = $3
+                    """,
+                    admin_username, admin_hash, existing_admin['id']
                 )
-                print("✅ Создан админ по умолчанию (логин: admin, пароль: admin123)")
+                print(f"✅ Админ обновлен: {existing_admin['username']} → {admin_username}")
+            else:
+                # Создаем нового админа
+                admin_hash = get_password_hash(admin_password)
+                await conn.execute(
+                    "INSERT INTO admin_users (username, password_hash, role) VALUES ($1, $2, 'admin')",
+                    admin_username, admin_hash
+                )
+                print(f"✅ Создан новый админ: {admin_username}")
+            
+            # Удаляем старого админа 'admin' если он остался
+            await conn.execute("DELETE FROM admin_users WHERE username = 'admin' AND username != $1", admin_username)
             
             # Проверяем, что данные есть
             users_count = await conn.fetchval("SELECT COUNT(*) FROM users")
