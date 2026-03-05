@@ -212,3 +212,81 @@ class GamePreferencesService:
         except PostgresError as e:
             logger.error(f"Database error getting game statistics: {e}")
             raise
+    
+    @staticmethod
+    async def get_users_by_game(conn: Connection, game_name: str) -> List[Dict]:
+        """
+        Get list of users who play a specific game
+        
+        Args:
+            conn: Database connection
+            game_name: Name of the game to filter by
+            
+        Returns:
+            List of users with basic info
+            
+        Raises:
+            PostgresError: If database operation fails
+        """
+        try:
+            # Query users who have this game in their preferences
+            rows = await conn.fetch(
+                """
+                SELECT 
+                    u.discord_id,
+                    u.discord_username,
+                    u.avatar_url,
+                    u.forest_rank,
+                    u.rating,
+                    u.game_preferences,
+                    CASE 
+                        WHEN u.last_seen > NOW() - INTERVAL '5 minutes' THEN true
+                        ELSE false
+                    END as is_online
+                FROM users u
+                WHERE u.game_preferences IS NOT NULL
+                  AND u.game_preferences != '[]'::jsonb
+                  AND u.is_hidden = false
+                ORDER BY is_online DESC, u.rating DESC
+                """
+            )
+            
+            # Filter users who have the specific game
+            users = []
+            for row in rows:
+                preferences_data = row['game_preferences']
+                if isinstance(preferences_data, str):
+                    preferences_data = json.loads(preferences_data)
+                
+                # Check if user has this game
+                has_game = False
+                for pref in preferences_data:
+                    game = pref.get('game')
+                    
+                    # Match exact game or categorize
+                    if game_name in ["CS2", "DOTA 2", "VALORANT"]:
+                        if game == game_name:
+                            has_game = True
+                            break
+                    elif game_name == "ДРУГИЕ":
+                        # All games except main 3
+                        if game not in ["CS2", "DOTA 2", "VALORANT"]:
+                            has_game = True
+                            break
+                
+                if has_game:
+                    users.append({
+                        "discord_id": row['discord_id'],
+                        "discord_username": row['discord_username'],
+                        "avatar_url": row['avatar_url'],
+                        "forest_rank": row['forest_rank'],
+                        "rating": float(row['rating']),
+                        "is_online": row['is_online']
+                    })
+            
+            logger.info(f"Found {len(users)} users for game {game_name}")
+            return users
+            
+        except PostgresError as e:
+            logger.error(f"Database error getting users by game {game_name}: {e}")
+            raise

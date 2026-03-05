@@ -68,6 +68,12 @@ export default function Home() {
   })
   const [showGamePreferencesModal, setShowGamePreferencesModal] = useState(false)
   const [gameStats, setGameStats] = useState<GameStatistics | null>(null)
+  
+  // Game players modal state
+  const [showGamePlayersModal, setShowGamePlayersModal] = useState(false)
+  const [selectedGame, setSelectedGame] = useState<string | null>(null)
+  const [gamePlayers, setGamePlayers] = useState<Player[]>([])
+  const [loadingPlayers, setLoadingPlayers] = useState(false)
 
   // После входа через Discord бэкенд редиректит с ?token=... — сохраняем и убираем из URL
   useEffect(() => {
@@ -128,6 +134,29 @@ export default function Home() {
 
   const handleGamePreferencesSkipped = () => {
     // Just close modal, statistics remain unchanged
+  }
+
+  const handleGameClick = async (gameName: string) => {
+    setSelectedGame(gameName)
+    setShowGamePlayersModal(true)
+    setLoadingPlayers(true)
+    
+    try {
+      // Fetch users with this game preference
+      const response = await axios.get<Player[]>(`${API_URL}/api/users/by-game/${encodeURIComponent(gameName)}`)
+      setGamePlayers(response.data)
+    } catch (err) {
+      console.error('Error fetching game players:', err)
+      setGamePlayers([])
+    } finally {
+      setLoadingPlayers(false)
+    }
+  }
+
+  const closeGamePlayersModal = () => {
+    setShowGamePlayersModal(false)
+    setSelectedGame(null)
+    setGamePlayers([])
   }
 
   const handleLogout = () => {
@@ -344,7 +373,20 @@ export default function Home() {
           <h2>ВО ЧТО ИГРАЕМ</h2>
           <div className="games-grid">
             {games.map((game, index) => (
-              <div key={index} className="game-card">
+              <div 
+                key={index} 
+                className="game-card"
+                onClick={() => handleGameClick(game.name)}
+                style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)'
+                  e.currentTarget.style.boxShadow = `0 10px 30px ${game.color}40`
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -612,6 +654,155 @@ export default function Home() {
             })}
           </div>
         </section>
+
+        {/* Game Players Modal */}
+        {showGamePlayersModal && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.9)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '1rem'
+            }}
+            onClick={closeGamePlayersModal}
+          >
+            <div 
+              style={{
+                background: 'var(--gray)',
+                border: '2px solid var(--accent)',
+                borderRadius: '8px',
+                padding: '2rem',
+                maxWidth: '800px',
+                width: '100%',
+                maxHeight: '80vh',
+                overflow: 'auto'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 style={{ 
+                fontFamily: 'Unbounded', 
+                marginBottom: '1rem',
+                color: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <span>ИГРОКИ В {selectedGame}</span>
+                <button
+                  onClick={closeGamePlayersModal}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#666',
+                    fontSize: '1.5rem',
+                    cursor: 'pointer',
+                    padding: '0.5rem'
+                  }}
+                >
+                  ✕
+                </button>
+              </h2>
+
+              {loadingPlayers ? (
+                <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>
+                  Загрузка...
+                </div>
+              ) : gamePlayers.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎮</div>
+                  <div style={{ color: '#666' }}>
+                    Пока никто не играет в {selectedGame}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
+                  gap: '1rem' 
+                }}>
+                  {gamePlayers.map((player) => (
+                    <a
+                      key={player.discord_id}
+                      href={`/profile/${player.discord_id}`}
+                      style={{
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        background: 'var(--gray-light)',
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        border: '1px solid transparent',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--accent)'
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'transparent'
+                        e.currentTarget.style.transform = 'translateY(0)'
+                      }}
+                    >
+                      {player.avatar_url ? (
+                        <img
+                          src={player.avatar_url}
+                          alt={player.discord_username}
+                          style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '50%',
+                          background: 'var(--accent-dark)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.5rem',
+                          color: 'var(--accent)'
+                        }}>
+                          {player.discord_username[0]}
+                        </div>
+                      )}
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '0.875rem' }}>
+                          {player.discord_username}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#666' }}>
+                          {player.forest_rank}
+                        </div>
+                        {player.is_online && (
+                          <div style={{ 
+                            fontSize: '0.75rem', 
+                            color: 'var(--accent)', 
+                            marginTop: '0.25rem' 
+                          }}>
+                            ● Онлайн
+                          </div>
+                        )}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Футер */}
         <footer className="footer">

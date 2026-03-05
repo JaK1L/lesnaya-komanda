@@ -200,3 +200,31 @@ async def get_game_statistics():
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred"
         )
+
+
+@router.get("/users/by-game/{game_name}")
+async def get_users_by_game(game_name: str):
+    """
+    Get list of users who play a specific game (public endpoint)
+    
+    Returns users with their basic info who have selected this game.
+    No authentication required.
+    """
+    try:
+        async with database.get_connection() as conn:
+            users = await GamePreferencesService.get_users_by_game(conn, game_name)
+        
+        return users
+        
+    except PostgresError as e:
+        logger.error(f"Database error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
+        )
