@@ -403,7 +403,7 @@ export default function ProfilePage() {
 
         {/* Game Stats Section */}
         <SectionErrorBoundary sectionName="Игровая статистика">
-          <GameStatsSection userId={profile.discord_id} />
+          <GameStatsSection userId={profile.discord_id} isOwnProfile={true} />
         </SectionErrorBoundary>
 
         {/* Activity Section */}

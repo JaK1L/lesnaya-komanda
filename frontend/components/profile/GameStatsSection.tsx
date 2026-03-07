@@ -21,10 +21,17 @@ interface GameStats {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-export function GameStatsSection({ userId }: { userId: number }) {
+export function GameStatsSection({ userId, isOwnProfile = false }: { userId: number, isOwnProfile?: boolean }) {
   const [stats, setStats] = useState<GameStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showLinkModal, setShowLinkModal] = useState(false)
+  const [linkGame, setLinkGame] = useState<'steam' | 'dota2' | 'valorant' | null>(null)
+  const [linkFormData, setLinkFormData] = useState({
+    accountId: '',
+    accountTag: '',
+    region: 'eu'
+  })
 
   useEffect(() => {
     loadStats()
@@ -40,6 +47,44 @@ export function GameStatsSection({ userId }: { userId: number }) {
       setError('Не удалось загрузить статистику')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleLinkAccount = (game: 'steam' | 'dota2' | 'valorant') => {
+    setLinkGame(game)
+    setLinkFormData({ accountId: '', accountTag: '', region: 'eu' })
+    setShowLinkModal(true)
+  }
+
+  const handleSubmitLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!linkGame) return
+
+    const token = localStorage.getItem('lesnaya_token')
+    if (!token) {
+      alert('Необходимо войти в систему')
+      return
+    }
+
+    try {
+      await axios.post(
+        `${API_URL}/api/game-stats/link`,
+        {
+          game: linkGame,
+          account_id: linkFormData.accountId,
+          account_tag: linkGame === 'valorant' ? linkFormData.accountTag : null,
+          region: linkGame === 'valorant' ? linkFormData.region : null
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+
+      setShowLinkModal(false)
+      loadStats()
+      alert('Аккаунт успешно привязан!')
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Ошибка привязки аккаунта')
     }
   }
 
@@ -60,7 +105,81 @@ export function GameStatsSection({ userId }: { userId: number }) {
           <div className={styles.emptyIcon}>🎯</div>
           <div>Игровые аккаунты не привязаны</div>
           <div className={styles.emptyHint}>Привяжите Steam, Dota 2 или Valorant для отображения статистики</div>
+          
+          {isOwnProfile && (
+            <div className={styles.linkButtons}>
+              <button onClick={() => handleLinkAccount('steam')} className={styles.linkButton}>
+                🎮 Привязать Steam
+              </button>
+              <button onClick={() => handleLinkAccount('dota2')} className={styles.linkButton}>
+                ⚔️ Привязать Dota 2
+              </button>
+              <button onClick={() => handleLinkAccount('valorant')} className={styles.linkButton}>
+                🎯 Привязать Valorant
+              </button>
+            </div>
+          )}
         </div>
+
+        {showLinkModal && (
+          <div className={styles.modal}>
+            <div className={styles.modalContent}>
+              <h2>Привязать {linkGame === 'steam' ? 'Steam' : linkGame === 'dota2' ? 'Dota 2' : 'Valorant'}</h2>
+              <form onSubmit={handleSubmitLink}>
+                <div className={styles.formGroup}>
+                  <label>
+                    {linkGame === 'steam' && 'Steam ID (например: 76561198012345678)'}
+                    {linkGame === 'dota2' && 'Dota 2 Account ID (например: 123456789)'}
+                    {linkGame === 'valorant' && 'Riot ID (например: PlayerName)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={linkFormData.accountId}
+                    onChange={(e) => setLinkFormData({ ...linkFormData, accountId: e.target.value })}
+                    required
+                    placeholder={linkGame === 'steam' ? '76561198012345678' : linkGame === 'dota2' ? '123456789' : 'PlayerName'}
+                  />
+                </div>
+
+                {linkGame === 'valorant' && (
+                  <>
+                    <div className={styles.formGroup}>
+                      <label>Тег (например: #EUW)</label>
+                      <input
+                        type="text"
+                        value={linkFormData.accountTag}
+                        onChange={(e) => setLinkFormData({ ...linkFormData, accountTag: e.target.value })}
+                        required
+                        placeholder="#EUW"
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Регион</label>
+                      <select
+                        value={linkFormData.region}
+                        onChange={(e) => setLinkFormData({ ...linkFormData, region: e.target.value })}
+                      >
+                        <option value="eu">Europe</option>
+                        <option value="na">North America</option>
+                        <option value="ap">Asia Pacific</option>
+                        <option value="kr">Korea</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                <div className={styles.modalActions}>
+                  <button type="button" onClick={() => setShowLinkModal(false)} className={styles.cancelButton}>
+                    Отмена
+                  </button>
+                  <button type="submit" className={styles.saveButton}>
+                    Привязать
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
