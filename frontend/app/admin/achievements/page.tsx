@@ -26,6 +26,11 @@ export default function AdminAchievementsPage() {
   const [showModal, setShowModal] = useState(false)
   const [showGrantModal, setShowGrantModal] = useState(false)
   const [editingAchievement, setEditingAchievement] = useState<AchievementType | null>(null)
+  
+  // Debug: проверка что компонент загружен
+  useEffect(() => {
+    console.log('✅ AdminAchievementsPage loaded with GrantAchievementModal')
+  }, [])
   const [formData, setFormData] = useState({
     name: '',
     description: '',
