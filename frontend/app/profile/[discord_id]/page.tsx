@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import axios from 'axios'
-import { TreePine, Shield, Award, TrendingUp } from 'lucide-react'
+import { TreePine, Shield } from 'lucide-react'
 
 interface PublicProfile {
   discord_id: number
@@ -14,10 +14,6 @@ interface PublicProfile {
   forest_rank: string
   rating: number
   joined_at: string | null
-  level: number
-  current_xp: number
-  total_xp: number
-  points: number
   is_hidden: boolean
 }
 
@@ -59,9 +55,6 @@ export default function PublicProfilePage() {
       setLoading(false)
     }
   }
-
-  const xpForLevel = (level: number) => level * 100
-  const xpProgress = profile ? (profile.current_xp / xpForLevel(profile.level)) * 100 : 0
 
   if (loading) {
     return (
@@ -121,7 +114,7 @@ export default function PublicProfilePage() {
         <div className="lunacy-card" style={{ marginBottom: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '2rem', flexWrap: 'wrap' }}>
             {/* Аватар */}
-            <div style={{ position: 'relative' }}>
+            <div>
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -150,27 +143,6 @@ export default function PublicProfilePage() {
                   {displayName[0].toUpperCase()}
                 </div>
               )}
-              
-              {/* Уровень бейдж */}
-              <div style={{
-                position: 'absolute',
-                bottom: '-10px',
-                right: '-10px',
-                background: 'linear-gradient(135deg, #4aff75 0%, #2d5a2d 100%)',
-                color: '#000',
-                fontWeight: 900,
-                fontSize: '1.5rem',
-                width: '60px',
-                height: '60px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '4px solid var(--background)',
-                boxShadow: '0 4px 12px rgba(74, 255, 117, 0.3)'
-              }}>
-                {profile.level}
-              </div>
             </div>
 
             {/* Информация */}
@@ -228,37 +200,16 @@ export default function PublicProfilePage() {
         {/* Статистика */}
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
           gap: '1rem',
           marginBottom: '2rem'
         }}>
           <div className="lunacy-card">
-            <Award size={32} style={{ color: 'var(--accent)', marginBottom: '0.5rem' }} />
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent)' }}>
-              {profile.level}
+            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
+              {profile.forest_rank}
             </div>
             <div style={{ color: '#666', fontSize: '0.875rem', textTransform: 'uppercase' }}>
-              Уровень
-            </div>
-          </div>
-
-          <div className="lunacy-card">
-            <TrendingUp size={32} style={{ color: '#4aff75', marginBottom: '0.5rem' }} />
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#4aff75' }}>
-              {profile.total_xp.toLocaleString()}
-            </div>
-            <div style={{ color: '#666', fontSize: '0.875rem', textTransform: 'uppercase' }}>
-              Всего опыта
-            </div>
-          </div>
-
-          <div className="lunacy-card">
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🪙</div>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ff6b6b' }}>
-              {profile.points.toLocaleString()}
-            </div>
-            <div style={{ color: '#666', fontSize: '0.875rem', textTransform: 'uppercase' }}>
-              Поинтов
+              Ранг в лесу
             </div>
           </div>
 
@@ -270,42 +221,6 @@ export default function PublicProfilePage() {
             <div style={{ color: '#666', fontSize: '0.875rem', textTransform: 'uppercase' }}>
               Рейтинг
             </div>
-          </div>
-        </div>
-
-        {/* Прогресс опыта */}
-        <div className="lunacy-card">
-          <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <TrendingUp size={24} />
-            ПРОГРЕСС ДО СЛЕДУЮЩЕГО УРОВНЯ
-          </h3>
-          
-          <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#666' }}>Уровень {profile.level}</span>
-            <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>
-              {profile.current_xp} / {xpForLevel(profile.level)} XP
-            </span>
-          </div>
-
-          <div style={{ 
-            width: '100%', 
-            height: '20px', 
-            background: 'var(--gray-light)',
-            borderRadius: '10px',
-            overflow: 'hidden',
-            position: 'relative'
-          }}>
-            <div style={{ 
-              width: `${xpProgress}%`,
-              height: '100%',
-              background: 'linear-gradient(to right, #4aff75, #5fff88)',
-              transition: 'width 0.5s ease',
-              boxShadow: '0 0 20px rgba(74, 255, 117, 0.5)'
-            }} />
-          </div>
-
-          <div style={{ marginTop: '0.5rem', textAlign: 'center', color: '#666', fontSize: '0.875rem' }}>
-            {Math.round(xpProgress)}% до уровня {profile.level + 1}
           </div>
         </div>
 

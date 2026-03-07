@@ -694,3 +694,41 @@ This feature requires both unit tests and property-based tests for comprehensive
 - [ ] Mobile responsive layout works
 - [ ] Animations smooth and performant
 
+
+
+## Implementation Details
+
+### Frontend Implementation
+
+#### GamePreferencesModal Component
+
+**File**: `frontend/components/GamePreferencesModal.tsx`
+
+```typescript
+'use client'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import axios from 'axios'
+
+interface GamePreference {
+  game: string
+  custom_name: string | null
+}
+
+interface GamePreferencesModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSuccess: () => void
+}
+
+const GAMES = [
+  'CS2', 'DOTA 2', 'VALORANT', 'PUBG', 
+  'Apex Legends', 'League of Legends', 
+  'Overwatch 2', 'Fortnite', 'Minecraft', 
+  'GTA V', 'Другое'
+]
+
+export function GamePreferencesModal({ isOpen, onClose, onSuccess }: GamePreferencesModalProps) {
+  const [selectedGames, setSelectedGames] = useState<Set<string>>(new Set())
+  const [customGameName, setCustomGameName] = useState('')
+  const [isSubmitting, setIsS
