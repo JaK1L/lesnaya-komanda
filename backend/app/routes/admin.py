@@ -661,6 +661,35 @@ class UserUpdate(BaseModel):
     rating: Optional[float] = None
 
 
+class UserOut(BaseModel):
+    id: int
+    discord_id: int
+    discord_username: str
+    forest_rank: str
+    rating: float
+    avatar_url: Optional[str]
+    site_nickname: Optional[str]
+    joined_at: Optional[datetime]
+    last_seen: datetime
+
+
+@router.get("/users", response_model=List[UserOut])
+async def list_users(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Получить список всех пользователей (только для админов)."""
+    rows = await db.fetch(
+        """
+        SELECT id, discord_id, discord_username, forest_rank, rating, 
+               avatar_url, site_nickname, joined_at, last_seen
+        FROM users
+        ORDER BY last_seen DESC, id DESC
+        """
+    )
+    return [UserOut(**dict(row)) for row in rows]
+
+
 @router.put("/users/{user_id}")
 async def update_user(
     user_id: int,
