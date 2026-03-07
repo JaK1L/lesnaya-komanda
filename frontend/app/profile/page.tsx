@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { Gamepad2 } from 'lucide-react'
 import { Navigation, Footer, SkipToContent } from '../../components/layout'
-import { ProfileHeader, ProfileEditForm, GamePreferencesSection, ProfileSkeleton } from '../../components/profile'
+import { ProfileHeader, ProfileEditForm, GamePreferencesSection, ProfileSkeleton, AchievementsSection } from '../../components/profile'
 import { ErrorMessage } from '../../components/ui'
 import { PageErrorBoundary } from '../../components/PageErrorBoundary'
 import { SectionErrorBoundary } from '../../components/SectionErrorBoundary'
@@ -396,6 +396,11 @@ export default function ProfilePage() {
             </div>
           </SectionErrorBoundary>
         )}
+
+        {/* Achievements Section */}
+        <SectionErrorBoundary sectionName="Достижения">
+          <AchievementsSection discordId={profile.discord_id} />
+        </SectionErrorBoundary>
 
         {/* Activity Section */}
         <SectionErrorBoundary sectionName="Активность">

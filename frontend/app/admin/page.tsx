@@ -163,6 +163,9 @@ export default function AdminPage() {
           <button onClick={() => router.push('/admin/users')} className={styles.navButton}>
             👥 Пользователи
           </button>
+          <button onClick={() => router.push('/admin/achievements')} className={styles.navButton}>
+            🏆 Достижения
+          </button>
           <button onClick={() => router.push('/admin/streamers')} className={styles.navButton}>
             🎮 Стримеры
           </button>
