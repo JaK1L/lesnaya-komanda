@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { ErrorBoundary } from '../components/ErrorBoundary'
+import { GoogleAnalytics } from '../components/GoogleAnalytics'
+import { YandexMetrika } from '../components/YandexMetrika'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] })
@@ -117,6 +119,8 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
+        <GoogleAnalytics />
+        <YandexMetrika />
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
