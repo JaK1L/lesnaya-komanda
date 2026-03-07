@@ -109,6 +109,7 @@ async def discord_now_playing(
 
 
 @router.get("/players", response_model=List[dict])
+@router.get("/users", response_model=List[dict])  # Алиас для совместимости с frontend
 async def get_players(
     limit: int = Query(default=50, ge=1, le=1000, description="Максимальное количество игроков в ответе"),
     offset: int = Query(default=0, ge=0, description="Смещение для пагинации"),
@@ -121,6 +122,10 @@ async def get_players(
     Поддерживает пагинацию через параметры limit и offset.
     
     **Не требует аутентификации**
+    
+    **Доступен по двум путям:**
+    - `/api/players` (основной)
+    - `/api/users` (алиас для совместимости)
     
     **Параметры:**
     - `limit`: количество игроков (1-1000, по умолчанию 50)
