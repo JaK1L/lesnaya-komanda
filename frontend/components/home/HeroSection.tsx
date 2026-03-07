@@ -47,7 +47,7 @@ export function HeroSection({ discordUrl }: HeroSectionProps) {
           
           <motion.div variants={itemVariants}>
             <p className={styles.subtitle}>
-              Добро пожаловать в цифровой лес
+              Присаживайся у костра чувак
             </p>
           </motion.div>
 
