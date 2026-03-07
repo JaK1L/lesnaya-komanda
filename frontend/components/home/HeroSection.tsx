@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { motion } from 'framer-motion'
 import { Button } from '../ui/Button/Button'
@@ -49,7 +49,7 @@ export function HeroSection({ discordUrl }: HeroSectionProps) {
           
           <motion.div variants={itemVariants}>
             <p className={styles.subtitle}>
-              рисаживайся у костра чувак
+              Присаживайся у костра чувак
             </p>
           </motion.div>
 
@@ -62,7 +62,7 @@ export function HeroSection({ discordUrl }: HeroSectionProps) {
                 href={STREAMS_URL}
                 size="large"
               >
-                СТТЬ СТ
+                СМОТРЕТЬ СТРИМ
               </Button>
               
               <Button 
@@ -71,7 +71,7 @@ export function HeroSection({ discordUrl }: HeroSectionProps) {
                 rel="noreferrer"
                 size="large"
               >
-                СТТЬ  Т
+                ВСТУПИТЬ В ТЕЛЕГРАМ
               </Button>
 
               <Button 
@@ -80,7 +80,7 @@ export function HeroSection({ discordUrl }: HeroSectionProps) {
                 rel="noreferrer"
                 size="large"
               >
-                СТТЬ  С
+                ВСТУПИТЬ В ДИСКОРД
               </Button>
             </div>
           </motion.div>
