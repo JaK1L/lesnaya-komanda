@@ -5,7 +5,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from datetime import datetime
 import asyncpg
-from pydantic import BaseModel, Field
+import json
+from pydantic import BaseModel, Field, field_validator
 
 from ..database import get_db
 from ..auth import get_current_user, get_current_admin_user
@@ -23,6 +24,14 @@ class AchievementTypeCreate(BaseModel):
     requirement: dict = Field(default_factory=dict)
     points: int = Field(default=10, ge=0)
     is_active: bool = True
+    
+    @field_validator('requirement', mode='before')
+    @classmethod
+    def parse_requirement(cls, v):
+        """Парсим JSONB строку в dict если нужно"""
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
 
 
 class AchievementTypeOut(AchievementTypeCreate):
