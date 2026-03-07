@@ -117,16 +117,7 @@ async def update_event(
     if not row:
         raise HTTPException(status_code=404, detail="Событие не найдено")
     return EventOut(**dict(row))
-        payload.game,
-        payload.event_date,
-        payload.status,
-        payload.telegram_url,
-    )
-    if not row:
-        raise HTTPException(status_code=404, detail="Событие не найдено")
-    return EventOut(**dict(row))
-
-
+    
 class NewsCreate(BaseModel):
     title: str = Field(..., max_length=200)
     content: str = Field(..., max_length=5000)
