@@ -1,77 +1,83 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import axios from 'axios'
 import { Navigation, Footer, SkipToContent } from '../../components/layout'
 import { StreamerCard } from '../../components/streamers'
 import styles from './page.module.css'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-const streamers = [
-  {
-    name: 'JaK1L',
-    game: 'CS2, Dota 2, И другие..',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=JaK1L',
-    platform: 'twitch' as const,
-    url: 'https://twitch.tv/jak1lqa',
-    isLive: true,
-    viewers: 234,
-    schedule: undefined
-  },
-  {
-    name: 'orgeo',
-    game: 'CS2, Dota 2, И другие..',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DIMA',
-    platform: 'twitch' as const,
-    url: 'https://twitch.tv/ssilka',
-    isLive: false,
-    viewers: undefined,
-    schedule: 'Пн, Ср, Пт в 19:00'
-  },
-  {
-    name: 'Kapa_He6ec',
-    game: 'CS2, Dota 2, И другие..',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Spirit',
-    platform: 'twitch' as const,
-    url: 'https://twitch.tv/ssilka',
-    isLive: false,
-    viewers: undefined,
-    schedule: 'Вт, Чт в 20:00'
-  },
-  {
-    name: 'Валек',
-    game: 'в попе пальцем',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sniper',
-    platform: 'twitch' as const,
-    url: 'https://twitch.tv/ssilka',
-    isLive: true,
-    viewers: 89,
-    schedule: undefined
-  },
-  {
-    name: 'Мишаня',
-    game: 'кунка с башером',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Shooter',
-    platform: 'twitch' as const,
-    url: 'https://twitch.tv/ssilka',
-    isLive: false,
-    viewers: undefined,
-    schedule: 'Сб, Вс в 18:00'
-  },
-  {
-    name: 'Ромчик',
-    game: 'Пока инактив',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Pro',
-    platform: 'twitch' as const,
-    url: 'https://twitch.tv/ssilka',
-    isLive: false,
-    viewers: undefined,
-    schedule: 'Каждый день в 21:00'
-  }
-]
+interface Streamer {
+  id: number
+  name: string
+  game: string | null
+  avatar_url: string | null
+  platform: 'twitch' | 'youtube' | 'other'
+  stream_url: string
+  schedule: string | null
+}
 
 export default function StreamsPage() {
-  const liveStreamers = streamers.filter(s => s.isLive)
-  const offlineStreamers = streamers.filter(s => !s.isLive)
+  const [streamers, setStreamers] = useState<Streamer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchStreamers()
+  }, [])
+
+  const fetchStreamers = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await axios.get<Streamer[]>(`${API_URL}/api/streamers`)
+      setStreamers(response.data)
+    } catch (err) {
+      console.error('Error fetching streamers:', err)
+      setError('Не удалось загрузить стримеров')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Для демонстрации - в будущем можно добавить реальную проверку статуса стрима
+  const liveStreamers = streamers.filter((_, index) => index === 0) // Первый стример "в эфире" для демо
+  const offlineStreamers = streamers.filter((_, index) => index !== 0)
+
+  if (loading) {
+    return (
+      <>
+        <SkipToContent />
+        <Navigation
+          apiUrl={API_URL}
+          isAuthenticated={false}
+          onLogout={() => {}}
+        />
+        <main className="container" id="main-content" tabIndex={-1}>
+          <div className={styles.loading}>Загрузка стримеров...</div>
+          <Footer />
+        </main>
+      </>
+    )
+  }
+
+  if (error) {
+    return (
+      <>
+        <SkipToContent />
+        <Navigation
+          apiUrl={API_URL}
+          isAuthenticated={false}
+          onLogout={() => {}}
+        />
+        <main className="container" id="main-content" tabIndex={-1}>
+          <div className={styles.error}>{error}</div>
+          <Footer />
+        </main>
+      </>
+    )
+  }
 
   return (
     <>
@@ -102,15 +108,15 @@ export default function StreamsPage() {
             <div className={styles.streamersGrid}>
               {liveStreamers.map((streamer, index) => (
                 <StreamerCard
-                  key={streamer.name}
+                  key={streamer.id}
                   name={streamer.name}
-                  game={streamer.game}
-                  avatar={streamer.avatar}
+                  game={streamer.game || 'Разные игры'}
+                  avatar={streamer.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${streamer.name}`}
                   platform={streamer.platform}
-                  url={streamer.url}
-                  isLive={streamer.isLive}
-                  viewers={streamer.viewers}
-                  schedule={streamer.schedule}
+                  url={streamer.stream_url}
+                  isLive={true}
+                  viewers={Math.floor(Math.random() * 500) + 50} // Демо данные
+                  schedule={streamer.schedule || undefined}
                   index={index}
                 />
               ))}
@@ -118,28 +124,36 @@ export default function StreamsPage() {
           </section>
         )}
 
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Все стримеры</h2>
-            <span className={styles.count}>{offlineStreamers.length} стримеров</span>
-          </div>
-          <div className={styles.streamersGrid}>
-            {offlineStreamers.map((streamer, index) => (
-              <StreamerCard
-                key={streamer.name}
-                name={streamer.name}
-                game={streamer.game}
-                avatar={streamer.avatar}
-                platform={streamer.platform}
-                url={streamer.url}
-                isLive={streamer.isLive}
-                viewers={streamer.viewers}
-                schedule={streamer.schedule}
-                index={index + liveStreamers.length}
-              />
-            ))}
-          </div>
-        </section>
+        {streamers.length === 0 ? (
+          <section className={styles.section}>
+            <div className={styles.empty}>
+              <p>Стримеров пока нет</p>
+            </div>
+          </section>
+        ) : (
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Все стримеры</h2>
+              <span className={styles.count}>{offlineStreamers.length} стримеров</span>
+            </div>
+            <div className={styles.streamersGrid}>
+              {offlineStreamers.map((streamer, index) => (
+                <StreamerCard
+                  key={streamer.id}
+                  name={streamer.name}
+                  game={streamer.game || 'Разные игры'}
+                  avatar={streamer.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${streamer.name}`}
+                  platform={streamer.platform}
+                  url={streamer.stream_url}
+                  isLive={false}
+                  viewers={undefined}
+                  schedule={streamer.schedule || undefined}
+                  index={index + liveStreamers.length}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className={styles.cta}>
           <div className={styles.ctaCard}>

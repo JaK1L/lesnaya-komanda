@@ -317,6 +317,118 @@ class CommonSettings(BaseModel):
     maintenance_message: Optional[str] = None
 
 
+# ============================================
+# СТРИМЕРЫ
+# ============================================
+
+class StreamerCreate(BaseModel):
+    name: str = Field(..., max_length=100)
+    game: Optional[str] = Field(None, max_length=200)
+    avatar_url: Optional[str] = Field(None, max_length=500)
+    platform: str = Field(default="twitch", max_length=20)
+    stream_url: str = Field(..., max_length=500)
+    schedule: Optional[str] = Field(None, max_length=200)
+    is_active: bool = True
+    display_order: int = 0
+
+
+class StreamerOut(StreamerCreate):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+@router.get("/streamers", response_model=List[StreamerOut])
+async def list_streamers(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Список всех стримеров (для админки)."""
+    rows = await db.fetch(
+        """
+        SELECT id, name, game, avatar_url, platform, stream_url, schedule, is_active, display_order, created_at, updated_at
+        FROM streamers
+        ORDER BY display_order ASC, id DESC
+        """
+    )
+    return [StreamerOut(**dict(row)) for row in rows]
+
+
+@router.post("/streamers", response_model=StreamerOut)
+async def create_streamer(
+    payload: StreamerCreate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Создать стримера."""
+    row = await db.fetchrow(
+        """
+        INSERT INTO streamers (name, game, avatar_url, platform, stream_url, schedule, is_active, display_order)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id, name, game, avatar_url, platform, stream_url, schedule, is_active, display_order, created_at, updated_at
+        """,
+        payload.name,
+        payload.game,
+        payload.avatar_url,
+        payload.platform,
+        payload.stream_url,
+        payload.schedule,
+        payload.is_active,
+        payload.display_order,
+    )
+    if not row:
+        raise HTTPException(status_code=500, detail="Не удалось создать стримера")
+    return StreamerOut(**dict(row))
+
+
+@router.put("/streamers/{streamer_id}", response_model=StreamerOut)
+async def update_streamer(
+    streamer_id: int,
+    payload: StreamerCreate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Обновить стримера."""
+    row = await db.fetchrow(
+        """
+        UPDATE streamers
+        SET name = $2, game = $3, avatar_url = $4, platform = $5, stream_url = $6, 
+            schedule = $7, is_active = $8, display_order = $9, updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, name, game, avatar_url, platform, stream_url, schedule, is_active, display_order, created_at, updated_at
+        """,
+        streamer_id,
+        payload.name,
+        payload.game,
+        payload.avatar_url,
+        payload.platform,
+        payload.stream_url,
+        payload.schedule,
+        payload.is_active,
+        payload.display_order,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Стример не найден")
+    return StreamerOut(**dict(row))
+
+
+@router.delete("/streamers/{streamer_id}", response_model=dict)
+async def delete_streamer(
+    streamer_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Удалить стримера."""
+    result = await db.execute("DELETE FROM streamers WHERE id = $1", streamer_id)
+    if result.endswith("0"):
+        raise HTTPException(status_code=404, detail="Стример не найден")
+    return {"status": "ok"}
+
+
+# ============================================
+# НАСТРОЙКИ
+# ============================================
+
 @router.get("/settings/common", response_model=CommonSettings)
 async def get_admin_common_settings(
     db: asyncpg.Connection = Depends(get_db),

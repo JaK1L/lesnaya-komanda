@@ -59,6 +59,33 @@ async def debug_database_info(db: asyncpg.Connection = Depends(get_db)):
     }
 
 
+class StreamerPublic(BaseModel):
+    id: int
+    name: str
+    game: Optional[str]
+    avatar_url: Optional[str]
+    platform: str
+    stream_url: str
+    schedule: Optional[str]
+
+
+@router.get("/streamers", response_model=List[StreamerPublic])
+async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
+    """
+    Публичный список стримеров для сайта.
+    Показываем только активных стримеров.
+    """
+    rows = await db.fetch(
+        """
+        SELECT id, name, game, avatar_url, platform, stream_url, schedule
+        FROM streamers
+        WHERE is_active = true
+        ORDER BY display_order ASC, id ASC
+        """
+    )
+    return [StreamerPublic(**dict(row)) for row in rows]
+
+
 class NewsPublic(BaseModel):
     id: int
     title: str
