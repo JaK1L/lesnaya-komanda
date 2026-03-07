@@ -19,7 +19,6 @@ export default function AdminNewsPage() {
   const [news, setNews] = useState<News[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
   
   const [formData, setFormData] = useState({
     title: '',
