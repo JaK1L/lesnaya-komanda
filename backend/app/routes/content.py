@@ -86,6 +86,33 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     return [StreamerPublic(**dict(row)) for row in rows]
 
 
+class MerchPublic(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    price: float
+    image_url: Optional[str]
+    category: Optional[str]
+    sizes: Optional[str]
+
+
+@router.get("/merch", response_model=List[MerchPublic])
+async def list_public_merch(db: asyncpg.Connection = Depends(get_db)):
+    """
+    Публичный список товаров для магазина.
+    Показываем только товары в наличии.
+    """
+    rows = await db.fetch(
+        """
+        SELECT id, name, description, price, image_url, category, sizes
+        FROM merch
+        WHERE in_stock = true
+        ORDER BY display_order ASC, id ASC
+        """
+    )
+    return [MerchPublic(**dict(row)) for row in rows]
+
+
 class NewsPublic(BaseModel):
     id: int
     title: str
