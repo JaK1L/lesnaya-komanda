@@ -15,7 +15,8 @@ GUILD_ID = int(os.getenv('DISCORD_GUILD_ID', '236652227060563969'))
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/lesnaya')
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='!', intents=intents)
+# Удаляем встроенную команду help, чтобы использовать свою
+bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 
 class StatsCollector:
     def __init__(self):
