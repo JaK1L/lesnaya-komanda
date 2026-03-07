@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PageErrorBoundary } from '../../../components/PageErrorBoundary'
+import { GrantAchievementModal } from '../../../components/GrantAchievementModal'
 import styles from './page.module.css'
 
 interface AchievementType {
@@ -23,6 +24,7 @@ export default function AdminAchievementsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [showGrantModal, setShowGrantModal] = useState(false)
   const [editingAchievement, setEditingAchievement] = useState<AchievementType | null>(null)
   const [formData, setFormData] = useState({
     name: '',
@@ -165,9 +167,14 @@ export default function AdminAchievementsPage() {
             ← Назад
           </button>
           <h1>🏆 Управление достижениями</h1>
-          <button onClick={handleCreate} className={styles.createButton}>
-            + Создать
-          </button>
+          <div className={styles.headerActions}>
+            <button onClick={() => setShowGrantModal(true)} className={styles.grantButton}>
+              🎁 Выдать достижение
+            </button>
+            <button onClick={handleCreate} className={styles.createButton}>
+              + Создать
+            </button>
+          </div>
         </header>
 
         {error && <div className={styles.error}>{error}</div>}
@@ -292,6 +299,16 @@ export default function AdminAchievementsPage() {
             </div>
           </div>
         )}
+
+        {/* Модальное окно для выдачи достижений */}
+        <GrantAchievementModal
+          isOpen={showGrantModal}
+          onClose={() => setShowGrantModal(false)}
+          onSuccess={() => {
+            // Можно добавить уведомление об успехе
+            console.log('Достижение успешно выдано!')
+          }}
+        />
       </div>
     </PageErrorBoundary>
   )
