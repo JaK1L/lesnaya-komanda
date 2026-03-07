@@ -14,8 +14,8 @@ interface EventCardProps {
   is_registered: boolean
   can_register: boolean
   onClick: () => void
-  onRegister?: () => void
-  onUnregister?: () => void
+  onRegister?: (() => void) | undefined
+  onUnregister?: (() => void) | undefined
   isAuthenticated: boolean
 }
 
