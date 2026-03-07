@@ -2,7 +2,7 @@ import { AlertCircle } from 'lucide-react'
 import styles from './FormError.module.css'
 
 interface FormErrorProps {
-  error?: string | null
+  error?: string | null | undefined
   className?: string
 }
 
@@ -19,7 +19,7 @@ export function FormError({ error, className = '' }: FormErrorProps) {
 
 interface FormFieldProps {
   label: string
-  error?: string | null
+  error?: string | null | undefined
   required?: boolean
   children: React.ReactNode
   htmlFor?: string
