@@ -94,8 +94,14 @@ export default function AdminStreamersPage() {
       // Загружаем изображение если выбрано
       if (imageFile) {
         setIsUploading(true)
-        const uploadedUrl = await uploadImage(imageFile)
-        avatarUrl = uploadedUrl
+        const result = await uploadImage(imageFile)
+        if (result.success && result.url) {
+          avatarUrl = result.url
+        } else {
+          alert(result.error || 'Ошибка загрузки изображения')
+          setIsUploading(false)
+          return
+        }
         setIsUploading(false)
       }
 

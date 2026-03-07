@@ -94,8 +94,14 @@ export default function AdminMerchPage() {
       // Загружаем изображение если выбрано
       if (imageFile) {
         setIsUploading(true)
-        const uploadedUrl = await uploadImage(imageFile)
-        imageUrl = uploadedUrl
+        const result = await uploadImage(imageFile)
+        if (result.success && result.url) {
+          imageUrl = result.url
+        } else {
+          alert(result.error || 'Ошибка загрузки изображения')
+          setIsUploading(false)
+          return
+        }
         setIsUploading(false)
       }
 
