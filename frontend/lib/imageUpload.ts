@@ -3,7 +3,7 @@
  * Бесплатный API для хостинга изображений
  */
 
-const IMGBB_API_KEY = '8d32e7f8c8e9c8f8c8e9c8f8c8e9c8f8' // Замени на свой ключ с https://api.imgbb.com/
+const IMGBB_API_KEY = 'c026403294c4af46bc1d0a7e3faf582e' // Замени на свой ключ с https://api.imgbb.com/
 
 export interface UploadResult {
   success: boolean
