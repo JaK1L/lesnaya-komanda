@@ -54,17 +54,26 @@ async def list_achievement_types(
     db: asyncpg.Connection = Depends(get_db),
 ):
     """Получить список всех типов достижений."""
-    if category:
-        rows = await db.fetch(
-            "SELECT * FROM achievement_types WHERE is_active = true AND category = $1 ORDER BY points, id",
-            category
-        )
-    else:
-        rows = await db.fetch(
-            "SELECT * FROM achievement_types WHERE is_active = true ORDER BY category, points, id"
-        )
-    
-    return [AchievementTypeOut(**dict(row)) for row in rows]
+    try:
+        if category:
+            rows = await db.fetch(
+                "SELECT * FROM achievement_types WHERE is_active = true AND category = $1 ORDER BY points, id",
+                category
+            )
+        else:
+            rows = await db.fetch(
+                "SELECT * FROM achievement_types WHERE is_active = true ORDER BY category, points, id"
+            )
+        
+        return [AchievementTypeOut(**dict(row)) for row in rows]
+    except asyncpg.UndefinedTableError:
+        # Таблица не существует - вернуть пустой список
+        return []
+    except Exception as e:
+        # Логируем ошибку и возвращаем пустой список вместо 500
+        import logging
+        logging.error(f"Error fetching achievement types: {e}")
+        return []
 
 
 @router.get("/user/{discord_id}", response_model=List[UserAchievementOut])
