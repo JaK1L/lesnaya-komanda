@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import styles from './NewsCard.module.css'
 
 interface NewsCardProps {
@@ -10,6 +11,8 @@ interface NewsCardProps {
 }
 
 export function NewsCard({ title, content, image_url, created_at, onClick }: NewsCardProps) {
+  const [imageError, setImageError] = useState(false)
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('ru-RU', {
@@ -22,12 +25,13 @@ export function NewsCard({ title, content, image_url, created_at, onClick }: New
   return (
     <article className={styles.card} onClick={onClick}>
       <div className={styles.imageContainer}>
-        {image_url ? (
+        {image_url && !imageError ? (
           <img
             src={image_url}
             alt={title}
             className={styles.image}
             loading="lazy"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className={styles.noImage}>📰</div>
