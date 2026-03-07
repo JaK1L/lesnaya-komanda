@@ -1,0 +1,158 @@
+/* Mobile First */
+.hero {
+  text-align: center;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 900;
+  margin: 0 0 1rem 0;
+  background: linear-gradient(135deg, #4AFF75 0%, #2ECC71 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.socialGrid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.cta {
+  margin: 4rem 0 3rem 0;
+}
+
+.ctaCard {
+  background: linear-gradient(135deg, rgba(74, 255, 117, 0.1) 0%, rgba(46, 204, 113, 0.05) 100%);
+  border: 1px solid rgba(74, 255, 117, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.ctaTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  color: #fff;
+}
+
+.ctaText {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 1.5rem 0;
+  line-height: 1.6;
+}
+
+.ctaButton {
+  display: inline-block;
+  padding: 0.875rem 2rem;
+  background: linear-gradient(135deg, #4AFF75 0%, #2ECC71 100%);
+  color: #0a0a0a;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(74, 255, 117, 0.3);
+}
+
+.ctaButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74, 255, 117, 0.4);
+}
+
+.ctaButton:active {
+  transform: translateY(0);
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .hero {
+    padding: 3rem 0;
+    margin-bottom: 3rem;
+  }
+
+  .title {
+    font-size: 3rem;
+  }
+
+  .subtitle {
+    font-size: 1.125rem;
+  }
+
+  .socialGrid {
+    gap: 1.5rem;
+  }
+
+  .ctaCard {
+    padding: 3rem;
+  }
+
+  .ctaTitle {
+    font-size: 2rem;
+  }
+
+  .ctaText {
+    font-size: 1.125rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .hero {
+    padding: 4rem 0;
+  }
+
+  .title {
+    font-size: 3.5rem;
+  }
+
+  .socialGrid {
+    gap: 2rem;
+  }
+}
+
+/* Animations */
+@media (prefers-reduced-motion: no-preference) {
+  .hero {
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  .ctaCard {
+    animation: fadeInUp 0.8s ease-out 0.3s both;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
