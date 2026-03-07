@@ -1,0 +1,92 @@
+.icon {
+  display: inline-block;
+  background-image: url('/icons-sprite.png');
+  background-repeat: no-repeat;
+  background-size: 1000px auto; /* Подстроим под реальный размер */
+  width: 80px;
+  height: 80px;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Первый ряд */
+.home { background-position: 0 0; }
+.team { background-position: -100px 0; }
+.streams { background-position: -200px 0; }
+.games { background-position: -300px 0; }
+.news { background-position: -400px 0; }
+.contact { background-position: -500px 0; }
+.twitch { background-position: -600px 0; }
+.youtube { background-position: -700px 0; }
+.discord { background-position: -800px 0; }
+
+/* Второй ряд */
+.twitchAlt { background-position: 0 -100px; }
+.youtubeAlt { background-position: -100px -100px; }
+.discordAlt { background-position: -200px -100px; }
+.telegram { background-position: -300px -100px; }
+.vk { background-position: -400px -100px; }
+.instagram { background-position: -500px -100px; }
+.dota2 { background-position: -600px -100px; }
+.cs2 { background-position: -700px -100px; }
+.trophy { background-position: -800px -100px; }
+
+/* Третий ряд */
+.dota2Alt { background-position: 0 -200px; }
+.cs2Alt { background-position: -100px -200px; }
+.trophyAlt { background-position: -200px -200px; }
+.tournament { background-position: -300px -200px; }
+.statistics { background-position: -400px -200px; }
+.rating { background-position: -500px -200px; }
+.settings { background-position: -600px -200px; }
+.donate { background-position: -700px -200px; }
+.profile { background-position: -800px -200px; }
+
+/* Четвертый ряд */
+.favorite { background-position: 0 -300px; }
+.notification { background-position: -100px -300px; }
+.settingsAlt { background-position: -200px -300px; }
+.search { background-position: -300px -300px; }
+.donateAlt { background-position: -400px -300px; }
+.profileAlt { background-position: -500px -300px; }
+.fire { background-position: -600px -300px; }
+.moreFunc { background-position: -700px -300px; }
+.laugh { background-position: -800px -300px; }
+.shock { background-position: -900px -300px; }
+
+/* Пятый ряд */
+.calendar { background-position: 0 -400px; }
+.chat { background-position: -100px -400px; }
+.like { background-position: -200px -400px; }
+.fireAlt { background-position: -300px -400px; }
+.applause { background-position: -400px -400px; }
+.hype { background-position: -500px -400px; }
+.tree { background-position: -600px -400px; }
+.leaf { background-position: -700px -400px; }
+.bonus1 { background-position: -800px -400px; }
+.bonus2 { background-position: -900px -400px; }
+
+/* Размеры */
+.small {
+  width: 32px;
+  height: 32px;
+  background-size: 400px auto;
+}
+
+.medium {
+  width: 48px;
+  height: 48px;
+  background-size: 600px auto;
+}
+
+.large {
+  width: 64px;
+  height: 64px;
+  background-size: 800px auto;
+}
+
+.xlarge {
+  width: 80px;
+  height: 80px;
+  background-size: 1000px auto;
+}
