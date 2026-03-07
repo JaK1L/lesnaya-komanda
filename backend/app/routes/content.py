@@ -29,6 +29,14 @@ async def list_public_events(db: asyncpg.Connection = Depends(get_db)):
     Публичный список событий для сайта.
     Показываем ближайшие и прошедшие, отсортированные по дате.
     """
+    # Логируем для отладки
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Проверяем какая база используется
+    db_info = await db.fetchrow("SELECT current_database(), current_user")
+    logger.info(f"[PUBLIC EVENTS] Database: {db_info['current_database']}, User: {db_info['current_user']}")
+    
     rows = await db.fetch(
         """
         SELECT id, title, description, game, event_date, telegram_url
@@ -36,6 +44,11 @@ async def list_public_events(db: asyncpg.Connection = Depends(get_db)):
         ORDER BY event_date ASC NULLS LAST, id DESC
         """
     )
+    
+    logger.info(f"[PUBLIC EVENTS] Found {len(rows)} events")
+    for row in rows:
+        logger.info(f"[PUBLIC EVENTS] Event ID: {row['id']}, Title: {row['title']}")
+    
     return [EventPublic(**dict(row)) for row in rows]
 
 
