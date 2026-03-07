@@ -313,3 +313,64 @@ async def grant_achievement(
         pass  # Колонка points может не существовать
     
     return {"message": "Достижение выдано"}
+
+
+@router.post("/grant-by-discord/{discord_id}/{achievement_type_id}")
+async def grant_achievement_by_discord(
+    discord_id: int,
+    achievement_type_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Выдать достижение пользователю по Discord ID (только для админов)."""
+    
+    # Получаем user_id по discord_id
+    user = await db.fetchrow("SELECT id FROM users WHERE discord_id = $1", discord_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    user_id = user['id']
+    
+    # Проверяем существование типа достижения
+    achievement_type = await db.fetchrow(
+        "SELECT id, points, name, icon FROM achievement_types WHERE id = $1",
+        achievement_type_id
+    )
+    if not achievement_type:
+        raise HTTPException(status_code=404, detail="Тип достижения не найден")
+    
+    # Проверяем не выдано ли уже
+    existing = await db.fetchrow(
+        "SELECT id FROM user_achievements WHERE user_id = $1 AND achievement_type_id = $2",
+        user_id, achievement_type_id
+    )
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Достижение уже выдано этому пользователю")
+    
+    # Выдаем достижение
+    await db.execute(
+        """
+        INSERT INTO user_achievements (user_id, achievement_type_id, progress, max_progress, is_completed, earned_at)
+        VALUES ($1, $2, 100, 100, true, NOW())
+        """,
+        user_id, achievement_type_id
+    )
+    
+    # Добавляем поинты пользователю
+    try:
+        await db.execute(
+            "UPDATE users SET points = COALESCE(points, 0) + $1 WHERE id = $2",
+            achievement_type['points'], user_id
+        )
+    except:
+        pass  # Колонка points может не существовать
+    
+    return {
+        "message": "Достижение выдано",
+        "achievement": {
+            "name": achievement_type['name'],
+            "icon": achievement_type['icon'],
+            "points": achievement_type['points']
+        }
+    }
