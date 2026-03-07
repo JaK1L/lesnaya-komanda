@@ -326,7 +326,16 @@ async def get_admin_common_settings(
             maintenance_enabled=False,
             maintenance_message=None,
         )
-    data = row["value"] or {}
+    
+    # Парсим value если это строка JSON
+    data = row["value"]
+    if isinstance(data, str):
+        import json
+        data = json.loads(data)
+    
+    if not data:
+        data = {}
+        
     return CommonSettings(
         discord_join_url=data.get("discord_join_url", "https://discord.gg/YgX4RQZ"),
         maintenance_enabled=bool(data.get("maintenance_enabled", False)),
