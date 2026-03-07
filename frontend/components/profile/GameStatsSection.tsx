@@ -4,18 +4,71 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import styles from './GameStatsSection.module.css'
 
+interface SteamProfile {
+  steam_id: string
+  username: string
+  avatar_url: string
+  profile_url: string
+  status: string
+  last_logoff: string | null
+}
+
+interface CS2Stats {
+  kills: number
+  deaths: number
+  kd_ratio: number
+  wins: number
+  matches_played: number
+  mvps: number
+  headshots: number
+  accuracy: number
+}
+
+interface Dota2Profile {
+  account_id: string
+  username: string
+  avatar_url: string
+  rank_tier: number | null
+  leaderboard_rank: number | null
+  mmr_estimate: number | null
+}
+
+interface Dota2Stats {
+  wins: number
+  losses: number
+  total_matches: number
+  win_rate: number
+}
+
+interface ValorantProfile {
+  riot_id: string
+  tag: string
+  username: string
+  account_level: number
+  card_url: string
+  region: string
+}
+
+interface ValorantMMR {
+  current_tier: string
+  ranking_in_tier: number
+  mmr_change: number
+  elo: number
+  games_needed_for_rating: number
+}
+
 interface GameStats {
   steam?: {
-    profile: any
-    cs2_stats: any
+    profile: SteamProfile
+    cs2_stats: CS2Stats
   }
   dota2?: {
-    profile: any
-    stats: any
+    profile: Dota2Profile
+    stats: Dota2Stats
   }
   valorant?: {
-    profile: any
-    mmr: any
+    profile: ValorantProfile
+    mmr: ValorantMMR
   }
 }
 
@@ -83,8 +136,11 @@ export function GameStatsSection({ userId, isOwnProfile = false }: { userId: num
       setShowLinkModal(false)
       loadStats()
       alert('Аккаунт успешно привязан!')
-    } catch (err: any) {
-      alert(err.response?.data?.detail || 'Ошибка привязки аккаунта')
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as any).response?.data?.detail || 'Ошибка привязки аккаунта'
+        : 'Ошибка привязки аккаунта'
+      alert(errorMessage)
     }
   }
 

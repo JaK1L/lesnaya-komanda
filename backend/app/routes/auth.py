@@ -1,7 +1,7 @@
 """
 Маршруты для аутентификации
 """
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 from datetime import datetime, timedelta
@@ -13,6 +13,7 @@ from ..auth import (
     get_current_admin_user, get_password_hash
 )
 from ..config import settings
+from ..rate_limit import limiter
 import asyncpg
 
 router = APIRouter()
@@ -20,7 +21,9 @@ security = HTTPBearer()
 
 
 @router.post("/token", response_model=Token)
+@limiter.limit("5/minute")
 async def login_for_access_token(
+    request: Request,
     user_login: UserLogin,
     db: asyncpg.Connection = Depends(get_db)
 ):
@@ -30,15 +33,14 @@ async def login_for_access_token(
     Аутентификация администратора для получения токена доступа.
     Токен используется для доступа к защищенным эндпоинтам.
     
-    **Учетные данные по умолчанию:**
-    - Username: `LesnoyBOSS`
-    - Password: `LesnoyBOSS909!`
+    **Учетные данные:**
+    Используйте учетные данные администратора, настроенные через переменные окружения.
     
     **Пример запроса:**
     ```json
     {
-        "username": "LesnoyBOSS",
-        "password": "LesnoyBOSS909!"
+        "username": "admin",
+        "password": "your_secure_password"
     }
     ```
     

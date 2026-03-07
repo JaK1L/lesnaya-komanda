@@ -3,8 +3,11 @@
 """
 import aiohttp
 import os
+import logging
 from typing import Optional, Dict, Any
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 class GameAPIService:
@@ -42,7 +45,7 @@ class GameAPIService:
                                 "last_logoff": datetime.fromtimestamp(player.get("lastlogoff", 0)) if player.get("lastlogoff") else None,
                             }
         except Exception as e:
-            print(f"Error fetching Steam profile: {e}")
+            logger.error(f"Error fetching Steam profile for {steam_id}: {e}", exc_info=True)
             return None
     
     def _get_steam_status(self, state: int) -> str:
@@ -92,7 +95,7 @@ class GameAPIService:
                             "accuracy": round(stats_dict.get("total_shots_hit", 0) / max(stats_dict.get("total_shots_fired", 1), 1) * 100, 2),
                         }
         except Exception as e:
-            print(f"Error fetching CS2 stats: {e}")
+            logger.error(f"Error fetching CS2 stats for {steam_id}: {e}", exc_info=True)
             return None
     
     async def get_dota2_profile(self, account_id: str) -> Optional[Dict[str, Any]]:
@@ -115,7 +118,7 @@ class GameAPIService:
                             "mmr_estimate": data.get("mmr_estimate", {}).get("estimate"),
                         }
         except Exception as e:
-            print(f"Error fetching Dota 2 profile: {e}")
+            logger.error(f"Error fetching Dota 2 profile for {account_id}: {e}", exc_info=True)
             return None
     
     async def get_dota2_stats(self, account_id: str) -> Optional[Dict[str, Any]]:
@@ -138,7 +141,7 @@ class GameAPIService:
                             "win_rate": round(wins / max(total, 1) * 100, 2),
                         }
         except Exception as e:
-            print(f"Error fetching Dota 2 stats: {e}")
+            logger.error(f"Error fetching Dota 2 stats for {account_id}: {e}", exc_info=True)
             return None
     
     async def get_dota2_recent_matches(self, account_id: str, limit: int = 10) -> Optional[list]:
@@ -152,7 +155,7 @@ class GameAPIService:
                         matches = await response.json()
                         return matches[:limit]
         except Exception as e:
-            print(f"Error fetching Dota 2 recent matches: {e}")
+            logger.error(f"Error fetching Dota 2 recent matches for {account_id}: {e}", exc_info=True)
             return None
     
     async def get_valorant_profile(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
@@ -176,7 +179,7 @@ class GameAPIService:
                             "region": account_data.get("region"),
                         }
         except Exception as e:
-            print(f"Error fetching Valorant profile: {e}")
+            logger.error(f"Error fetching Valorant profile for {riot_id}#{tag}: {e}", exc_info=True)
             return None
     
     async def get_valorant_mmr(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
@@ -199,7 +202,7 @@ class GameAPIService:
                             "games_needed_for_rating": current_data.get("games_needed_for_rating", 0),
                         }
         except Exception as e:
-            print(f"Error fetching Valorant MMR: {e}")
+            logger.error(f"Error fetching Valorant MMR for {riot_id}#{tag}: {e}", exc_info=True)
             return None
 
 

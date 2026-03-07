@@ -48,7 +48,6 @@ export default function AdminPage() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL
-      console.log('Attempting login with:', { username, api_url: apiUrl })
       
       const response = await fetch(`${apiUrl}/api/token`, {
         method: 'POST',
@@ -61,8 +60,6 @@ export default function AdminPage() {
         }),
       })
 
-      console.log('Login response status:', response.status)
-
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Login failed:', errorText)
@@ -70,7 +67,6 @@ export default function AdminPage() {
       }
 
       const data = await response.json()
-      console.log('Login successful, token received:', data.access_token ? 'yes' : 'no')
       
       localStorage.setItem('admin_token', data.access_token)
       setIsAuthenticated(true)

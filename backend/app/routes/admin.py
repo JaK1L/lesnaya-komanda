@@ -1,16 +1,19 @@
 """
 Админские маршруты для управления контентом (событиями и новостями).
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from typing import List, Optional
 from datetime import datetime
 
 import asyncpg
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from ..database import get_db
 from ..auth import get_current_admin_user
 from ..models import User
+from ..pagination import PaginatedResponse
+from ..rate_limit import limiter
+from ..validation import ContentValidationMixin, validate_url, validate_telegram_url
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -78,7 +81,7 @@ async def get_admin_stats(
     }
 
 
-class EventCreate(BaseModel):
+class EventCreate(BaseModel, ContentValidationMixin):
     title: str = Field(..., max_length=200)
     description: str = Field(..., max_length=2000)
     game: Optional[str] = Field(default="Общее", max_length=50)
@@ -86,6 +89,11 @@ class EventCreate(BaseModel):
     status: str = Field(default="Планируется", max_length=30)
     telegram_url: Optional[str] = Field(None, max_length=500)
     expires_at: Optional[datetime] = Field(None, description="Дата и время когда событие автоматически скрывается")
+    
+    @field_validator('telegram_url', mode='before')
+    @classmethod
+    def validate_telegram(cls, v):
+        return validate_telegram_url(v) if v else None
 
 
 class EventOut(EventCreate):
@@ -96,20 +104,34 @@ class EventOut(EventCreate):
     expires_at: Optional[datetime] = None
 
 
-@router.get("/events", response_model=List[EventOut])
+@router.get("/events")
 async def list_events(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
     db: asyncpg.Connection = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
-    """Список всех событий (для админки)."""
+    """Список всех событий с пагинацией (для админки)."""
+    offset = (page - 1) * limit
+    
     rows = await db.fetch(
         """
         SELECT id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
         FROM events
         ORDER BY event_date DESC NULLS LAST, id DESC
-        """
+        LIMIT $1 OFFSET $2
+        """,
+        limit, offset
     )
-    return [EventOut(**dict(row)) for row in rows]
+    
+    total = await db.fetchval("SELECT COUNT(*) FROM events")
+    
+    return PaginatedResponse.create(
+        items=[EventOut(**dict(row)) for row in rows],
+        total=total,
+        page=page,
+        limit=limit
+    )
 
 
 @router.post("/events", response_model=EventOut)
@@ -180,11 +202,16 @@ async def update_event(
         raise HTTPException(status_code=404, detail="Событие не найдено")
     return EventOut(**dict(row))
     
-class NewsCreate(BaseModel):
+class NewsCreate(BaseModel, ContentValidationMixin):
     title: str = Field(..., max_length=200)
     content: str = Field(..., max_length=5000)
     image_url: Optional[str] = Field(None, max_length=500)
     published: bool = True
+    
+    @field_validator('image_url', mode='before')
+    @classmethod
+    def validate_image(cls, v):
+        return validate_url(v) if v else None
 
 
 class NewsOut(NewsCreate):
@@ -673,21 +700,35 @@ class UserOut(BaseModel):
     last_seen: datetime
 
 
-@router.get("/users", response_model=List[UserOut])
+@router.get("/users")
 async def list_users(
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    limit: int = Query(50, ge=1, le=100, description="Элементов на странице (макс 100)"),
     db: asyncpg.Connection = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
-    """Получить список всех пользователей (только для админов)."""
+    """Получить список всех пользователей с пагинацией (только для админов)."""
+    offset = (page - 1) * limit
+    
     rows = await db.fetch(
         """
         SELECT id, discord_id, discord_username, forest_rank, rating, 
                avatar_url, site_nickname, joined_at, last_seen
         FROM users
         ORDER BY last_seen DESC, id DESC
-        """
+        LIMIT $1 OFFSET $2
+        """,
+        limit, offset
     )
-    return [UserOut(**dict(row)) for row in rows]
+    
+    total = await db.fetchval("SELECT COUNT(*) FROM users")
+    
+    return PaginatedResponse.create(
+        items=[UserOut(**dict(row)) for row in rows],
+        total=total,
+        page=page,
+        limit=limit
+    )
 
 
 @router.put("/users/{user_id}")

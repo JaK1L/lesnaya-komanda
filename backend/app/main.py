@@ -4,11 +4,26 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 import asyncpg
 from datetime import timedelta
+import logging
+import sys
+import signal
 
 from .config import settings
 from .database import database
 from .routes import users, auth, discord_oauth, content, websocket, discord, profile, migration, game_preferences, admin, achievements, events, game_stats
 from .auth import get_password_hash
+from .rate_limit import setup_rate_limiting
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO if not settings.DEBUG else logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 # Инициализация приложения
 @asynccontextmanager
@@ -16,7 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Жизненный цикл приложения"""
     # Запуск
     await database.connect()
-    print("✅ Подключение к базе данных установлено")
+    logger.info("✅ Подключение к базе данных установлено")
     
     # Инициализация базы данных
     await init_db()
@@ -25,7 +40,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     
     # Завершение
     await database.disconnect()
-    print("✅ Подключение к базе данных закрыто")
+    logger.info("✅ Подключение к базе данных закрыто")
 
 app = FastAPI(
     title="Лесная Команда API",
@@ -112,15 +127,28 @@ app = FastAPI(
 )
 
 # Настройка CORS
-print(f"🌐 CORS: Разрешенные origins: {settings.ALLOWED_ORIGINS}")
-print(f"🌐 DEBUG mode: {settings.DEBUG}")
+logger.info(f"🌐 CORS: Разрешенные origins: {settings.ALLOWED_ORIGINS}")
+logger.info(f"🌐 DEBUG mode: {settings.DEBUG}")
+
+# Настройка Rate Limiting
+setup_rate_limiting(app)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "DNT",
+        "Cache-Control",
+        "X-Requested-With",
+    ],
+    max_age=3600,  # Кэшировать preflight запросы на 1 час
 )
 
 # Middleware для отключения кэша
@@ -147,6 +175,32 @@ app.include_router(achievements.router, prefix="/api", tags=["achievements"])  #
 app.include_router(events.router, prefix="/api", tags=["events"])  # Events API
 app.include_router(game_stats.router, prefix="/api", tags=["game_stats"])  # Game Stats API
 app.include_router(migration.router, tags=["migration"])  # Temporary migration endpoint
+
+# Health check endpoints
+@app.get("/health", tags=["health"])
+async def health_check():
+    """Проверка здоровья приложения"""
+    return {
+        "status": "ok",
+        "service": "Лесная Команда API",
+        "version": "1.0.0"
+    }
+
+@app.get("/health/db", tags=["health"])
+async def health_check_db(db = Depends(get_db)):
+    """Проверка подключения к базе данных"""
+    try:
+        await db.fetchval("SELECT 1")
+        return {
+            "status": "ok",
+            "database": "connected"
+        }
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail="Database unavailable"
+        )
 
 # WebSocket endpoint
 @app.websocket("/ws/discord")
@@ -176,7 +230,7 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             ''')
-            print("✅ Таблица users создана или уже существует")
+            logger.info("✅ Таблица users создана или уже существует")
             
             # Создаём таблицу game_profiles
             await conn.execute('''
@@ -190,7 +244,7 @@ async def init_db():
                     updated_at TIMESTAMP DEFAULT NOW()
                 )
             ''')
-            print("✅ Таблица game_profiles создана или уже существует")
+            logger.info("✅ Таблица game_profiles создана или уже существует")
             
             # Создаём таблицу achievements
             await conn.execute('''
@@ -203,7 +257,7 @@ async def init_db():
                     earned_at TIMESTAMP DEFAULT NOW()
                 )
             ''')
-            print("✅ Таблица achievements создана или уже существует")
+            logger.info("✅ Таблица achievements создана или уже существует")
             
             # Создаём таблицу admin_users
             await conn.execute('''
@@ -215,7 +269,7 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             ''')
-            print("✅ Таблица admin_users создана или уже существует")
+            logger.info("✅ Таблица admin_users создана или уже существует")
             
             # Таблица activity_log (для UserService)
             await conn.execute('''
@@ -231,7 +285,7 @@ async def init_db():
             ''')
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_activity_discord_id ON activity_log(discord_id)')
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_activity_created_at ON activity_log(created_at)')
-            print("✅ Таблица activity_log создана или уже существует")
+            logger.info("✅ Таблица activity_log создана или уже существует")
             
             # Таблица voice_sessions (для UserService)
             await conn.execute('''
@@ -244,7 +298,7 @@ async def init_db():
                 )
             ''')
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_voice_sessions_discord_id ON voice_sessions(discord_id)')
-            print("✅ Таблица voice_sessions создана или уже существует")
+            logger.info("✅ Таблица voice_sessions создана или уже существует")
 
             # Таблица discord_presence (онлайн/статус/во что играет)
             await conn.execute('''
@@ -258,7 +312,7 @@ async def init_db():
             ''')
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_presence_status ON discord_presence(status)')
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_presence_updated_at ON discord_presence(updated_at)')
-            print("✅ Таблица discord_presence создана или уже существует")
+            logger.info("✅ Таблица discord_presence создана или уже существует")
             
             # Добавляем новые колонки для расширенных данных присутствия (миграция)
             await conn.execute('''
@@ -268,7 +322,7 @@ async def init_db():
                 ADD COLUMN IF NOT EXISTS game_icon_url TEXT
             ''')
             await conn.execute('CREATE INDEX IF NOT EXISTS idx_presence_activity_started ON discord_presence(activity_started_at DESC)')
-            print("✅ Расширенные колонки discord_presence добавлены (roles, activity_started_at, game_icon_url)")
+            logger.info("✅ Расширенные колонки discord_presence добавлены (roles, activity_started_at, game_icon_url)")
 
             # Таблица контент-ленты (посты и достижения для главной)
             await conn.execute('''
@@ -280,7 +334,7 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             ''')
-            print("✅ Таблица home_feed создана или уже существует")
+            logger.info("✅ Таблица home_feed создана или уже существует")
 
             # Таблица настроек сайта (JSON по ключу)
             await conn.execute('''
@@ -289,7 +343,7 @@ async def init_db():
                     value JSONB NOT NULL
                 )
             ''')
-            print("✅ Таблица site_settings создана или уже существует")
+            logger.info("✅ Таблица site_settings создана или уже существует")
 
             # Таблицы новостей и событий (на случай, если init.sql не запускали)
             await conn.execute('''
@@ -315,7 +369,7 @@ async def init_db():
                     status VARCHAR(30) DEFAULT 'Планируется'
                 )
             ''')
-            print("✅ Таблицы news и events созданы или уже существуют")
+            logger.info("✅ Таблицы news и events созданы или уже существуют")
             
             # Добавляем тестовых игроков (если таблица была пуста)
             await conn.execute('''
@@ -329,7 +383,7 @@ async def init_db():
                 ) AS v(discord_id, discord_username, forest_rank, rating, joined_at)
                 WHERE NOT EXISTS (SELECT 1 FROM users)
             ''')
-            print("✅ Тестовые игроки добавлены (если таблица была пуста)")
+            logger.info("✅ Тестовые игроки добавлены (если таблица была пуста)")
             
             # Добавляем тестовые достижения
             await conn.execute('''
@@ -338,10 +392,10 @@ async def init_db():
                 FROM users u
                 WHERE NOT EXISTS (SELECT 1 FROM achievements)
             ''')
-            print("✅ Тестовые достижения добавлены")
+            logger.info("✅ Тестовые достижения добавлены")
             
             # Обновляем/создаем админа с новыми данными
-            print("\n🔐 Проверка администратора...")
+            logger.info("\n🔐 Проверка администратора...")
             admin_username = settings.ADMIN_USERNAME if hasattr(settings, 'ADMIN_USERNAME') else "admin"
             admin_password = settings.ADMIN_PASSWORD if hasattr(settings, 'ADMIN_PASSWORD') else "admin123"
             
@@ -362,7 +416,7 @@ async def init_db():
                     """,
                     admin_username, admin_hash, existing_admin['id']
                 )
-                print(f"✅ Админ обновлен: {existing_admin['username']} → {admin_username}")
+                logger.info(f"✅ Админ обновлен: {existing_admin['username']} → {admin_username}")
             else:
                 # Создаем нового админа
                 admin_hash = get_password_hash(admin_password)
@@ -370,7 +424,7 @@ async def init_db():
                     "INSERT INTO admin_users (username, password_hash, role) VALUES ($1, $2, 'admin')",
                     admin_username, admin_hash
                 )
-                print(f"✅ Создан новый админ: {admin_username}")
+                logger.info(f"✅ Создан новый админ: {admin_username}")
             
             # Удаляем старого админа 'admin' если он остался
             await conn.execute("DELETE FROM admin_users WHERE username = 'admin' AND username != $1", admin_username)
@@ -379,10 +433,10 @@ async def init_db():
             users_count = await conn.fetchval("SELECT COUNT(*) FROM users")
             games_count = await conn.fetchval("SELECT COUNT(*) FROM game_profiles")
             achievements_count = await conn.fetchval("SELECT COUNT(*) FROM achievements")
-            print(f"📊 В базе: {users_count} игроков, {games_count} игровых профилей, {achievements_count} достижений")
+            logger.info(f"📊 В базе: {users_count} игроков, {games_count} игровых профилей, {achievements_count} достижений")
             
             # Применяем миграцию системы достижений (если еще не применена)
-            print("\n🔄 Проверка миграции системы достижений...")
+            logger.info("\n🔄 Проверка миграции системы достижений...")
             try:
                 # Проверяем есть ли таблица achievement_types
                 achievement_types_exists = await conn.fetchval("""
@@ -393,7 +447,7 @@ async def init_db():
                 """)
                 
                 if not achievement_types_exists:
-                    print("📝 Применение миграции системы достижений...")
+                    logger.info("📝 Применение миграции системы достижений...")
                     
                     # Создаем таблицы достижений
                     await conn.execute('''
@@ -454,16 +508,15 @@ async def init_db():
                         ON CONFLICT DO NOTHING
                     ''')
                     
-                    print("✅ Миграция системы достижений успешно применена!")
+                    logger.info("✅ Миграция системы достижений успешно применена!")
                 else:
-                    print("✅ Миграция системы достижений уже применена")
+                    logger.info("✅ Миграция системы достижений уже применена")
             except Exception as achievements_error:
-                print(f"⚠️ Ошибка при применении миграции достижений: {achievements_error}")
-                import traceback
-                traceback.print_exc()
+                logger.error(f"⚠️ Ошибка при применении миграции достижений: {achievements_error}", exc_info=True)
+
             
             # Применяем миграцию game_accounts (если еще не применена)
-            print("\n🔄 Проверка миграции game_accounts...")
+            logger.info("\n🔄 Проверка миграции game_accounts...")
             try:
                 # Проверяем есть ли таблица game_accounts
                 game_accounts_exists = await conn.fetchval("""
@@ -474,7 +527,7 @@ async def init_db():
                 """)
                 
                 if not game_accounts_exists:
-                    print("📝 Применение миграции game_accounts...")
+                    logger.info("📝 Применение миграции game_accounts...")
                     
                     # Создаем таблицу game_accounts
                     await conn.execute('''
@@ -493,16 +546,15 @@ async def init_db():
                         CREATE INDEX IF NOT EXISTS idx_game_accounts_game ON game_accounts(game);
                     ''')
                     
-                    print("✅ Миграция game_accounts успешно применена!")
+                    logger.info("✅ Миграция game_accounts успешно применена!")
                 else:
-                    print("✅ Миграция game_accounts уже применена")
+                    logger.info("✅ Миграция game_accounts уже применена")
             except Exception as game_accounts_error:
-                print(f"⚠️ Ошибка при применении миграции game_accounts: {game_accounts_error}")
-                import traceback
-                traceback.print_exc()
+                logger.error(f"⚠️ Ошибка при применении миграции game_accounts: {game_accounts_error}", exc_info=True)
+
             
             # Применяем миграцию XP системы (если еще не применена)
-            print("\n🔄 Проверка миграции XP системы...")
+            logger.info("\n🔄 Проверка миграции XP системы...")
             try:
                 # Проверяем есть ли колонка level
                 level_exists = await conn.fetchval("""
@@ -513,7 +565,7 @@ async def init_db():
                 """)
                 
                 if not level_exists:
-                    print("📝 Применение миграции XP системы...")
+                    logger.info("📝 Применение миграции XP системы...")
                     
                     # SQL миграции встроен в код (не зависит от файлов)
                     migration_sql = """
@@ -562,20 +614,33 @@ async def init_db():
                     """
                     
                     await conn.execute(migration_sql)
-                    print("✅ Миграция XP системы успешно применена!")
+                    logger.info("✅ Миграция XP системы успешно применена!")
                 else:
-                    print("✅ Миграция XP системы уже применена")
+                    logger.info("✅ Миграция XP системы уже применена")
             except Exception as migration_error:
-                print(f"⚠️ Ошибка при применении миграции XP: {migration_error}")
-                import traceback
-                traceback.print_exc()
+                logger.error(f"⚠️ Ошибка при применении миграции XP: {migration_error}", exc_info=True)
+
                 # Не прерываем запуск, если миграция не применилась
             
-            print("\n✅ База данных полностью готова к работе!")
+            logger.info("\n✅ База данных полностью готова к работе!")
             
     except Exception as e:
-        print(f"❌ Ошибка при инициализации БД: {e}")
+        logger.error(f"❌ Ошибка при инициализации БД: {e}", exc_info=True)
+
+
+# Graceful shutdown handler
+def setup_signal_handlers():
+    """Настройка обработчиков сигналов для graceful shutdown"""
+    def signal_handler(sig, frame):
+        logger.info(f"Получен сигнал {sig}, начинаем graceful shutdown...")
+        # FastAPI автоматически вызовет lifespan shutdown
+        sys.exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    logger.info("✅ Signal handlers настроены")
 
 if __name__ == "__main__":
     import uvicorn
+    setup_signal_handlers()
     uvicorn.run(app, host="0.0.0.0", port=8000)

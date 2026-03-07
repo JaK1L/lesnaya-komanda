@@ -2,8 +2,9 @@
 Конфигурация приложения
 """
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
+from pydantic import field_validator, ValidationError
 from typing import Optional, Union
+import sys
 
 
 class Settings(BaseSettings):
@@ -15,6 +16,13 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_secret_key(cls, v):
+        if len(v) < 32:
+            raise ValueError("SECRET_KEY должен быть минимум 32 символа для безопасности")
+        return v
     
     # CORS: в .env можно указать один origin или несколько через запятую
     ALLOWED_ORIGINS: Union[list, str] = ["http://localhost:3000", "https://lesnaya-komanda.vercel.app"]
@@ -43,9 +51,24 @@ class Settings(BaseSettings):
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD: str = "admin123"
     
+    @field_validator("ADMIN_PASSWORD")
+    @classmethod
+    def validate_admin_password(cls, v):
+        if len(v) < 8:
+            print("⚠️ ПРЕДУПРЕЖДЕНИЕ: ADMIN_PASSWORD слишком короткий (минимум 8 символов)")
+        return v
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
 
 
-settings = Settings()
+try:
+    settings = Settings()
+except ValidationError as e:
+    print("❌ ОШИБКА КОНФИГУРАЦИИ:")
+    for error in e.errors():
+        field = " -> ".join(str(x) for x in error["loc"])
+        print(f"  • {field}: {error['msg']}")
+    print("\n💡 Проверьте файл .env и убедитесь что все обязательные переменные установлены")
+    sys.exit(1)

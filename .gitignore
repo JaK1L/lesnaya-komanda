@@ -33,6 +33,11 @@ backend/.env
 secrets/
 *.log
 
+# Скрипты с credentials (не коммитить!)
+update-admin*.py
+check-deploy.py
+*-credentials.py
+
 # Cursor/служебное
 .agents/
 skills-lock.json

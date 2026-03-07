@@ -44,16 +44,12 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
         custom_name: game === 'Другое' ? customGameName.trim() || null : null
       }))
 
-      console.log('Saving preferences:', preferences)
-
       // Get token
       const token = localStorage.getItem('lesnaya_token')
       if (!token) {
         setError('Вы не авторизованы. Войдите через Discord.')
         return
       }
-
-      console.log('Token found, sending request to:', `${API_URL}/api/users/game-preferences`)
 
       // Send to API
       const response = await axios.post(
@@ -66,33 +62,35 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
         }
       )
 
-      console.log('Success response:', response.data)
       onSave()
       onClose()
-    } catch (err: any) {
-      console.error('Error saving preferences:', err)
-      console.error('Error response:', err.response)
-      console.error('Error status:', err.response?.status)
-      console.error('Error data:', err.response?.data)
+    } catch (err: unknown) {
+      // Log error for debugging in development only
+      if (process.env.NODE_ENV === 'development' && err instanceof Error) {
+        console.error('Error saving preferences:', err)
+      }
       
       // Extract error message
       let errorMessage = 'Не удалось сохранить предпочтения'
       
-      if (err.response?.status === 401) {
-        errorMessage = 'Сессия истекла. Перезайдите через Discord.'
-      } else if (err.response?.data) {
-        const detail = err.response.data.detail
-        if (typeof detail === 'string') {
-          errorMessage = detail
-        } else if (detail?.message) {
-          errorMessage = detail.message
-        } else if (detail?.error) {
-          errorMessage = detail.error
-        } else if (Array.isArray(detail)) {
-          errorMessage = detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
+      if (err && typeof err === 'object' && 'response' in err) {
+        const error = err as any
+        if (error.response?.status === 401) {
+          errorMessage = 'Сессия истекла. Перезайдите через Discord.'
+        } else if (error.response?.data) {
+          const detail = error.response.data.detail
+          if (typeof detail === 'string') {
+            errorMessage = detail
+          } else if (detail?.message) {
+            errorMessage = detail.message
+          } else if (detail?.error) {
+            errorMessage = detail.error
+          } else if (Array.isArray(detail)) {
+            errorMessage = detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
+          }
+        } else if (error.message) {
+          errorMessage = error.message
         }
-      } else if (err.message) {
-        errorMessage = err.message
       }
       
       setError(errorMessage)
