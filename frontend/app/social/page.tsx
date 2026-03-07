@@ -18,18 +18,10 @@ const socialLinks = [
   {
     name: 'Telegram',
     description: 'Новости, анонсы и быстрая связь с командой',
-    url: 'https://t.me/lesnaya_komanda',
+    url: 'https://t.me/lesnayakomanda',
     icon: '✈️',
     followers: '80+',
     color: '#0088cc'
-  },
-  {
-    name: 'VK',
-    description: 'Сообщество ВКонтакте с фото, видео и обсуждениями',
-    url: 'https://vk.com/lesnaya_komanda',
-    icon: '🎵',
-    followers: '120+',
-    color: '#0077FF'
   },
   {
     name: 'YouTube',
@@ -42,7 +34,7 @@ const socialLinks = [
   {
     name: 'Twitch',
     description: 'Прямые трансляции игр от участников команды',
-    url: 'https://twitch.tv/lesnaya_komanda',
+    url: 'https://twitch.tv/jak1lqa',
     icon: '🎮',
     followers: '200+',
     color: '#9146FF'
