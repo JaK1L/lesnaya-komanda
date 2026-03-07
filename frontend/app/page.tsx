@@ -1,12 +1,10 @@
 'use client'
-// Vercel build: no unused imports
+
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Gamepad2, TreePine, Sword, Target, Shield, ChevronRight, Calendar } from 'lucide-react'
+import { TreePine } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { DiscordActivityGrid } from '../components/DiscordActivityGrid'
 import { GamePreferencesModal } from '../components/GamePreferencesModal'
-import { GameStatistics } from '../types/gamePreferences'
 import './mobile-styles.css'
 
 interface Player {
@@ -19,21 +17,6 @@ interface Player {
   avatar_url?: string | null
   status?: string
   is_online?: boolean
-}
-
-interface Stats {
-  members: number
-  online: number
-  achievements: number
-}
-
-interface EventItem {
-  id: number
-  title: string
-  description: string
-  game: string
-  event_date: string | null
-  status?: string | null
 }
 
 interface FeedItem {
@@ -55,25 +38,17 @@ const TOKEN_KEY = 'lesnaya_token'
 
 export default function Home() {
   const [elitePlayers, setElitePlayers] = useState<Player[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
-  const [events, setEvents] = useState<EventItem[]>([])
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [commonSettings, setCommonSettings] = useState<CommonSettings | null>(null)
-  const [stats, setStats] = useState<Stats>({
-    members: 70,
-    online: 12,
-    achievements: 150
-  })
   const [showGamePreferencesModal, setShowGamePreferencesModal] = useState(false)
-  const [gameStats, setGameStats] = useState<GameStatistics | null>(null)
   
   // Game players modal state
   const [showGamePlayersModal, setShowGamePlayersModal] = useState(false)
   const [selectedGame, setSelectedGame] = useState<string | null>(null)
   const [gamePlayers, setGamePlayers] = useState<Player[]>([])
-  const [loadingPlayers, setLoadingPlayers] = useState(false)
+  const [loadingPlayers] = useState(false)
 
   // После входа через Discord бэкенд редиректит с ?token=... — сохраняем и убираем из URL
   useEffect(() => {
@@ -98,7 +73,6 @@ export default function Home() {
 
   useEffect(() => {
     fetchData()
-    fetchGameStatistics()
   }, [])
 
   const checkGamePreferences = async (authToken: string) => {
@@ -118,39 +92,12 @@ export default function Home() {
     }
   }
 
-  const fetchGameStatistics = async () => {
-    try {
-      const response = await axios.get<GameStatistics>(`${API_URL}/api/games/statistics`)
-      setGameStats(response.data)
-    } catch (err) {
-      console.error('Error fetching game statistics:', err)
-    }
-  }
-
   const handleGamePreferencesSaved = () => {
-    // Refresh game statistics after saving preferences
-    fetchGameStatistics()
+    // Refresh after saving preferences
   }
 
   const handleGamePreferencesSkipped = () => {
     // Just close modal, statistics remain unchanged
-  }
-
-  const handleGameClick = async (gameName: string) => {
-    setSelectedGame(gameName)
-    setShowGamePlayersModal(true)
-    setLoadingPlayers(true)
-    
-    try {
-      // Fetch users with this game preference
-      const response = await axios.get<Player[]>(`${API_URL}/api/users/by-game/${encodeURIComponent(gameName)}`)
-      setGamePlayers(response.data)
-    } catch (err) {
-      console.error('Error fetching game players:', err)
-      setGamePlayers([])
-    } finally {
-      setLoadingPlayers(false)
-    }
   }
 
   const closeGamePlayersModal = () => {
@@ -166,17 +113,12 @@ export default function Home() {
 
   const fetchData = async (): Promise<void> => {
     try {
-      setLoading(true)
       setError(null)
-      const [statsRes, eventsRes, feedRes, commonRes, eliteRes] = await Promise.all([
-        axios.get<Stats>(`${API_URL}/api/stats`),
-        axios.get<EventItem[]>(`${API_URL}/api/events`),
+      const [feedRes, commonRes, eliteRes] = await Promise.all([
         axios.get<FeedItem[]>(`${API_URL}/api/feed`),
         axios.get<CommonSettings>(`${API_URL}/api/settings/common`),
         axios.get<Player[]>(`${API_URL}/api/discord/elite`),
       ])
-      setStats(statsRes.data)
-      setEvents(eventsRes.data)
       setFeed(feedRes.data)
       setCommonSettings(commonRes.data)
       setElitePlayers(eliteRes.data)
@@ -184,20 +126,10 @@ export default function Home() {
       console.error('Error fetching data:', err)
       setError('Не удалось загрузить данные')
       setElitePlayers([])
-    } finally {
-      setLoading(false)
     }
   }
 
-  const games = [
-    { name: 'CS2', icon: Target, players: gameStats?.CS2 ?? 0, color: '#ffaa00' },
-    { name: 'DOTA 2', icon: Sword, players: gameStats?.['DOTA 2'] ?? 0, color: '#ff4444' },
-    { name: 'VALORANT', icon: Shield, players: gameStats?.VALORANT ?? 0, color: '#ff6b6b' },
-    { name: 'ДРУГИЕ', icon: Gamepad2, players: gameStats?.['ДРУГИЕ'] ?? 0, color: '#4aff75' },
-  ]
-
   const posts = feed.filter((item) => item.kind === 'post')
-  const achievementsFeed = feed.filter((item) => item.kind === 'achievement')
 
   return (
     <>
@@ -214,13 +146,13 @@ export default function Home() {
         <div className="container nav-container">
           <a href="/" className="nav-logo">
             <TreePine size={32} />
-            <span>ЛЕСНАЯ КОМАНДА</span>
+            <span>LESNAYA KOMANDA</span>
           </a>
           <div className="nav-links">
-            <a href="/" className="nav-link">ГЛАВНАЯ</a>
-            <a href="/merch" className="nav-link">МЕРЧ</a>
-            <a href="/streams" className="nav-link">СТРИМЫ</a>
-            <a href="/social" className="nav-link">СОЦ.СЕТИ</a>
+            <a href="/" className="nav-link">Главная</a>
+            <a href="/streams" className="nav-link">Стримеры</a>
+            <a href="/social" className="nav-link">Команда</a>
+            <a href="/merch" className="nav-link">Магазин</a>
             {token ? (
               <>
                 <a href="/profile" className="nav-link">ПРОФИЛЬ</a>
@@ -230,7 +162,7 @@ export default function Home() {
               </>
             ) : (
               <a href={`${API_URL}/api/auth/discord`} className="lunacy-button" style={{ padding: '0.75rem 1.5rem' }}>
-                ВОЙТИ ЧЕРЕЗ DISCORD
+                ВОЙТИ
               </a>
             )}
           </div>
@@ -239,45 +171,170 @@ export default function Home() {
 
       <main className="container">
         {error && <p style={{ color: '#ff6b6b', marginBottom: '1rem' }}>{error}</p>}
-        {/* Hero секция в стиле Lunacy */}
-        <div className="hero-block">
+        
+        {/* Hero секция */}
+        <div className="hero-section" style={{
+          minHeight: '80vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          position: 'relative',
+          marginBottom: '4rem'
+        }}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            style={{ maxWidth: '800px' }}
           >
-            <h1>ЛЕСНАЯ<br />КОМАНДА</h1>
-            <p>
-              Мы — своя стая. Играем в CS2, Dota 2, Valorant и всё, что под руку попадётся.
-              Без понтов, без маркетологов в пиджаках. Просто геймеры, которые нашли друг друга.
+            <h1 style={{ 
+              fontSize: 'clamp(3rem, 10vw, 6rem)',
+              marginBottom: '2rem',
+              background: 'linear-gradient(135deg, #4aff75 0%, #2d5a2d 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              LESNAYA
+            </h1>
+            <p style={{ 
+              fontSize: '1.5rem', 
+              color: '#888', 
+              marginBottom: '3rem',
+              fontFamily: 'Inter'
+            }}>
+              Добро пожаловать в цифровой лес
             </p>
+            
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a
                 href={commonSettings?.discord_join_url || '#'}
                 target="_blank"
                 rel="noreferrer"
                 className="lunacy-button"
-                style={{ marginTop: '2rem' }}
+                style={{ fontSize: '1.1rem', padding: '1.25rem 3rem' }}
               >
-                ВОЙТИ В ЛЕС{' '}
-                <ChevronRight
-                  size={16}
-                  style={{ marginLeft: '0.5rem', display: 'inline' }}
-                />
+                СМОТРЕТЬ СТРИМ
               </a>
+              <a
+                href={commonSettings?.discord_join_url || '#'}
+                target="_blank"
+                rel="noreferrer"
+                className="lunacy-button"
+                style={{ fontSize: '1.1rem', padding: '1.25rem 3rem' }}
+              >
+                ВСТУПИТЬ TELEGRAM
+              </a>
+            </div>
           </motion.div>
+        </div>
 
-        {/* Новости стаи */}
-        <section style={{ marginTop: '4rem' }}>
-          <h2>ЧТО ПРОИСХОДИТ В ЛЕСУ</h2>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '1px',
-              background: 'var(--gray-light)',
-              border: '1px solid var(--gray-light)',
-            }}
-          >
-            {(posts.length ? posts : []).slice(0, 4).map((item) => {
+        {/* Стримеры лесной команды */}
+        <section id="streamers" style={{ marginTop: '6rem' }}>
+          <h2 style={{ textAlign: 'center', marginBottom: '3rem' }}>СТРИМЕРЫ ЛЕСНОЙ КОМАНДЫ</h2>
+          <div className="players-grid">
+            {elitePlayers.filter(p => p.is_online).slice(0, 3).map((player, index) => (
+              <a 
+                key={player.discord_id ?? index} 
+                href={`/profile/${player.discord_id}`}
+                className="player-card"
+                style={{ 
+                  textDecoration: 'none', 
+                  color: 'inherit', 
+                  cursor: 'pointer',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  padding: '2rem'
+                }}
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                >
+                  <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                    {player.avatar_url ? (
+                      <img
+                        src={player.avatar_url}
+                        alt={player.discord_username}
+                        style={{ 
+                          width: '120px', 
+                          height: '120px', 
+                          objectFit: 'cover', 
+                          borderRadius: '50%',
+                          border: '3px solid var(--accent)'
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        background: 'var(--accent-dark)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '3rem',
+                        color: 'var(--accent)',
+                        border: '3px solid var(--accent)'
+                      }}>
+                        {player.discord_username?.[0] || '🐺'}
+                      </div>
+                    )}
+                    {player.is_online && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: '5px',
+                          right: '5px',
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '50%',
+                          backgroundColor: '#4aff75',
+                          border: '3px solid var(--gray)',
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div className="player-name" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+                    {player.discord_username}
+                  </div>
+                  <div className="player-rank" style={{ marginBottom: '0.5rem' }}>
+                    {player.forest_rank}
+                  </div>
+                  {player.is_online && (
+                    <div style={{ fontSize: '0.875rem', color: '#4aff75' }}>
+                      ● online
+                    </div>
+                  )}
+                  <button className="lunacy-button" style={{ marginTop: '1rem', padding: '0.75rem 2rem' }}>
+                    СМОТРЕТЬ СТРИМ
+                  </button>
+                </motion.div>
+              </a>
+            ))}
+            
+            {elitePlayers.filter(p => p.is_online).length === 0 && (
+              <div className="game-card" style={{ background: 'var(--gray)', gridColumn: '1 / -1', textAlign: 'center', padding: '3rem' }}>
+                <div className="game-name" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+                  💤
+                </div>
+                <div className="game-players" style={{ fontSize: '1.2rem' }}>
+                  Тише Боссы спят....
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Мерч команды -> НОВОСТИ */}
+        <section id="news" style={{ marginTop: '6rem' }}>
+          <h2 style={{ textAlign: 'center', marginBottom: '3rem' }}>НОВОСТИ</h2>
+          <div className="games-grid">
+            {posts.slice(0, 3).map((item, index) => {
               const dateLabel = new Date(item.created_at).toLocaleString('ru-RU', {
                 day: '2-digit',
                 month: '2-digit',
@@ -286,372 +343,57 @@ export default function Home() {
               })
 
               return (
-                <div key={item.id} className="game-card" style={{ background: 'var(--gray)' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: '0.75rem',
-                    }}
+                <div key={item.id} className="game-card" style={{ 
+                  background: 'var(--gray)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center'
+                }}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    style={{ width: '100%' }}
                   >
-                    <span
-                      style={{
-                        color: 'var(--accent)',
-                        fontFamily: 'Unbounded',
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                      }}
-                    >
-                      ЛЕНТА
-                    </span>
-                    <span style={{ color: '#666', fontSize: '0.75rem' }}>{dateLabel}</span>
-                  </div>
-                  <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                    {item.title}
-                  </div>
-                  {item.content && (
-                    <div className="game-players" style={{ whiteSpace: 'pre-line' }}>
-                      {item.content}
+                    <div style={{ marginBottom: '1rem', color: '#666', fontSize: '0.75rem' }}>
+                      {dateLabel}
                     </div>
-                  )}
+                    <div className="game-name" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
+                      {item.title}
+                    </div>
+                    {item.content && (
+                      <div className="game-players" style={{ whiteSpace: 'pre-line', marginBottom: '1.5rem' }}>
+                        {item.content}
+                      </div>
+                    )}
+                    <button className="lunacy-button" style={{ padding: '0.75rem 2rem' }}>
+                      КУПИТЬ
+                    </button>
+                  </motion.div>
                 </div>
               )
             })}
 
             {posts.length === 0 && (
-              <div className="game-card" style={{ background: 'var(--gray)' }}>
-                <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                  В стае пока тихо
+              <>
+                <div className="game-card" style={{ background: 'var(--gray)', textAlign: 'center' }}>
+                  <div className="game-name" style={{ marginBottom: '1rem' }}>ХУДИ LESNAYA</div>
+                  <div className="game-players" style={{ marginBottom: '1.5rem' }}>4 500 ₽</div>
+                  <button className="lunacy-button" style={{ padding: '0.75rem 2rem' }}>КУПИТЬ</button>
                 </div>
-                <div className="game-players">
-                  Здесь появится живая лента активности сервера.
+                <div className="game-card" style={{ background: 'var(--gray)', textAlign: 'center' }}>
+                  <div className="game-name" style={{ marginBottom: '1rem' }}>ФУТБОЛКА CYBER FOREST</div>
+                  <div className="game-players" style={{ marginBottom: '1.5rem' }}>2 500 ₽</div>
+                  <button className="lunacy-button" style={{ padding: '0.75rem 2rem' }}>КУПИТЬ</button>
                 </div>
-              </div>
+                <div className="game-card" style={{ background: 'var(--gray)', textAlign: 'center' }}>
+                  <div className="game-name" style={{ marginBottom: '1rem' }}>КРУЖКА DRUID MODE</div>
+                  <div className="game-players" style={{ marginBottom: '1.5rem' }}>1 000 ₽</div>
+                  <button className="lunacy-button" style={{ padding: '0.75rem 2rem' }}>КУПИТЬ</button>
+                </div>
+              </>
             )}
-          </div>
-        </section>
-        </div>
-
-        {/* Баннер техработ */}
-        {commonSettings?.maintenance_enabled && (
-          <div className="stat-grid" style={{ marginTop: '0' }}>
-            <div className="stat-item" style={{ gridColumn: '1 / -1' }}>
-              <div className="stat-label" style={{ color: '#facc15' }}>
-                ТЕХНИЧЕСКИЕ РАБОТЫ
-              </div>
-              <div className="game-players">
-                {commonSettings.maintenance_message ||
-                  'Сейчас в стае идут техработы. Возможны лаги и вылеты.'}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Статистика */}
-        <div className="stat-grid">
-          <div className="stat-item">
-            <div className="stat-number">{loading ? '…' : stats.members}</div>
-            <div className="stat-label">ВОЛКОВ В СТАЕ</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">{loading ? '…' : stats.online}</div>
-            <div className="stat-label">ОНЛАЙН СЕЙЧАС</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">{loading ? '…' : `${stats.achievements}+`}</div>
-            <div className="stat-label">ДОСТИЖЕНИЙ</div>
-          </div>
-        </div>
-
-        {/* Discord Activity Cards */}
-        <section style={{ marginTop: '4rem' }}>
-          <DiscordActivityGrid />
-        </section>
-
-        {/* Игры */}
-        <section id="games" style={{ marginTop: '6rem' }}>
-          <h2>ВО ЧТО ИГРАЕМ</h2>
-          <div className="games-grid">
-            {games.map((game, index) => (
-              <div 
-                key={index} 
-                className="game-card"
-                onClick={() => handleGameClick(game.name)}
-                style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)'
-                  e.currentTarget.style.boxShadow = `0 10px 30px ${game.color}40`
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}
-              >
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <game.icon className="game-icon" size={32} style={{ color: game.color }} />
-                  <div className="game-name">{game.name}</div>
-                  <div className="game-players">{game.players} ИГРОКОВ</div>
-                </motion.div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Элита леса - пользователи с ролью ПИТУХ */}
-        <section id="players" style={{ marginTop: '6rem' }}>
-          <h2>ЭЛИТА ЛЕСА</h2>
-          <div className="players-grid">
-            {(() => {
-              // Фильтруем только онлайн пользователей
-              const onlinePlayers = elitePlayers.filter(player => player.is_online)
-              
-              // Если никого онлайн нет
-              if (onlinePlayers.length === 0) {
-                return (
-                  <div className="game-card" style={{ background: 'var(--gray)', gridColumn: '1 / -1', textAlign: 'center', padding: '3rem' }}>
-                    <div className="game-name" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
-                      💤
-                    </div>
-                    <div className="game-players" style={{ fontSize: '1.2rem' }}>
-                      Тише Боссы спят....
-                    </div>
-                  </div>
-                )
-              }
-              
-              // Показываем только онлайн игроков
-              return onlinePlayers.map((player: Player, index) => {
-                return (
-                  <a 
-                    key={player.discord_id ?? index} 
-                    href={`/profile/${player.discord_id}`}
-                    className="player-card"
-                    style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <div className="player-avatar" style={{ position: 'relative' }}>
-                        {player.avatar_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={player.avatar_url}
-                            alt={player.discord_username}
-                            style={{ 
-                              width: '100%', 
-                              height: '100%', 
-                              objectFit: 'cover', 
-                              borderRadius: '50%'
-                            }}
-                          />
-                        ) : (
-                          <span>
-                            {player.discord_username?.[0] || '🐺'}
-                          </span>
-                        )}
-                        {/* Индикатор онлайн */}
-                        <div
-                          style={{
-                            position: 'absolute',
-                            bottom: '2px',
-                            right: '2px',
-                            width: '12px',
-                            height: '12px',
-                            borderRadius: '50%',
-                            backgroundColor: '#4aff75',
-                            border: '2px solid var(--bg)',
-                          }}
-                        />
-                      </div>
-                      <div className="player-info">
-                        <div className="player-name">{player.discord_username}</div>
-                        <div className="player-rank">{player.forest_rank}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#4aff75', marginTop: '0.25rem' }}>
-                          Онлайн
-                        </div>
-                      </div>
-                      <div className="player-rating">{player.rating}</div>
-                    </motion.div>
-                  </a>
-                )
-              })
-            })()}
-          </div>
-        </section>
-
-        {/* Достижения */}
-        <section id="achievements" style={{ marginTop: '6rem' }}>
-          <h2>ДОСТИЖЕНИЯ</h2>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '1px',
-              background: 'var(--gray-light)',
-              border: '1px solid var(--gray-light)',
-            }}
-          >
-            {(achievementsFeed.length ? achievementsFeed : []).slice(0, 4).map((item) => {
-              const dateLabel = new Date(item.created_at).toLocaleString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-              })
-              return (
-                <div key={item.id} className="game-card" style={{ background: 'var(--gray)' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: '0.75rem',
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: 'var(--accent)',
-                        fontFamily: 'Unbounded',
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                      }}
-                    >
-                      ДОСТИЖЕНИЕ
-                    </span>
-                    <span style={{ color: '#666', fontSize: '0.75rem' }}>{dateLabel}</span>
-                  </div>
-                  <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                    {item.title}
-                  </div>
-                  {item.content && (
-                    <div className="game-players" style={{ whiteSpace: 'pre-line' }}>
-                      {item.content}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-
-            {achievementsFeed.length === 0 && (
-              <div className="game-card" style={{ background: 'var(--gray)' }}>
-                <div className="game-name" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                  Тут скоро будут легенды
-                </div>
-                <div className="game-players">
-                  Заносите сюда клатчи, смешные моменты и победы.
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* События в стиле Lunacy */}
-        <section style={{ marginTop: '6rem' }}>
-          <h2>СОБЫТИЯ В ЛЕСУ</h2>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '1px',
-              background: 'var(--gray-light)',
-              border: '1px solid var(--gray-light)',
-            }}
-          >
-            {(events.length
-              ? events
-              : [
-                  {
-                    id: 0,
-                    title: 'CS2 КЛАТЧ-ТУРНИР',
-                    description: 'Собираем 5 команд для вечерних замесов',
-                    game: 'CS2',
-                    event_date: null,
-                    status: 'Планируется',
-                  },
-                  {
-                    id: 1,
-                    title: 'DOTA 2 ИНХАУС',
-                    description: 'Играем 5х5, все уровни приветствуются',
-                    game: 'DOTA 2',
-                    event_date: null,
-                    status: 'Идёт набор',
-                  },
-                  {
-                    id: 2,
-                    title: 'VALORANT ТУРНИР',
-                    description: 'Приз — звание "Лесной Ас"',
-                    game: 'VALORANT',
-                    event_date: null,
-                    status: 'Скоро',
-                  },
-                ]
-            ).map((event, index) => {
-              const dateLabel = event.event_date
-                ? new Date(event.event_date).toLocaleString('ru-RU', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : null
-
-              return (
-                <div
-                  key={event.id ?? index}
-                  className="game-card"
-                  style={{ background: 'var(--gray)' }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: '1rem',
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: 'var(--accent)',
-                        fontFamily: 'Unbounded',
-                        fontWeight: 700,
-                        fontSize: '0.875rem',
-                      }}
-                    >
-                      {event.game || 'СОБЫТИЕ'}
-                    </span>
-                    <span
-                      style={{
-                        color: '#666',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-end',
-                        gap: '0.1rem',
-                        fontSize: '0.75rem',
-                      }}
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Calendar size={14} />
-                        {dateLabel ?? 'Скоро'}
-                      </span>
-                      {event.status && (
-                        <span style={{ color: '#facc15', textTransform: 'uppercase' }}>
-                          {event.status}
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  <div
-                    className="game-name"
-                    style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}
-                  >
-                    {event.title}
-                  </div>
-                  <div className="game-players">{event.description}</div>
-                </div>
-              )
-            })}
           </div>
         </section>
 
