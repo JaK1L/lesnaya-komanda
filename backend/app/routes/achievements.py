@@ -190,17 +190,20 @@ async def create_achievement_type(
     current_user: User = Depends(get_current_admin_user),
 ):
     """Создать новый тип достижения (только для админов)."""
+    # Сериализуем requirement в JSON для PostgreSQL JSONB
+    requirement_json = json.dumps(payload.requirement) if isinstance(payload.requirement, dict) else payload.requirement
+    
     row = await db.fetchrow(
         """
         INSERT INTO achievement_types (name, description, icon, category, requirement, points, is_active)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
         RETURNING *
         """,
         payload.name,
         payload.description,
         payload.icon,
         payload.category,
-        payload.requirement,
+        requirement_json,
         payload.points,
         payload.is_active,
     )
@@ -216,11 +219,14 @@ async def update_achievement_type(
     current_user: User = Depends(get_current_admin_user),
 ):
     """Обновить тип достижения (только для админов)."""
+    # Сериализуем requirement в JSON для PostgreSQL JSONB
+    requirement_json = json.dumps(payload.requirement) if isinstance(payload.requirement, dict) else payload.requirement
+    
     row = await db.fetchrow(
         """
         UPDATE achievement_types
         SET name = $1, description = $2, icon = $3, category = $4, 
-            requirement = $5, points = $6, is_active = $7
+            requirement = $5::jsonb, points = $6, is_active = $7
         WHERE id = $8
         RETURNING *
         """,
@@ -228,7 +234,7 @@ async def update_achievement_type(
         payload.description,
         payload.icon,
         payload.category,
-        payload.requirement,
+        requirement_json,
         payload.points,
         payload.is_active,
         achievement_id,
