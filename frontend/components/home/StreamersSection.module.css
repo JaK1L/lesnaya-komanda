@@ -1,0 +1,156 @@
+.section {
+  margin-top: 6rem;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 3rem;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1px;
+  background: var(--gray-light);
+  border: 1px solid var(--gray-light);
+}
+
+.streamerCard {
+  background: var(--gray);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.streamerCard:hover {
+  background: var(--gray-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 255, 117, 0.2);
+}
+
+.avatarWrapper {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent);
+}
+
+.avatarPlaceholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--accent-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: var(--accent);
+  border: 3px solid var(--accent);
+}
+
+.onlineIndicator {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #4aff75;
+  border: 3px solid var(--gray);
+}
+
+.name {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.rank {
+  color: var(--accent);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.status {
+  font-size: 0.875rem;
+  color: #4aff75;
+  margin-bottom: 1rem;
+}
+
+.emptyState {
+  background: var(--gray);
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.emptyText {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.emptySubtext {
+  color: #666;
+  font-size: 1.2rem;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .section {
+    margin-top: 4rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .streamerCard {
+    padding: 1.5rem;
+  }
+
+  .avatar,
+  .avatarPlaceholder {
+    width: 100px;
+    height: 100px;
+  }
+
+  .name {
+    font-size: 1.25rem;
+  }
+
+  .emptyState {
+    padding: 2rem 1rem;
+  }
+
+  .emptyIcon {
+    font-size: 2rem;
+  }
+
+  .emptyText {
+    font-size: 1.25rem;
+  }
+
+  .emptySubtext {
+    font-size: 1rem;
+  }
+}

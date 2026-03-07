@@ -1,0 +1,23 @@
+.footer {
+  border-top: 1px solid var(--gray-light);
+  margin-top: 6rem;
+  padding: 2rem 0;
+  text-align: center;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footer p + p {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding: 1.5rem 0;
+    font-size: 0.75rem;
+  }
+}
