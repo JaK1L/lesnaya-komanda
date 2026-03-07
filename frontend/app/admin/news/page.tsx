@@ -8,6 +8,7 @@ interface News {
   id: number
   title: string
   content: string
+  image_url: string | null
   author_id: number | null
   published: boolean
   created_at: string
@@ -24,6 +25,7 @@ export default function AdminNewsPage() {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
+    image_url: '',
     published: true,
   })
 
@@ -114,6 +116,7 @@ export default function AdminNewsPage() {
     setFormData({
       title: item.title,
       content: item.content,
+      image_url: item.image_url || '',
       published: item.published,
     })
     setShowForm(true)
@@ -121,7 +124,7 @@ export default function AdminNewsPage() {
 
   const handleCancelEdit = () => {
     setEditingNews(null)
-    setFormData({ title: '', content: '', published: true })
+    setFormData({ title: '', content: '', image_url: '', published: true })
     setShowForm(false)
   }
 
@@ -177,6 +180,25 @@ export default function AdminNewsPage() {
                 rows={10}
                 maxLength={5000}
               />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="image_url">URL изображения (необязательно)</label>
+              <input
+                id="image_url"
+                type="url"
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+                maxLength={500}
+              />
+              {formData.image_url && (
+                <div className={styles.imagePreview}>
+                  <img src={formData.image_url} alt="Превью" onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }} />
+                </div>
+              )}
             </div>
 
             <div className={styles.formGroup}>

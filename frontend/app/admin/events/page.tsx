@@ -10,6 +10,7 @@ interface Event {
   description: string
   game: string
   event_date: string
+  telegram_url: string | null
   created_by: number | null
   participants: number[]
   status: string
@@ -27,6 +28,7 @@ export default function AdminEventsPage() {
     description: '',
     game: 'Общее',
     event_date: '',
+    telegram_url: '',
     status: 'Планируется',
   })
 
@@ -89,6 +91,7 @@ export default function AdminEventsPage() {
         description: '',
         game: 'Общее',
         event_date: '',
+        telegram_url: '',
         status: 'Планируется',
       })
     } catch (error) {
@@ -131,6 +134,7 @@ export default function AdminEventsPage() {
       description: item.description,
       game: item.game,
       event_date: localDate,
+      telegram_url: item.telegram_url || '',
       status: item.status,
     })
     setShowForm(true)
@@ -143,6 +147,7 @@ export default function AdminEventsPage() {
       description: '',
       game: 'Общее',
       event_date: '',
+      telegram_url: '',
       status: 'Планируется',
     })
     setShowForm(false)
@@ -227,6 +232,21 @@ export default function AdminEventsPage() {
                 onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
                 required
               />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="telegram_url">Ссылка на Telegram пост (необязательно)</label>
+              <input
+                id="telegram_url"
+                type="url"
+                value={formData.telegram_url}
+                onChange={(e) => setFormData({ ...formData, telegram_url: e.target.value })}
+                placeholder="https://t.me/channel/123"
+                maxLength={500}
+              />
+              <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                При клике на событие пользователь перейдет по этой ссылке
+              </small>
             </div>
 
             <div className={styles.formGroup}>

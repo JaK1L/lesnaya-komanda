@@ -1,135 +1,122 @@
 'use client'
 
-import { useMemo, memo, useCallback } from 'react'
-import { motion } from 'framer-motion'
-import { Button } from '../ui/Button/Button'
+import { useEffect, useState } from 'react'
+import axios from 'axios'
+import { NewsCard } from './NewsCard'
+import { NewsModal } from './NewsModal'
 import styles from './NewsSection.module.css'
 
-interface FeedItem {
+interface News {
   id: number
   title: string
-  content: string | null
+  content: string
+  image_url: string | null
   created_at: string
 }
 
-interface NewsSectionProps {
-  posts: FeedItem[]
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-// Анимация контейнера с stagger
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-    },
-  },
-}
+export function NewsSection() {
+  const [news, setNews] = useState<News[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedNews, setSelectedNews] = useState<News | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-// Анимация карточки
-const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.5,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
-}
-
-// Мемоизированная карточка новости
-const NewsCard = memo(function NewsCard({ 
-  item,
-  dateLabel
-}: { 
-  item: FeedItem
-  dateLabel: string
-}) {
-  return (
-    <motion.div 
-      variants={cardVariants}
-      whileHover={{ 
-        y: -8,
-        transition: { duration: 0.2 }
-      }}
-    >
-      <div className={styles.newsCard}>
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className={styles.date}>{dateLabel}</div>
-        </motion.div>
-        
-        <div className={styles.newsTitle}>{item.title}</div>
-        
-        {item.content && (
-          <div className={styles.content}>{item.content}</div>
-        )}
-        
-        <Button size="small">КУПИТЬ</Button>
-      </div>
-    </motion.div>
-  )
-})
-
-// Дефолтные новости (вынесены наружу, чтобы не создавать каждый раз)
-const DEFAULT_NEWS: FeedItem[] = [
-  { id: 1, title: 'ХУДИ LESNAYA', content: '4 500 ₽', created_at: new Date().toISOString() },
-  { id: 2, title: 'ФУТБОЛКА CYBER FOREST', content: '2 500 ₽', created_at: new Date().toISOString() },
-  { id: 3, title: 'КРУЖКА DRUID MODE', content: '1 000 ₽', created_at: new Date().toISOString() },
-]
-
-export const NewsSection = memo(function NewsSection({ posts }: NewsSectionProps) {
-  // Мемоизируем отображаемые посты
-  const newsToShow = useMemo(() => {
-    const displayPosts = posts.slice(0, 3)
-    return displayPosts.length > 0 ? displayPosts : DEFAULT_NEWS
-  }, [posts])
-
-  // Мемоизируем функцию форматирования даты
-  const formatDate = useCallback((dateString: string) => {
-    return new Date(dateString).toLocaleString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+  useEffect(() => {
+    fetchNews()
   }, [])
 
-  return (
-    <section id="news" className={styles.section}>
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-      >
-        <h2 className={styles.title}>НОВОСТИ</h2>
-      </motion.div>
-      
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-      >
-        <div className={styles.grid}>
-          {newsToShow.map((item) => (
-            <NewsCard
-              key={item.id}
-              item={item}
-              dateLabel={formatDate(item.created_at)}
-            />
-          ))}
+  const fetchNews = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await axios.get<News[]>(`${API_URL}/api/news`)
+      setNews(response.data)
+    } catch (err) {
+      console.error('Error fetching news:', err)
+      setError('Не удалось загрузить новости')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleNewsClick = (newsItem: News) => {
+    setSelectedNews(newsItem)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setTimeout(() => setSelectedNews(null), 300)
+  }
+
+  if (loading) {
+    return (
+      <section className={styles.section}>
+        <div className={styles.container}>
+          <div className={styles.loading}>Загрузка новостей...</div>
         </div>
-      </motion.div>
-    </section>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className={styles.section}>
+        <div className={styles.container}>
+          <div className={styles.error}>{error}</div>
+        </div>
+      </section>
+    )
+  }
+
+  if (news.length === 0) {
+    return (
+      <section className={styles.section}>
+        <div className={styles.container}>
+          <header className={styles.header}>
+            <h2 className={styles.title}>
+              📰 Новости
+            </h2>
+            <p className={styles.subtitle}>Последние новости лесной команды</p>
+          </header>
+          <div className={styles.empty}>
+            <p>Новостей пока нет</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <>
+      <section className={styles.section}>
+        <div className={styles.container}>
+          <header className={styles.header}>
+            <h2 className={styles.title}>
+              📰 Новости
+            </h2>
+            <p className={styles.subtitle}>Последние новости лесной команды</p>
+          </header>
+
+          <div className={styles.grid}>
+            {news.map((item) => (
+              <NewsCard
+                key={item.id}
+                {...item}
+                onClick={() => handleNewsClick(item)}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <NewsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        news={selectedNews}
+      />
+    </>
   )
-})
+}

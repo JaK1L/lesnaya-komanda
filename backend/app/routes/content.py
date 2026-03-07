@@ -20,6 +20,7 @@ class EventPublic(BaseModel):
     description: str
     game: Optional[str]
     event_date: Optional[datetime]
+    telegram_url: Optional[str] = None
 
 
 @router.get("/events", response_model=List[EventPublic])
@@ -30,7 +31,7 @@ async def list_public_events(db: asyncpg.Connection = Depends(get_db)):
     """
     rows = await db.fetch(
         """
-        SELECT id, title, description, game, event_date
+        SELECT id, title, description, game, event_date, telegram_url
         FROM events
         ORDER BY event_date ASC NULLS LAST, id DESC
         """
@@ -42,6 +43,7 @@ class NewsPublic(BaseModel):
     id: int
     title: str
     content: str
+    image_url: Optional[str] = None
     created_at: datetime
 
 
@@ -52,7 +54,7 @@ async def list_public_news(db: asyncpg.Connection = Depends(get_db)):
     """
     rows = await db.fetch(
         """
-        SELECT id, title, content, created_at
+        SELECT id, title, content, image_url, created_at
         FROM news
         WHERE published = true
         ORDER BY created_at DESC, id DESC

@@ -1,6 +1,6 @@
 .section {
   padding: 4rem 0;
-  background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+  background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
 }
 
 .container {

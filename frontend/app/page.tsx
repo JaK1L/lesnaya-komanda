@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { Navigation, Footer, SkipToContent } from '../components/layout'
-import { HeroSection } from '../components/home'
+import { HeroSection, NewsSection, EventsSection, FeedSection, DiscordStats } from '../components/home'
 import { lazyLoadModal } from '../lib/lazyLoad'
 import './mobile-styles.css'
 
@@ -126,6 +126,18 @@ export default function Home() {
         <HeroSection
           discordUrl={commonSettings?.discord_join_url || '#'}
         />
+
+        {/* Секция новостей */}
+        <NewsSection />
+
+        {/* Секция событий */}
+        <EventsSection />
+
+        {/* Секция ленты */}
+        <FeedSection />
+
+        {/* Discord статистика */}
+        <DiscordStats />
 
         {/* Футер */}
         <Footer />

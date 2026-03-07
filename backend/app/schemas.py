@@ -62,6 +62,7 @@ class NewsPost(BaseModel):
     id: int
     title: str
     content: str
+    image_url: Optional[str] = None
     author_id: int
     published: bool
     created_at: datetime

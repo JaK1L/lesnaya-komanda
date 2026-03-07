@@ -22,12 +22,14 @@ class EventCreate(BaseModel):
     game: Optional[str] = Field(default="Общее", max_length=50)
     event_date: datetime
     status: str = Field(default="Планируется", max_length=30)
+    telegram_url: Optional[str] = Field(None, max_length=500)
 
 
 class EventOut(EventCreate):
     id: int
     created_by: Optional[int]
     participants: List[int] = []
+    telegram_url: Optional[str] = None
 
 
 @router.get("/events", response_model=List[EventOut])
@@ -38,7 +40,7 @@ async def list_events(
     """Список всех событий (для админки)."""
     rows = await db.fetch(
         """
-        SELECT id, title, description, game, event_date, created_by, participants, status
+        SELECT id, title, description, game, event_date, created_by, participants, status, telegram_url
         FROM events
         ORDER BY event_date DESC NULLS LAST, id DESC
         """
@@ -55,9 +57,9 @@ async def create_event(
     """Создать новое событие."""
     row = await db.fetchrow(
         """
-        INSERT INTO events (title, description, game, event_date, created_by, status)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, title, description, game, event_date, created_by, participants, status
+        INSERT INTO events (title, description, game, event_date, created_by, status, telegram_url)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id, title, description, game, event_date, created_by, participants, status, telegram_url
         """,
         payload.title,
         payload.description,
@@ -65,6 +67,7 @@ async def create_event(
         payload.event_date,
         current_user.id,
         payload.status,
+        payload.telegram_url,
     )
     if not row:
         raise HTTPException(status_code=500, detail="Не удалось создать событие")
@@ -95,9 +98,9 @@ async def update_event(
     row = await db.fetchrow(
         """
         UPDATE events
-        SET title = $2, description = $3, game = $4, event_date = $5, status = $6
+        SET title = $2, description = $3, game = $4, event_date = $5, status = $6, telegram_url = $7
         WHERE id = $1
-        RETURNING id, title, description, game, event_date, created_by, participants, status
+        RETURNING id, title, description, game, event_date, created_by, participants, status, telegram_url
         """,
         event_id,
         payload.title,
@@ -105,6 +108,7 @@ async def update_event(
         payload.game,
         payload.event_date,
         payload.status,
+        payload.telegram_url,
     )
     if not row:
         raise HTTPException(status_code=404, detail="Событие не найдено")
@@ -114,6 +118,7 @@ async def update_event(
 class NewsCreate(BaseModel):
     title: str = Field(..., max_length=200)
     content: str = Field(..., max_length=5000)
+    image_url: Optional[str] = Field(None, max_length=500)
     published: bool = True
 
 
@@ -122,6 +127,7 @@ class NewsOut(NewsCreate):
     author_id: Optional[int]
     created_at: datetime
     updated_at: Optional[datetime]
+    image_url: Optional[str] = None
 
 
 @router.get("/news", response_model=List[NewsOut])
@@ -132,7 +138,7 @@ async def list_news(
     """Список всех новостей (для админки)."""
     rows = await db.fetch(
         """
-        SELECT id, title, content, author_id, published, created_at, updated_at
+        SELECT id, title, content, image_url, author_id, published, created_at, updated_at
         FROM news
         ORDER BY created_at DESC, id DESC
         """
@@ -149,12 +155,13 @@ async def create_news(
     """Создать новость."""
     row = await db.fetchrow(
         """
-        INSERT INTO news (title, content, author_id, published)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, title, content, author_id, published, created_at, updated_at
+        INSERT INTO news (title, content, image_url, author_id, published)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, title, content, image_url, author_id, published, created_at, updated_at
         """,
         payload.title,
         payload.content,
+        payload.image_url,
         current_user.id,
         payload.published,
     )
@@ -187,13 +194,14 @@ async def update_news(
     row = await db.fetchrow(
         """
         UPDATE news
-        SET title = $2, content = $3, published = $4, updated_at = NOW()
+        SET title = $2, content = $3, image_url = $4, published = $5, updated_at = NOW()
         WHERE id = $1
-        RETURNING id, title, content, author_id, published, created_at, updated_at
+        RETURNING id, title, content, image_url, author_id, published, created_at, updated_at
         """,
         news_id,
         payload.title,
         payload.content,
+        payload.image_url,
         payload.published,
     )
     if not row:
