@@ -1,34 +1,61 @@
+/* Mobile-First: Base styles for mobile (320px+) */
 .card {
   background: var(--gray);
-  padding: 2rem;
-  transition: all 0.2s ease;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
   overflow: hidden;
   border: 1px solid transparent;
 }
 
+/* Hover эффект с плавной анимацией */
 .card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   border-color: var(--accent);
-  box-shadow: 0 4px 12px rgba(74, 255, 117, 0.2);
+  box-shadow: 0 8px 24px rgba(74, 255, 117, 0.2);
+}
+
+/* Активное состояние */
+.card:active {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 255, 117, 0.15);
 }
 
 /* Variants */
 .card.clickable {
   cursor: pointer;
+  /* Touch-friendly */
+  min-height: 80px;
+}
+
+.card.clickable:hover {
+  background: rgba(74, 255, 117, 0.05);
 }
 
 .card.bordered {
   border: 2px solid var(--gray-light);
 }
 
+.card.bordered:hover {
+  border-color: var(--accent);
+}
+
 .card.elevated {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* Mobile */
-@media (max-width: 768px) {
+.card.elevated:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Tablet: 768px+ */
+@media (min-width: 768px) {
   .card {
-    padding: 1.5rem;
+    padding: 2rem;
+  }
+  
+  /* Более выраженный hover на больших экранах */
+  .card:hover {
+    transform: translateY(-6px);
   }
 }

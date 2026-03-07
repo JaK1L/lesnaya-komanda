@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react'
+import { ButtonHTMLAttributes, ReactNode, memo } from 'react'
 import styles from './Button.module.css'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -8,9 +8,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   href?: string
   target?: string
   rel?: string
+  isLoading?: boolean
 }
 
-export function Button({
+export const Button = memo(function Button({
   children,
   variant = 'default',
   size = 'default',
@@ -18,6 +19,8 @@ export function Button({
   target,
   rel,
   className = '',
+  isLoading = false,
+  disabled,
   ...props
 }: ButtonProps) {
   const classNames = [
@@ -33,10 +36,12 @@ export function Button({
       <a
         href={href}
         target={target}
-        rel={rel}
+        rel={target === '_blank' ? 'noopener noreferrer' : rel}
         className={classNames}
+        aria-disabled={disabled || isLoading}
+        tabIndex={disabled || isLoading ? -1 : 0}
       >
-        {children}
+        {isLoading ? 'Загрузка...' : children}
       </a>
     )
   }
@@ -45,9 +50,12 @@ export function Button({
   return (
     <button
       className={classNames}
+      disabled={disabled || isLoading}
+      aria-busy={isLoading}
+      type={props.type || 'button'}
       {...props}
     >
-      {children}
+      {isLoading ? 'Загрузка...' : children}
     </button>
   )
-}
+})

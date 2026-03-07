@@ -1,3 +1,7 @@
 export { Button } from './Button/Button'
 export { Card } from './Card/Card'
 export { Modal } from './Modal/Modal'
+export { Skeleton } from './Skeleton/Skeleton'
+export { ErrorMessage } from './ErrorMessage/ErrorMessage'
+export { OptimizedImage } from './OptimizedImage/OptimizedImage'
+export { Loading } from './Loading/Loading'

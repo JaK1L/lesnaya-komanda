@@ -1,0 +1,56 @@
+/* Mobile-First: Base styles for mobile (320px+) */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem 1rem;
+  background: var(--gray);
+  border: 2px solid #ff6b6b;
+  border-radius: 8px;
+  min-height: 200px;
+}
+
+.icon {
+  color: #ff6b6b;
+  margin-bottom: 1rem;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(10px);
+  }
+}
+
+.title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.25rem;
+  color: #ff6b6b;
+  margin-bottom: 0.5rem;
+}
+
+.message {
+  color: #888;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+/* Tablet: 768px+ */
+@media (min-width: 768px) {
+  .error {
+    padding: 3rem 2rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+}

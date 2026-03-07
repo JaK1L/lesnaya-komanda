@@ -1,11 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import axios from 'axios'
-import { Navigation, Footer } from '../components/layout'
+import { Navigation, Footer, SkipToContent } from '../components/layout'
 import { HeroSection, StreamersSection, NewsSection } from '../components/home'
-import { GamePreferencesModal } from '../components/GamePreferencesModal'
+import { StreamersSkeleton } from '../components/home/StreamersSkeleton'
+import { NewsSkeleton } from '../components/home/NewsSkeleton'
+import { ErrorMessage } from '../components/ui'
+import { lazyLoadModal } from '../lib/lazyLoad'
 import './mobile-styles.css'
+
+// Dynamic imports для модалок (lazy loading)
+const GamePreferencesModal = lazyLoadModal(
+  () => import('../components/GamePreferencesModal').then(mod => ({ default: mod.GamePreferencesModal }))
+)
 
 // Types
 interface Player {
@@ -38,6 +46,7 @@ const TOKEN_KEY = 'lesnaya_token'
 export default function Home() {
   // State
   const [elitePlayers, setElitePlayers] = useState<Player[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [feed, setFeed] = useState<FeedItem[]>([])
@@ -71,8 +80,8 @@ export default function Home() {
     fetchData()
   }, [])
 
-  // Проверка заполнены ли игровые предпочтения
-  const checkGamePreferences = async (authToken: string) => {
+  // Проверка заполнены ли игровые предпочтения (мемоизирована)
+  const checkGamePreferences = useCallback(async (authToken: string) => {
     try {
       const response = await axios.get(`${API_URL}/api/profile`, {
         headers: { Authorization: `Bearer ${authToken}` }
@@ -84,12 +93,14 @@ export default function Home() {
     } catch (err) {
       console.error('Error checking game preferences:', err)
     }
-  }
+  }, [])
 
-  // Загрузка данных с API
-  const fetchData = async (): Promise<void> => {
+  // Загрузка данных с API (мемоизирована)
+  const fetchData = useCallback(async (): Promise<void> => {
     try {
+      setLoading(true)
       setError(null)
+      
       const [feedRes, commonRes, eliteRes] = await Promise.all([
         axios.get<FeedItem[]>(`${API_URL}/api/feed`),
         axios.get<CommonSettings>(`${API_URL}/api/settings/common`),
@@ -101,30 +112,42 @@ export default function Home() {
       setElitePlayers(eliteRes.data)
     } catch (err) {
       console.error('Error fetching data:', err)
-      setError('Не удалось загрузить данные')
+      setError('Не удалось загрузить данные. Проверьте подключение к интернету.')
       setElitePlayers([])
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [])
 
-  // Handlers
-  const handleLogout = () => {
+  // Handlers (мемоизированы)
+  const handleLogout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY)
     setToken(null)
-  }
+  }, [])
 
-  const handleGamePreferencesSaved = () => {
+  const handleGamePreferencesSaved = useCallback(() => {
     // Можно обновить статистику игр если нужно
-  }
+  }, [])
 
-  const handleGamePreferencesSkipped = () => {
+  const handleGamePreferencesSkipped = useCallback(() => {
     // Просто закрываем модалку
-  }
+  }, [])
 
-  // Фильтруем посты
-  const posts = feed.filter((item) => item.kind === 'post')
+  const handleRetry = useCallback(() => {
+    fetchData()
+  }, [fetchData])
+
+  // Мемоизируем фильтрацию постов
+  const posts = useMemo(
+    () => feed.filter((item) => item.kind === 'post'),
+    [feed]
+  )
 
   return (
     <>
+      {/* Skip to content для keyboard navigation */}
+      <SkipToContent />
+
       {/* Модалка выбора игр */}
       <GamePreferencesModal
         isOpen={showGamePreferencesModal}
@@ -141,31 +164,43 @@ export default function Home() {
       />
 
       {/* Основной контент */}
-      <main className="container">
-        {/* Сообщение об ошибке */}
-        {error && (
-          <div style={{
-            background: '#ff4444',
-            color: 'white',
-            padding: '1rem',
-            marginBottom: '2rem',
-            borderRadius: '8px',
-            textAlign: 'center'
-          }}>
-            {error}
-          </div>
-        )}
-
+      <main id="main-content" className="container" tabIndex={-1}>
         {/* Hero секция */}
         <HeroSection
           discordUrl={commonSettings?.discord_join_url || '#'}
         />
 
+        {/* Ошибка загрузки */}
+        {error && !loading && (
+          <ErrorMessage 
+            message={error}
+            onRetry={handleRetry}
+          />
+        )}
+
         {/* Стримеры */}
-        <StreamersSection players={elitePlayers} />
+        {loading ? (
+          <section id="streamers" style={{ marginTop: '6rem' }} aria-label="Загрузка стримеров">
+            <h2 style={{ textAlign: 'center', marginBottom: '3rem', fontSize: 'clamp(2rem, 5vw, 3rem)' }}>
+              СТРИМЕРЫ ЛЕСНОЙ КОМАНДЫ
+            </h2>
+            <StreamersSkeleton />
+          </section>
+        ) : !error ? (
+          <StreamersSection players={elitePlayers} />
+        ) : null}
 
         {/* Новости */}
-        <NewsSection posts={posts} />
+        {loading ? (
+          <section id="news" style={{ marginTop: '6rem' }} aria-label="Загрузка новостей">
+            <h2 style={{ textAlign: 'center', marginBottom: '3rem', fontSize: 'clamp(2rem, 5vw, 3rem)' }}>
+              НОВОСТИ
+            </h2>
+            <NewsSkeleton />
+          </section>
+        ) : !error ? (
+          <NewsSection posts={posts} />
+        ) : null}
 
         {/* Футер */}
         <Footer />

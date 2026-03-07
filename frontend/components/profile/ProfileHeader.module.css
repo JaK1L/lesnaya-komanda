@@ -1,16 +1,18 @@
+/* Mobile-First: Base styles for mobile (320px+) */
 .header {
   background: var(--gray);
   border: 2px solid var(--gray-light);
   border-radius: 8px;
-  padding: 2rem;
+  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
 .content {
   display: flex;
-  gap: 2rem;
-  align-items: flex-start;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+  text-align: center;
 }
 
 .avatarWrapper {
@@ -18,37 +20,37 @@
 }
 
 .avatar {
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--accent);
 }
 
 .avatarPlaceholder {
-  width: 150px;
-  height: 150px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   background: var(--accent-dark);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
+  font-size: 2.5rem;
   color: var(--accent);
   border: 3px solid var(--accent);
 }
 
 .info {
-  flex: 1;
-  min-width: 250px;
+  width: 100%;
 }
 
 .nickname {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-family: 'Unbounded', sans-serif;
   font-weight: bold;
   color: var(--accent);
   margin-bottom: 0.25rem;
+  word-break: break-word;
 }
 
 .username {
@@ -81,6 +83,7 @@
 .bioText {
   color: white;
   line-height: 1.6;
+  word-break: break-word;
 }
 
 .bioEmpty {
@@ -89,40 +92,48 @@
 }
 
 .actions {
-  flex-shrink: 0;
+  width: 100%;
 }
 
-/* Mobile */
-@media (max-width: 768px) {
+.actions button {
+  width: 100%;
+}
+
+/* Tablet: 768px+ */
+@media (min-width: 768px) {
   .header {
-    padding: 1.5rem;
+    padding: 2rem;
   }
 
   .content {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+    flex-direction: row;
+    gap: 2rem;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .avatar,
   .avatarPlaceholder {
-    width: 120px;
-    height: 120px;
-  }
-
-  .nickname {
-    font-size: 1.5rem;
+    width: 150px;
+    height: 150px;
+    font-size: 3rem;
   }
 
   .info {
-    width: 100%;
+    flex: 1;
+    min-width: 250px;
+  }
+
+  .nickname {
+    font-size: 1.75rem;
   }
 
   .actions {
-    width: 100%;
+    width: auto;
+    flex-shrink: 0;
   }
 
   .actions button {
-    width: 100%;
+    width: auto;
   }
 }

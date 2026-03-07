@@ -20,6 +20,38 @@
   box-sizing: border-box;
 }
 
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Улучшенная прокрутка для Safari */
+@supports (scroll-behavior: smooth) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Focus visible для keyboard navigation */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Убираем outline для мыши, оставляем для клавиатуры */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+  outline: none;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
@@ -27,6 +59,19 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Reduce motion для пользователей с prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -51,30 +96,57 @@ h3 {
   font-weight: 800;
 }
 
+/* Mobile-First Base Styles */
 .container {
-  max-width: 1400px;
+  width: 100%;
+  padding: 0 1rem;
   margin: 0 auto;
-  padding: 0 2rem;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .container {
+    padding: 0 2rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1400px;
+  }
 }
 
 /* Lunacy-style block quotes и текстовые блоки */
 .hero-block {
   border-left: 4px solid var(--accent);
-  padding-left: 2rem;
-  margin: 4rem 0;
+  padding-left: 1rem;
+  margin: 2rem 0;
 }
 
 .hero-block p {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: #888;
   max-width: 600px;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .hero-block {
+    padding-left: 2rem;
+    margin: 4rem 0;
+  }
+
+  .hero-block p {
+    font-size: 1.2rem;
+  }
 }
 
 /* Карточки в стиле Lunacy */
 .lunacy-card {
   background: var(--gray);
   border: 1px solid var(--gray-light);
-  padding: 2rem;
+  padding: 1.5rem;
   transition: all 0.2s;
 }
 
@@ -83,21 +155,33 @@ h3 {
   transform: translateY(-2px);
 }
 
-/* Кнопки */
+/* Tablet */
+@media (min-width: 768px) {
+  .lunacy-card {
+    padding: 2rem;
+  }
+}
+
+/* Кнопки - Mobile First */
 .lunacy-button {
   background: transparent;
   border: 2px solid var(--accent);
   color: var(--accent);
   font-family: 'Unbounded', sans-serif;
   font-weight: 800;
-  font-size: 1rem;
-  padding: 1rem 2.5rem;
+  font-size: 0.875rem;
+  padding: 0.875rem 2rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   cursor: pointer;
   transition: all 0.2s;
   display: inline-block;
   text-decoration: none;
+  /* Touch-friendly минимум 44px высота */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lunacy-button:hover {
@@ -105,12 +189,20 @@ h3 {
   color: var(--background);
 }
 
-/* Статистика */
+/* Desktop */
+@media (min-width: 1024px) {
+  .lunacy-button {
+    font-size: 1rem;
+    padding: 1rem 2.5rem;
+  }
+}
+
+/* Статистика - Mobile First */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 2rem;
-  margin: 4rem 0;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin: 2rem 0;
 }
 
 .stat-item {
@@ -121,7 +213,7 @@ h3 {
 .stat-number {
   font-family: 'Unbounded', sans-serif;
   font-weight: 900;
-  font-size: 3rem;
+  font-size: 2.5rem;
   color: var(--accent);
   line-height: 1;
 }
@@ -129,27 +221,60 @@ h3 {
 .stat-label {
   color: #666;
   text-transform: uppercase;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   letter-spacing: 0.1em;
 }
 
-/* Сетка игр */
+/* Tablet */
+@media (min-width: 768px) {
+  .stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin: 4rem 0;
+  }
+
+  .stat-number {
+    font-size: 3rem;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+  }
+}
+
+/* Сетка игр - Mobile First */
 .games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1px;
   background: var(--gray-light);
   border: 1px solid var(--gray-light);
 }
 
+/* Tablet */
+@media (min-width: 768px) {
+  .games-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .games-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
 .game-card {
   background: var(--gray);
-  padding: 2rem;
+  padding: 1.5rem;
   text-decoration: none;
   color: inherit;
   transition: all 0.2s;
   position: relative;
   overflow: hidden;
+  /* Touch-friendly */
+  min-height: 120px;
 }
 
 .game-card:hover {
@@ -159,6 +284,13 @@ h3 {
 
 .game-card:hover .game-icon {
   color: var(--background);
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .game-card {
+    padding: 2rem;
+  }
 }
 
 .game-icon {
@@ -184,29 +316,52 @@ h3 {
   color: rgba(0,0,0,0.7);
 }
 
-/* Сетка игроков */
+/* Сетка игроков - Mobile First */
 .players-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1px;
   background: var(--gray-light);
   border: 1px solid var(--gray-light);
   margin-top: 2rem;
 }
 
+/* Tablet */
+@media (min-width: 768px) {
+  .players-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .players-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
 .player-card {
   background: var(--gray);
-  padding: 1.5rem;
+  padding: 1rem;
   display: flex;
   align-items: center;
   gap: 1rem;
   transition: all 0.2s;
+  /* Touch-friendly */
+  min-height: 80px;
 }
 
 .player-card:hover {
   background: var(--gray-light);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(74, 255, 117, 0.2);
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .player-card {
+    padding: 1.5rem;
+  }
 }
 
 .player-avatar {
@@ -244,17 +399,19 @@ h3 {
   font-size: 0.875rem;
 }
 
-/* Навигация */
+/* Навигация - Mobile First */
 .nav {
   border-bottom: 1px solid var(--gray-light);
-  padding: 1.5rem 0;
-  margin-bottom: 4rem;
+  padding: 1rem 0;
+  margin-bottom: 2rem;
 }
 
 .nav-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .nav-logo {
@@ -263,28 +420,49 @@ h3 {
   gap: 0.5rem;
   font-family: 'Unbounded', sans-serif;
   font-weight: 900;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   color: var(--accent);
   text-decoration: none;
 }
 
 .nav-links {
   display: flex;
-  gap: 2rem;
+  gap: 1rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .nav-link {
   color: #666;
   text-decoration: none;
   text-transform: uppercase;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   letter-spacing: 0.1em;
   transition: color 0.2s;
 }
 
 .nav-link:hover {
   color: var(--accent);
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .nav {
+    padding: 1.5rem 0;
+    margin-bottom: 4rem;
+  }
+
+  .nav-logo {
+    font-size: 1.5rem;
+  }
+
+  .nav-links {
+    gap: 2rem;
+  }
+
+  .nav-link {
+    font-size: 0.875rem;
+  }
 }
 
 /* Админ-навигация */
@@ -314,14 +492,31 @@ h3 {
   border-color: var(--accent);
 }
 
-/* Футер */
+/* Футер - Mobile First */
 .footer {
   border-top: 1px solid var(--gray-light);
-  margin-top: 6rem;
-  padding: 2rem 0;
+  margin-top: 4rem;
+  padding: 1.5rem 0;
   text-align: center;
   color: #666;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footer p + p {
+  margin-top: 0.5rem;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .footer {
+    margin-top: 6rem;
+    padding: 2rem 0;
+    font-size: 0.875rem;
+  }
 }
 
 /* Анимации */

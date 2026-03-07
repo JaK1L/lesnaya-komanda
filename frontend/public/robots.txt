@@ -1,0 +1,24 @@
+# robots.txt для Лесная Команда
+
+# Разрешаем всем ботам
+User-agent: *
+Allow: /
+
+# Запрещаем индексацию API
+Disallow: /api/
+
+# Запрещаем индексацию приватных профилей
+Disallow: /profile/*/private
+
+# Sitemap
+Sitemap: https://lesnaya-komanda.com/sitemap.xml
+
+# Специальные правила для Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Специальные правила для Yandex
+User-agent: Yandex
+Allow: /
+Crawl-delay: 0

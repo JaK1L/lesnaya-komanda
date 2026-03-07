@@ -29,9 +29,82 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     title="Лесная Команда API",
-    description="API для управления игровым сообществом",
+    description="""
+    ## 🌲 API для управления игровым сообществом
+    
+    Полнофункциональный REST API для платформы игрового сообщества "Лесная Команда".
+    
+    ### Основные возможности:
+    
+    * **Пользователи** - управление профилями игроков, статистика, рейтинги
+    * **Аутентификация** - JWT токены, OAuth через Discord
+    * **Профили** - редактирование профиля, загрузка аватаров
+    * **Контент** - новости, события, лента активности
+    * **Discord интеграция** - статус онлайн, активность, игровые сессии
+    * **Игровые предпочтения** - управление любимыми играми пользователей
+    * **WebSocket** - real-time обновления Discord статуса
+    
+    ### Аутентификация:
+    
+    Большинство эндпоинтов требуют JWT токен в заголовке:
+    ```
+    Authorization: Bearer <your_token>
+    ```
+    
+    Получить токен можно через `/api/token` (для админов) или `/api/discord/callback` (для пользователей).
+    
+    ### Окружение:
+    
+    - **Production**: https://api.lesnaya-komanda.com
+    - **Development**: http://localhost:8000
+    
+    ### Контакты:
+    
+    - Discord: https://discord.gg/YgX4RQZ
+    - GitHub: https://github.com/lesnaya-komanda
+    """,
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+    contact={
+        "name": "Лесная Команда",
+        "url": "https://lesnaya-komanda.com",
+    },
+    license_info={
+        "name": "MIT",
+    },
+    tags_metadata=[
+        {
+            "name": "users",
+            "description": "Операции с пользователями: получение списка игроков, статистика, рейтинги, достижения",
+        },
+        {
+            "name": "auth",
+            "description": "Аутентификация и авторизация: получение JWT токенов, регистрация, проверка прав доступа",
+        },
+        {
+            "name": "discord",
+            "description": "Discord OAuth интеграция: авторизация через Discord, получение данных пользователя",
+        },
+        {
+            "name": "profile",
+            "description": "Управление профилем: редактирование данных, загрузка аватаров, настройки приватности",
+        },
+        {
+            "name": "content",
+            "description": "Публичный контент: новости, события, лента активности для главной страницы",
+        },
+        {
+            "name": "game_preferences",
+            "description": "Игровые предпочтения: управление списком любимых игр пользователя",
+        },
+        {
+            "name": "migration",
+            "description": "Временные эндпоинты для миграции данных (будут удалены в будущем)",
+        },
+    ],
 )
 
 # Настройка CORS

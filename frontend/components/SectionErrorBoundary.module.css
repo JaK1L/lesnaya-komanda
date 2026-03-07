@@ -1,0 +1,63 @@
+/* Mobile-First: Base styles for mobile (320px+) */
+.sectionError {
+  padding: 2rem 1rem;
+  background: rgba(255, 68, 68, 0.05);
+  border: 1px solid rgba(255, 68, 68, 0.2);
+  border-radius: 8px;
+  margin: 2rem 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.icon {
+  color: #ff4444;
+  flex-shrink: 0;
+}
+
+.text {
+  flex: 1;
+}
+
+.title {
+  color: var(--foreground);
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.errorMessage {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem;
+  border-radius: 4px;
+  word-break: break-word;
+}
+
+/* Tablet: 768px+ */
+@media (min-width: 768px) {
+  .sectionError {
+    padding: 2rem;
+  }
+
+  .content {
+    flex-direction: row;
+    text-align: left;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .errorMessage {
+    font-size: 0.875rem;
+  }
+}

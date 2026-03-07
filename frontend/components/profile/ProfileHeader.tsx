@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button/Button'
+import { Button, OptimizedImage } from '../ui'
 import styles from './ProfileHeader.module.css'
 
 interface ProfileHeaderProps {
@@ -26,10 +26,13 @@ export function ProfileHeader({
         {/* Avatar */}
         <div className={styles.avatarWrapper}>
           {avatarUrl ? (
-            <img
+            <OptimizedImage
               src={avatarUrl}
-              alt="Avatar"
+              alt={`${nickname || username} avatar`}
+              width={150}
+              height={150}
               className={styles.avatar}
+              priority
             />
           ) : (
             <div className={styles.avatarPlaceholder}>

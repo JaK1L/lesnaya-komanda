@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import axios from 'axios'
 import { TreePine, Shield } from 'lucide-react'
+import { OptimizedImage } from '../../../components/ui'
 
 interface PublicProfile {
   discord_id: number
@@ -116,16 +117,14 @@ export default function PublicProfilePage() {
             {/* Аватар */}
             <div>
               {profile.avatar_url ? (
-                <img
+                <OptimizedImage
                   src={profile.avatar_url}
-                  alt={displayName}
-                  style={{
-                    width: '150px',
-                    height: '150px',
-                    borderRadius: '50%',
-                    border: '4px solid var(--accent)',
-                    objectFit: 'cover'
-                  }}
+                  alt={`${displayName} avatar`}
+                  width={150}
+                  height={150}
+                  className="avatar"
+                  priority
+                  objectFit="cover"
                 />
               ) : (
                 <div style={{

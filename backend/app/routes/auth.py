@@ -24,7 +24,37 @@ async def login_for_access_token(
     user_login: UserLogin,
     db: asyncpg.Connection = Depends(get_db)
 ):
-    """Получение токена доступа"""
+    """
+    Получение JWT токена доступа
+    
+    Аутентификация администратора для получения токена доступа.
+    Токен используется для доступа к защищенным эндпоинтам.
+    
+    **Учетные данные по умолчанию:**
+    - Username: `LesnoyBOSS`
+    - Password: `LesnoyBOSS909!`
+    
+    **Пример запроса:**
+    ```json
+    {
+        "username": "LesnoyBOSS",
+        "password": "LesnoyBOSS909!"
+    }
+    ```
+    
+    **Пример ответа:**
+    ```json
+    {
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "token_type": "bearer"
+    }
+    ```
+    
+    **Использование токена:**
+    ```
+    Authorization: Bearer <access_token>
+    ```
+    """
     user = await authenticate_user(db, user_login.username, user_login.password)
     if not user:
         raise HTTPException(

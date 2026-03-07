@@ -1,0 +1,42 @@
+/* Mobile-First: Base styles for mobile (320px+) */
+.imageWrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.image {
+  transition: opacity 0.3s ease;
+}
+
+.image.loading {
+  opacity: 0;
+}
+
+.image.loaded {
+  opacity: 1;
+}
+
+/* Placeholder для ошибок */
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-dark);
+  border: 3px solid var(--accent);
+  width: 100%;
+  height: 100%;
+}
+
+.placeholderIcon {
+  font-size: 2rem;
+  color: var(--accent);
+}
+
+/* Tablet: 768px+ */
+@media (min-width: 768px) {
+  .placeholderIcon {
+    font-size: 3rem;
+  }
+}

@@ -80,8 +80,8 @@ class Event(BaseModel):
 
 # Модели для аутентификации
 class Token(BaseModel):
-    access_token: str
-    token_type: str
+    access_token: str = Field(..., description="JWT токен доступа", examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."])
+    token_type: str = Field(default="bearer", description="Тип токена", examples=["bearer"])
 
 
 class TokenData(BaseModel):
@@ -105,8 +105,8 @@ class UserCreate(BaseModel):
 
 
 class UserLogin(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., description="Имя пользователя", examples=["LesnoyBOSS"])
+    password: str = Field(..., description="Пароль", examples=["LesnoyBOSS909!"])
 
 
 # Модели для запросов
@@ -195,10 +195,29 @@ class UserXPUpdate(BaseModel):
 
 class ProfileUpdate(BaseModel):
     """Request model for updating user profile"""
-    site_nickname: Optional[str] = Field(None, max_length=50)
-    avatar_url: Optional[str] = Field(None, max_length=500)
-    bio: Optional[str] = Field(None, max_length=500)
-    is_hidden: bool = False
+    site_nickname: Optional[str] = Field(
+        None, 
+        max_length=50,
+        description="Никнейм на сайте (отображается вместо Discord имени)",
+        examples=["Лесной Волк"]
+    )
+    avatar_url: Optional[str] = Field(
+        None, 
+        max_length=500,
+        description="URL аватара пользователя",
+        examples=["https://cdn.discordapp.com/avatars/123456789/abc123.png"]
+    )
+    bio: Optional[str] = Field(
+        None, 
+        max_length=500,
+        description="Биография пользователя (о себе)",
+        examples=["Играю в CS2 и Dota 2. Люблю командную игру!"]
+    )
+    is_hidden: bool = Field(
+        default=False,
+        description="Скрыть профиль от других пользователей",
+        examples=[False]
+    )
     
     @field_validator('site_nickname')
     @classmethod

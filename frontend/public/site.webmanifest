@@ -1,0 +1,25 @@
+{
+  "name": "Лесная Команда",
+  "short_name": "Lesnaya",
+  "description": "Игровое сообщество для CS2, Dota 2, Valorant и других игр",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#4aff75",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["games", "entertainment", "social"],
+  "lang": "ru",
+  "dir": "ltr"
+}

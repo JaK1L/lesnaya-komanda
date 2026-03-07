@@ -1,16 +1,17 @@
+/* Mobile-First: Base styles for mobile (320px+) */
 .section {
-  margin-top: 6rem;
+  margin-top: 4rem;
 }
 
 .title {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   font-size: clamp(2rem, 5vw, 3rem);
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1px;
   background: var(--gray-light);
   border: 1px solid var(--gray-light);
@@ -18,7 +19,7 @@
 
 .streamerCard {
   background: var(--gray);
-  padding: 2rem;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -26,6 +27,8 @@
   transition: all 0.2s;
   text-decoration: none;
   color: inherit;
+  /* Touch-friendly */
+  min-height: 200px;
 }
 
 .streamerCard:hover {
@@ -40,22 +43,22 @@
 }
 
 .avatar {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--accent);
 }
 
 .avatarPlaceholder {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   background: var(--accent-dark);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
+  font-size: 2.5rem;
   color: var(--accent);
   border: 3px solid var(--accent);
 }
@@ -64,8 +67,8 @@
   position: absolute;
   bottom: 5px;
   right: 5px;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background-color: #4aff75;
   border: 3px solid var(--gray);
@@ -74,8 +77,9 @@
 .name {
   font-family: 'Unbounded', sans-serif;
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   margin-bottom: 0.5rem;
+  word-break: break-word;
 }
 
 .rank {
@@ -96,61 +100,71 @@
   background: var(--gray);
   grid-column: 1 / -1;
   text-align: center;
-  padding: 3rem;
+  padding: 2rem 1rem;
 }
 
 .emptyIcon {
-  font-size: 3rem;
+  font-size: 2rem;
   margin-bottom: 1rem;
 }
 
 .emptyText {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   margin-bottom: 0.5rem;
 }
 
 .emptySubtext {
   color: #666;
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
-/* Mobile */
-@media (max-width: 768px) {
+/* Tablet: 768px+ */
+@media (min-width: 768px) {
   .section {
-    margin-top: 4rem;
+    margin-top: 6rem;
+  }
+
+  .title {
+    margin-bottom: 3rem;
   }
 
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   }
 
   .streamerCard {
-    padding: 1.5rem;
+    padding: 2rem;
   }
 
   .avatar,
   .avatarPlaceholder {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
+    font-size: 3rem;
+  }
+
+  .onlineIndicator {
+    width: 20px;
+    height: 20px;
   }
 
   .name {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
   }
 
   .emptyState {
-    padding: 2rem 1rem;
+    padding: 3rem;
   }
 
   .emptyIcon {
-    font-size: 2rem;
+    font-size: 3rem;
   }
 
   .emptyText {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
   }
 
   .emptySubtext {
-    font-size: 1rem;
+    font-size: 1.2rem;
   }
 }

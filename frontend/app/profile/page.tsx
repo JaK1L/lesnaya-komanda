@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-import { Loader2, Gamepad2 } from 'lucide-react'
-import { Navigation, Footer } from '../../components/layout'
-import { ProfileHeader, ProfileEditForm, GamePreferencesSection } from '../../components/profile'
+import { Gamepad2 } from 'lucide-react'
+import { Navigation, Footer, SkipToContent } from '../../components/layout'
+import { ProfileHeader, ProfileEditForm, GamePreferencesSection, ProfileSkeleton } from '../../components/profile'
+import { ErrorMessage } from '../../components/ui'
 import { GamePreference } from '../../types/gamePreferences'
 import './mobile-profile.css'
 
@@ -256,54 +257,45 @@ export default function ProfilePage() {
     router.push('/')
   }
 
+  const handleRetry = () => {
+    if (token) {
+      loadProfile(token)
+    }
+  }
+
   // Loading state
   if (loading) {
     return (
       <>
+        <SkipToContent />
         <Navigation
           isAuthenticated={!!token}
           onLogout={handleLogout}
           apiUrl={API_URL}
         />
-        <main className="container">
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            minHeight: '60vh' 
-          }}>
-            <Loader2 size={48} className="animate-spin" style={{ color: 'var(--accent)' }} />
-          </div>
+        <main id="main-content" className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }} tabIndex={-1}>
+          <ProfileSkeleton />
         </main>
       </>
     )
   }
 
   // Error state
-  if (!profile) {
+  if (error || !profile) {
     return (
       <>
+        <SkipToContent />
         <Navigation
           isAuthenticated={!!token}
           onLogout={handleLogout}
           apiUrl={API_URL}
         />
-        <main className="container">
-          <div style={{
-            background: 'var(--gray)',
-            border: '2px solid var(--gray-light)',
-            borderRadius: '8px',
-            padding: '3rem',
-            textAlign: 'center',
-            marginTop: '4rem'
-          }}>
-            <h2 style={{ fontFamily: 'Unbounded', marginBottom: '1rem' }}>
-              ПРОФИЛЬ НЕ НАЙДЕН
-            </h2>
-            <p style={{ color: '#666' }}>
-              Не удалось загрузить данные профиля
-            </p>
-          </div>
+        <main id="main-content" className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }} tabIndex={-1}>
+          <ErrorMessage
+            title="Ошибка загрузки профиля"
+            message={error || 'Не удалось загрузить данные профиля'}
+            onRetry={handleRetry}
+          />
         </main>
       </>
     )
@@ -312,13 +304,14 @@ export default function ProfilePage() {
   // Main render
   return (
     <>
+      <SkipToContent />
       <Navigation
         isAuthenticated={!!token}
         onLogout={handleLogout}
         apiUrl={API_URL}
       />
 
-      <main className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
+      <main id="main-content" className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }} tabIndex={-1}>
         {/* Error message */}
         {error && (
           <div style={{ 

@@ -1,15 +1,16 @@
+/* Mobile-First: Base styles for mobile (320px+) */
 .button {
   background: transparent;
   border: 2px solid var(--accent);
   color: var(--accent);
   font-family: 'Unbounded', sans-serif;
   font-weight: 800;
-  font-size: 1rem;
-  padding: 1rem 2.5rem;
+  font-size: 0.875rem;
+  padding: 0.875rem 2rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -17,17 +18,41 @@
   text-decoration: none;
   border-radius: 4px;
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  /* Touch-friendly minimum */
+  min-height: 44px;
+}
+
+/* Ripple эффект при hover */
+.button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(74, 255, 117, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.button:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .button:hover {
   background: var(--accent);
   color: var(--background);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(74, 255, 117, 0.3);
+  box-shadow: 0 8px 20px rgba(74, 255, 117, 0.4);
 }
 
 .button:active {
   transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(74, 255, 117, 0.3);
 }
 
 .button:disabled {
@@ -36,15 +61,25 @@
   transform: none;
 }
 
+.button:disabled:hover::before {
+  width: 0;
+  height: 0;
+}
+
 /* Variants */
 .button.primary {
   background: var(--accent);
   color: var(--background);
 }
 
+.button.primary::before {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .button.primary:hover {
   background: var(--accent-dark);
   border-color: var(--accent-dark);
+  box-shadow: 0 8px 20px rgba(74, 255, 117, 0.5);
 }
 
 .button.secondary {
@@ -52,32 +87,48 @@
   color: #666;
 }
 
+.button.secondary::before {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .button.secondary:hover {
   border-color: white;
   color: white;
   background: transparent;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
 }
 
-/* Sizes */
+/* Sizes - Mobile */
 .button.small {
   padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  min-height: 40px;
 }
 
 .button.large {
-  padding: 1.25rem 3rem;
-  font-size: 1.1rem;
+  padding: 1rem 2rem;
+  font-size: 1rem;
 }
 
-/* Mobile */
-@media (max-width: 768px) {
+/* Desktop: 1024px+ */
+@media (min-width: 1024px) {
   .button {
-    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    padding: 1rem 2.5rem;
+  }
+
+  .button.small {
+    padding: 0.5rem 1rem;
     font-size: 0.875rem;
   }
 
   .button.large {
-    padding: 1rem 2rem;
-    font-size: 1rem;
+    padding: 1.25rem 3rem;
+    font-size: 1.1rem;
+  }
+  
+  /* Более выраженный hover на desktop */
+  .button:hover {
+    transform: translateY(-4px);
   }
 }

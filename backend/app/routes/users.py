@@ -16,13 +16,44 @@ router = APIRouter()
 
 @router.get("/", response_model=dict)
 async def root():
-    """Корневой эндпоинт"""
+    """
+    Корневой эндпоинт API
+    
+    Возвращает базовую информацию о статусе API.
+    Используется для проверки доступности сервиса.
+    
+    **Пример ответа:**
+    ```json
+    {
+        "message": "🌲 Лесная Команда API",
+        "status": "active"
+    }
+    ```
+    """
     return {"message": "🌲 Лесная Команда API", "status": "active"}
 
 
 @router.get("/stats", response_model=dict)
 async def get_stats(db: asyncpg.Connection = Depends(get_db)):
-    """Сводная статистика для главной страницы: число участников, достижений, онлайн (пока 0)"""
+    """
+    Сводная статистика для главной страницы
+    
+    Возвращает общую статистику сообщества:
+    - Количество участников
+    - Количество игроков онлайн в Discord
+    - Общее количество достижений
+    
+    **Не требует аутентификации**
+    
+    **Пример ответа:**
+    ```json
+    {
+        "members": 150,
+        "online": 23,
+        "achievements": 487
+    }
+    ```
+    """
     service = UserService(db)
     members = await db.fetchval("SELECT COUNT(*) FROM users")
     achievements = await db.fetchval("SELECT COUNT(*) FROM achievements")
@@ -79,11 +110,35 @@ async def discord_now_playing(
 
 @router.get("/players", response_model=List[dict])
 async def get_players(
-    limit: int = Query(default=50, ge=1, le=1000),
-    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=1000, description="Максимальное количество игроков в ответе"),
+    offset: int = Query(default=0, ge=0, description="Смещение для пагинации"),
     db: asyncpg.Connection = Depends(get_db)
 ):
-    """Получить список всех игроков"""
+    """
+    Получить список всех игроков
+    
+    Возвращает список игроков с их базовой информацией.
+    Поддерживает пагинацию через параметры limit и offset.
+    
+    **Не требует аутентификации**
+    
+    **Параметры:**
+    - `limit`: количество игроков (1-1000, по умолчанию 50)
+    - `offset`: смещение для пагинации (по умолчанию 0)
+    
+    **Пример ответа:**
+    ```json
+    [
+        {
+            "discord_id": 123456789,
+            "discord_username": "JaK1L",
+            "forest_rank": "🐺 Старый Волк",
+            "rating": 95.0,
+            "avatar_url": "https://cdn.discordapp.com/avatars/..."
+        }
+    ]
+    ```
+    """
     service = UserService(db)
     try:
         players = await service.get_players(limit, offset)
