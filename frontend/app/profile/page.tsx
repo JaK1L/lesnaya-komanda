@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-import { Gamepad2 } from 'lucide-react'
 import { Navigation, Footer, SkipToContent } from '../../components/layout'
 import { ProfileHeader, ProfileEditForm, GamePreferencesSection, ProfileSkeleton, AchievementsSection, GameStatsSection } from '../../components/profile'
 import { ErrorMessage } from '../../components/ui'
@@ -437,41 +436,6 @@ export default function ProfilePage() {
         </SectionErrorBoundary>
 
         {/* Games Section */}
-        <SectionErrorBoundary sectionName="Игры">
-          <div style={{
-            background: 'var(--gray)',
-            border: '2px solid var(--gray-light)',
-            borderRadius: '8px',
-            padding: '2rem',
-            marginBottom: '2rem',
-            minHeight: '300px'
-          }}>
-            <h3 style={{ 
-              fontFamily: 'Unbounded', 
-              marginBottom: '1.5rem', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.5rem' 
-            }}>
-              <Gamepad2 size={24} style={{ color: 'var(--accent)' }} />
-              ИГРЫ, РЕЙТИНГ И ЛЮБИМЫЕ ГЕРОИ
-            </h3>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              minHeight: '200px',
-              color: '#666',
-              flexDirection: 'column',
-              gap: '1rem'
-            }}>
-              <div style={{ fontSize: '3rem' }}>🎮</div>
-              <div>Рейтинг в играх и любимые герои</div>
-              <div style={{ fontSize: '0.875rem' }}>(В разработке)</div>
-            </div>
-          </div>
-        </SectionErrorBoundary>
-
         <Footer />
       </main>
     </PageErrorBoundary>
