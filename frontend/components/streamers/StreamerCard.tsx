@@ -7,7 +7,7 @@ interface StreamerCardProps {
   name: string
   game: string
   avatar: string
-  platform: 'twitch' | 'youtube'
+  platform: 'twitch' | 'youtube' | 'other'
   url: string
   isLive?: boolean
   viewers?: number | undefined
@@ -26,8 +26,8 @@ export function StreamerCard({
   schedule,
   index
 }: StreamerCardProps) {
-  const PlatformIcon = platform === 'twitch' ? Twitch : Youtube
-  const platformColor = platform === 'twitch' ? '#9146FF' : '#FF0000'
+  const PlatformIcon = platform === 'twitch' ? Twitch : platform === 'youtube' ? Youtube : ExternalLink
+  const platformColor = platform === 'twitch' ? '#9146FF' : platform === 'youtube' ? '#FF0000' : '#7cb342'
 
   return (
     <a
