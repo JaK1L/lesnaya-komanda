@@ -134,20 +134,3 @@
     max-width: 1400px;
   }
 }
-
-/* Icon styles in navigation */
-.link {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.link span {
-  display: inline-block;
-}
-
-@media (max-width: 768px) {
-  .link {
-    padding: 0.75rem 1rem;
-  }
-}
