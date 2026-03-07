@@ -30,15 +30,8 @@ export function EventsSection() {
       setLoading(true)
       setError(null)
       const response = await axios.get<Event[]>(`${API_URL}/api/events`)
-      // Показываем все будущие события и прошедшие не старше 24 часов
-      const now = new Date()
-      const filtered = response.data.filter(event => {
-        if (!event.event_date) return true // Показываем события без даты
-        const eventDate = new Date(event.event_date)
-        const diffHours = (now.getTime() - eventDate.getTime()) / (1000 * 60 * 60)
-        return diffHours < 24 // Показываем события не старше 24 часов
-      })
-      setEvents(filtered)
+      // Бэкенд уже фильтрует по expires_at, просто показываем все что пришло
+      setEvents(response.data)
     } catch (err) {
       console.error('Error fetching events:', err)
       setError('Не удалось загрузить события')

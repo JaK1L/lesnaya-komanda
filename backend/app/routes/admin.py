@@ -23,6 +23,7 @@ class EventCreate(BaseModel):
     event_date: datetime
     status: str = Field(default="Планируется", max_length=30)
     telegram_url: Optional[str] = Field(None, max_length=500)
+    expires_at: Optional[datetime] = Field(None, description="Дата и время когда событие автоматически скрывается")
 
 
 class EventOut(EventCreate):
@@ -30,6 +31,7 @@ class EventOut(EventCreate):
     created_by: Optional[int]
     participants: List[int] = []
     telegram_url: Optional[str] = None
+    expires_at: Optional[datetime] = None
 
 
 @router.get("/events", response_model=List[EventOut])
@@ -40,7 +42,7 @@ async def list_events(
     """Список всех событий (для админки)."""
     rows = await db.fetch(
         """
-        SELECT id, title, description, game, event_date, created_by, participants, status, telegram_url
+        SELECT id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
         FROM events
         ORDER BY event_date DESC NULLS LAST, id DESC
         """
@@ -57,9 +59,9 @@ async def create_event(
     """Создать новое событие."""
     row = await db.fetchrow(
         """
-        INSERT INTO events (title, description, game, event_date, created_by, status, telegram_url)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, title, description, game, event_date, created_by, participants, status, telegram_url
+        INSERT INTO events (title, description, game, event_date, created_by, status, telegram_url, expires_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
         """,
         payload.title,
         payload.description,
@@ -68,6 +70,7 @@ async def create_event(
         current_user.id,
         payload.status,
         payload.telegram_url,
+        payload.expires_at,
     )
     if not row:
         raise HTTPException(status_code=500, detail="Не удалось создать событие")
@@ -98,13 +101,22 @@ async def update_event(
     row = await db.fetchrow(
         """
         UPDATE events
-        SET title = $2, description = $3, game = $4, event_date = $5, status = $6, telegram_url = $7
+        SET title = $2, description = $3, game = $4, event_date = $5, status = $6, telegram_url = $7, expires_at = $8
         WHERE id = $1
-        RETURNING id, title, description, game, event_date, created_by, participants, status, telegram_url
+        RETURNING id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
         """,
         event_id,
         payload.title,
         payload.description,
+        payload.game,
+        payload.event_date,
+        payload.status,
+        payload.telegram_url,
+        payload.expires_at,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+    return EventOut(**dict(row))
         payload.game,
         payload.event_date,
         payload.status,

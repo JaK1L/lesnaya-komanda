@@ -14,6 +14,7 @@ interface Event {
   created_by: number | null
   participants: number[]
   status: string
+  expires_at: string | null
 }
 
 export default function AdminEventsPage() {
@@ -30,6 +31,7 @@ export default function AdminEventsPage() {
     event_date: '',
     telegram_url: '',
     status: 'Планируется',
+    expires_at: '',
   })
 
   useEffect(() => {
@@ -72,13 +74,19 @@ export default function AdminEventsPage() {
       
       const method = editingEvent ? 'PUT' : 'POST'
       
+      // Подготавливаем данные - если expires_at пустое, отправляем null
+      const payload = {
+        ...formData,
+        expires_at: formData.expires_at || null
+      }
+      
       const response = await fetch(url, {
         method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) throw new Error('Failed to save')
@@ -93,6 +101,7 @@ export default function AdminEventsPage() {
         event_date: '',
         telegram_url: '',
         status: 'Планируется',
+        expires_at: '',
       })
     } catch (error) {
       console.error('Error saving event:', error)
@@ -129,6 +138,15 @@ export default function AdminEventsPage() {
       .toISOString()
       .slice(0, 16)
     
+    // Преобразуем expires_at если есть
+    let expiresDate = ''
+    if (item.expires_at) {
+      const expires = new Date(item.expires_at)
+      expiresDate = new Date(expires.getTime() - expires.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16)
+    }
+    
     setFormData({
       title: item.title,
       description: item.description,
@@ -136,6 +154,7 @@ export default function AdminEventsPage() {
       event_date: localDate,
       telegram_url: item.telegram_url || '',
       status: item.status,
+      expires_at: expiresDate,
     })
     setShowForm(true)
   }
@@ -149,6 +168,7 @@ export default function AdminEventsPage() {
       event_date: '',
       telegram_url: '',
       status: 'Планируется',
+      expires_at: '',
     })
     setShowForm(false)
   }
@@ -232,6 +252,19 @@ export default function AdminEventsPage() {
                 onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
                 required
               />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="expires_at">Скрыть событие после (необязательно)</label>
+              <input
+                id="expires_at"
+                type="datetime-local"
+                value={formData.expires_at}
+                onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
+              />
+              <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                Событие автоматически исчезнет с сайта после указанной даты. Оставьте пустым, чтобы событие не скрывалось автоматически.
+              </small>
             </div>
 
             <div className={styles.formGroup}>

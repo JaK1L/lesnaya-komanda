@@ -27,7 +27,7 @@ class EventPublic(BaseModel):
 async def list_public_events(db: asyncpg.Connection = Depends(get_db)):
     """
     Публичный список событий для сайта.
-    Показываем ближайшие и прошедшие, отсортированные по дате.
+    Показываем только активные события (не истекшие).
     """
     from fastapi import Response
     
@@ -35,6 +35,7 @@ async def list_public_events(db: asyncpg.Connection = Depends(get_db)):
         """
         SELECT id, title, description, game, event_date, telegram_url
         FROM events
+        WHERE expires_at IS NULL OR expires_at > NOW()
         ORDER BY event_date ASC NULLS LAST, id DESC
         """
     )
