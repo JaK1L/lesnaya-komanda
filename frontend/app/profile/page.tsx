@@ -312,9 +312,6 @@ export default function ProfilePage() {
     )
   }
 
-  const bioLength = bio.length
-  const bioMaxLength = 500
-
   return (
     <>
       {/* Навигация */}
