@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { TreePine, Menu, X } from 'lucide-react'
 import { Button } from '../ui/Button/Button'
+import { Icon } from '../ui/Icon'
 import styles from './Navigation.module.css'
 
 interface NavigationProps {
@@ -67,22 +68,27 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
           role="navigation"
         >
           <a href="/" className={styles.link}>
-            Главная
+            <Icon name="home" size="small" />
+            <span>Главная</span>
           </a>
           <a href="/streams" className={styles.link}>
-            Стримеры
+            <Icon name="streams" size="small" />
+            <span>Стримеры</span>
           </a>
           <a href="/social" className={styles.link}>
-            Команда
+            <Icon name="team" size="small" />
+            <span>Команда</span>
           </a>
           <a href="/merch" className={styles.link}>
-            Магазин
+            <Icon name="trophy" size="small" />
+            <span>Магазин</span>
           </a>
 
           {isAuthenticated ? (
             <>
               <a href="/profile" className={styles.link}>
-                Профиль
+                <Icon name="profile" size="small" />
+                <span>Профиль</span>
               </a>
               <Button onClick={onLogout} size="small" aria-label="Выйти из аккаунта">
                 Выйти
@@ -90,7 +96,8 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
             </>
           ) : (
             <Button href={`${apiUrl}/api/auth/discord`} size="small" aria-label="Войти через Discord">
-              Войти
+              <Icon name="discord" size="small" />
+              <span>Войти</span>
             </Button>
           )}
         </div>
