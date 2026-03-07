@@ -137,7 +137,7 @@ class ContentValidationMixin:
         
         return v
     
-    @field_validator('content', mode='before')
+    @field_validator('content', mode='before', check_fields=False)
     @classmethod
     def validate_content(cls, v: Optional[str]) -> Optional[str]:
         """Валидация и санитизация контента"""
