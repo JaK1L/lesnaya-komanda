@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadImage } from '../../../lib/imageUpload'
+import { FormValidator, rules, useFormValidation } from '../../../lib/validation'
+import { FormField } from '../../../components/ui/FormError'
+import { AdminTableSkeleton } from '../../../components/skeletons'
 import styles from './page.module.css'
 
 interface News {
@@ -30,6 +33,14 @@ export default function AdminNewsPage() {
     published: true,
   })
   const [uploading, setUploading] = useState(false)
+
+  // Валидация
+  const { errors, validateForm, clearErrors } = useFormValidation()
+
+  // Валидатор для формы новостей
+  const newsValidator = new FormValidator()
+    .field('title', rules.required('Заголовок обязателен'), rules.minLength(3, 'Минимум 3 символа'), rules.maxLength(200, 'Максимум 200 символов'))
+    .field('content', rules.required('Содержание обязательно'), rules.minLength(10, 'Минимум 10 символов'), rules.maxLength(5000, 'Максимум 5000 символов'))
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -63,6 +74,11 @@ export default function AdminNewsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Валидация формы
+    if (!validateForm(newsValidator, formData)) {
+      return
+    }
+    
     try {
       const token = localStorage.getItem('admin_token')
       const url = editingNews
@@ -86,6 +102,7 @@ export default function AdminNewsPage() {
       setShowForm(false)
       setEditingNews(null)
       setFormData({ title: '', content: '', image_url: '', published: true })
+      clearErrors()
     } catch (error) {
       console.error('Error saving news:', error)
       alert('Ошибка при сохранении новости')
@@ -128,6 +145,7 @@ export default function AdminNewsPage() {
     setEditingNews(null)
     setFormData({ title: '', content: '', image_url: '', published: true })
     setShowForm(false)
+    clearErrors()
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,7 +169,18 @@ export default function AdminNewsPage() {
   }
 
   if (isLoading) {
-    return <div className={styles.loading}>Загрузка...</div>
+    return (
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <button onClick={() => router.push('/admin')} className={styles.backButton}>
+            ← Назад
+          </button>
+          <h1>📰 Управление новостями</h1>
+          <div style={{ width: '120px' }} /> {/* Spacer */}
+        </header>
+        <AdminTableSkeleton rows={5} />
+      </div>
+    )
   }
 
   return (
@@ -178,31 +207,30 @@ export default function AdminNewsPage() {
             <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
               {editingNews ? 'Редактировать новость' : 'Создать новость'}
             </h2>
-            <div className={styles.formGroup}>
-              <label htmlFor="title">Заголовок</label>
+            
+            <FormField label="Заголовок" error={errors.title} required htmlFor="title">
               <input
                 id="title"
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Заголовок новости"
-                required
                 maxLength={200}
+                className={styles.input}
               />
-            </div>
+            </FormField>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="content">Содержание</label>
+            <FormField label="Содержание" error={errors.content} required htmlFor="content">
               <textarea
                 id="content"
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="Текст новости..."
-                required
                 rows={10}
                 maxLength={5000}
+                className={styles.textarea}
               />
-            </div>
+            </FormField>
 
             <div className={styles.formGroup}>
               <label htmlFor="image_url">Изображение</label>

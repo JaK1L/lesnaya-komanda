@@ -4,15 +4,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_URL = os.getenv('NEXT_PUBLIC_API_URL', 'https://lesnayakomanda.onrender.com')
+API_URL = os.getenv('BACKEND_URL', 'https://lesnayakomanda.onrender.com')
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
 
 # Получаем токен админа
 print("Логинимся...")
 response = requests.post(
     f"{API_URL}/api/token",
     json={
-        "username": "LesnoyBOSS",
-        "password": "LesnoyBOSS909!"
+        "username": ADMIN_USERNAME,
+        "password": ADMIN_PASSWORD
     }
 )
 

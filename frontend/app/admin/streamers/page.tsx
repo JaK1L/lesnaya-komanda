@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadImage } from '../../../lib/imageUpload'
+import { FormValidator, rules, useFormValidation } from '../../../lib/validation'
+import { FormField } from '../../../components/ui/FormError'
+import { AdminTableSkeleton } from '../../../components/skeletons'
 import styles from '../news/page.module.css'
 
 interface Streamer {
@@ -37,6 +40,14 @@ export default function AdminStreamersPage() {
     is_active: true,
     display_order: 0,
   })
+
+  // Валидация
+  const { errors, validateForm, clearErrors } = useFormValidation()
+
+  // Валидатор для формы стримеров
+  const streamerValidator = new FormValidator()
+    .field('name', rules.required('Имя стримера обязательно'), rules.minLength(2, 'Минимум 2 символа'), rules.maxLength(100, 'Максимум 100 символов'))
+    .field('stream_url', rules.required('Ссылка на канал обязательна'), rules.url('Неверный формат URL'))
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -87,6 +98,11 @@ export default function AdminStreamersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Валидация формы
+    if (!validateForm(streamerValidator, formData)) {
+      return
+    }
     
     try {
       let avatarUrl = formData.avatar_url
@@ -190,10 +206,22 @@ export default function AdminStreamersPage() {
     setImageFile(null)
     setImagePreview('')
     setShowForm(false)
+    clearErrors()
   }
 
   if (isLoading) {
-    return <div className={styles.loading}>Загрузка...</div>
+    return (
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <button onClick={() => router.push('/admin')} className={styles.backButton}>
+            ← Назад
+          </button>
+          <h1>🎮 Управление стримерами</h1>
+          <div style={{ width: '120px' }} /> {/* Spacer */}
+        </header>
+        <AdminTableSkeleton rows={5} />
+      </div>
+    )
   }
 
   return (
@@ -221,18 +249,17 @@ export default function AdminStreamersPage() {
               {editingStreamer ? 'Редактировать стримера' : 'Добавить стримера'}
             </h2>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="name">Имя стримера</label>
+            <FormField label="Имя стримера" error={errors.name} required htmlFor="name">
               <input
                 id="name"
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="JaK1L"
-                required
                 maxLength={100}
+                className={styles.input}
               />
-            </div>
+            </FormField>
 
             <div className={styles.formGroup}>
               <label htmlFor="game">Игры</label>
@@ -329,18 +356,17 @@ export default function AdminStreamersPage() {
               </select>
             </div>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="stream_url">Ссылка на канал</label>
+            <FormField label="Ссылка на канал" error={errors.stream_url} required htmlFor="stream_url">
               <input
                 id="stream_url"
                 type="url"
                 value={formData.stream_url}
                 onChange={(e) => setFormData({ ...formData, stream_url: e.target.value })}
                 placeholder="https://twitch.tv/username"
-                required
                 maxLength={500}
+                className={styles.input}
               />
-            </div>
+            </FormField>
 
             <div className={styles.formGroup}>
               <label htmlFor="schedule">Расписание (необязательно)</label>

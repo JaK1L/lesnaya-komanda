@@ -336,8 +336,8 @@ async def init_db():
             
             # Обновляем/создаем админа с новыми данными
             print("\n🔐 Проверка администратора...")
-            admin_username = "LesnoyBOSS"
-            admin_password = "LesnoyBOSS909!"
+            admin_username = settings.ADMIN_USERNAME if hasattr(settings, 'ADMIN_USERNAME') else "admin"
+            admin_password = settings.ADMIN_PASSWORD if hasattr(settings, 'ADMIN_PASSWORD') else "admin123"
             
             # Проверяем существует ли админ
             existing_admin = await conn.fetchrow(

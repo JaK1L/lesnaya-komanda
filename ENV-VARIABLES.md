@@ -31,6 +31,10 @@ BACKEND_URL=https://lesnayakomanda.onrender.com
 DISCORD_BOT_TOKEN=твой_токен_бота
 DISCORD_GUILD_ID=236652227060563969
 
+# Admin credentials (для автоматического создания админа при старте)
+ADMIN_USERNAME=LesnoyBOSS
+ADMIN_PASSWORD=LesnoyBOSS909!
+
 # Режим
 DEBUG=False
 ```
@@ -53,6 +57,9 @@ NEXT_PUBLIC_GA_ID=G-3437T4EM9D
 
 # Yandex Metrika
 NEXT_PUBLIC_YM_ID=107194144
+
+# Image Upload (ImgBB API)
+NEXT_PUBLIC_IMGBB_API_KEY=c026403294c4af46bc1d0a7e3faf582e
 ```
 
 ---

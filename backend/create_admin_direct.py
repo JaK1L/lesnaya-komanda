@@ -3,15 +3,23 @@
 """
 import asyncio
 import asyncpg
+import os
+from dotenv import load_dotenv
 from passlib.context import CryptContext
 
-# Production DATABASE_URL
-DATABASE_URL = "postgresql://neondb_owner:npg_PRJbuN0f4Yyc@ep-purple-boat-agxuy7jr-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+load_dotenv()
+
+# Production DATABASE_URL (из переменных окружения)
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 async def create_admin():
     print("🔐 Создание администратора...")
+    
+    if not DATABASE_URL:
+        print("❌ Ошибка: DATABASE_URL не найден в .env")
+        return
     
     try:
         # Подключаемся к БД
@@ -40,9 +48,9 @@ async def create_admin():
             """)
             print("✅ Таблица создана")
         
-        # Обновляем существующего админа
-        username = "LesnoyBOSS"
-        password = "LesnoyBOSS909!"
+        # Обновляем существующего админа (из переменных окружения)
+        username = os.getenv('ADMIN_USERNAME', 'admin')
+        password = os.getenv('ADMIN_PASSWORD', 'admin123')
         password_hash = pwd_context.hash(password)
         
         # Проверяем есть ли админ

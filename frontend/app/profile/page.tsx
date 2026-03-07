@@ -7,6 +7,8 @@ import { Gamepad2 } from 'lucide-react'
 import { Navigation, Footer, SkipToContent } from '../../components/layout'
 import { ProfileHeader, ProfileEditForm, GamePreferencesSection, ProfileSkeleton } from '../../components/profile'
 import { ErrorMessage } from '../../components/ui'
+import { PageErrorBoundary } from '../../components/PageErrorBoundary'
+import { SectionErrorBoundary } from '../../components/SectionErrorBoundary'
 import { GamePreference } from '../../types/gamePreferences'
 import './mobile-profile.css'
 
@@ -303,7 +305,7 @@ export default function ProfilePage() {
 
   // Main render
   return (
-    <>
+    <PageErrorBoundary pageName="Профиль">
       <SkipToContent />
       <Navigation
         isAuthenticated={!!token}
@@ -341,119 +343,127 @@ export default function ProfilePage() {
         )}
 
         {/* Profile Header */}
-        <ProfileHeader
-          nickname={profile.site_nickname}
-          username={profile.discord_username}
-          avatarUrl={avatarPreview || profile.avatar_url}
-          bio={profile.bio}
-          age={age}
-          isEditMode={isEditMode}
-          onToggleEdit={() => setIsEditMode(!isEditMode)}
-        />
+        <SectionErrorBoundary sectionName="Заголовок профиля">
+          <ProfileHeader
+            nickname={profile.site_nickname}
+            username={profile.discord_username}
+            avatarUrl={avatarPreview || profile.avatar_url}
+            bio={profile.bio}
+            age={age}
+            isEditMode={isEditMode}
+            onToggleEdit={() => setIsEditMode(!isEditMode)}
+          />
+        </SectionErrorBoundary>
 
         {/* Edit Form */}
         {isEditMode && (
-          <div>
-            <ProfileEditForm
-              siteNickname={siteNickname}
-              age={age}
-              bio={bio}
-              isHidden={isHidden}
-              saving={saving}
-              onSiteNicknameChange={setSiteNickname}
-              onAgeChange={setAge}
-              onBioChange={setBio}
-              onIsHiddenChange={setIsHidden}
-              onAvatarFileChange={handleAvatarFileChange}
-              onSave={handleSave}
-              placeholderUsername={profile.discord_username}
-            />
-
-            {/* Game Preferences inside edit form */}
-            <div style={{
-              background: 'var(--gray)',
-              border: '2px solid var(--accent)',
-              borderRadius: '8px',
-              padding: '2rem',
-              marginBottom: '2rem',
-              marginTop: '-1rem'
-            }}>
-              <GamePreferencesSection
-                selectedGames={selectedGames}
-                customGameName={customGameName}
-                onGameToggle={handleGameToggle}
-                onCustomGameNameChange={(name) => {
-                  setCustomGameName(name)
-                  setGamePreferencesChanged(true)
-                }}
+          <SectionErrorBoundary sectionName="Форма редактирования">
+            <div>
+              <ProfileEditForm
+                siteNickname={siteNickname}
+                age={age}
+                bio={bio}
+                isHidden={isHidden}
+                saving={saving}
+                onSiteNicknameChange={setSiteNickname}
+                onAgeChange={setAge}
+                onBioChange={setBio}
+                onIsHiddenChange={setIsHidden}
+                onAvatarFileChange={handleAvatarFileChange}
+                onSave={handleSave}
+                placeholderUsername={profile.discord_username}
               />
+
+              {/* Game Preferences inside edit form */}
+              <div style={{
+                background: 'var(--gray)',
+                border: '2px solid var(--accent)',
+                borderRadius: '8px',
+                padding: '2rem',
+                marginBottom: '2rem',
+                marginTop: '-1rem'
+              }}>
+                <GamePreferencesSection
+                  selectedGames={selectedGames}
+                  customGameName={customGameName}
+                  onGameToggle={handleGameToggle}
+                  onCustomGameNameChange={(name) => {
+                    setCustomGameName(name)
+                    setGamePreferencesChanged(true)
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          </SectionErrorBoundary>
         )}
 
         {/* Activity Section */}
-        <div style={{
-          background: 'var(--gray)',
-          border: '2px solid var(--gray-light)',
-          borderRadius: '8px',
-          padding: '2rem',
-          marginBottom: '2rem',
-          minHeight: '300px'
-        }}>
-          <h3 style={{ fontFamily: 'Unbounded', marginBottom: '1.5rem' }}>
-            АКТИВНОСТЬ НА САЙТЕ
-          </h3>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            minHeight: '200px',
-            color: '#666',
-            flexDirection: 'column',
-            gap: '1rem'
+        <SectionErrorBoundary sectionName="Активность">
+          <div style={{
+            background: 'var(--gray)',
+            border: '2px solid var(--gray-light)',
+            borderRadius: '8px',
+            padding: '2rem',
+            marginBottom: '2rem',
+            minHeight: '300px'
           }}>
-            <div style={{ fontSize: '3rem' }}>📊</div>
-            <div>Лайкнутые новости, посты и активность</div>
-            <div style={{ fontSize: '0.875rem' }}>(В разработке)</div>
+            <h3 style={{ fontFamily: 'Unbounded', marginBottom: '1.5rem' }}>
+              АКТИВНОСТЬ НА САЙТЕ
+            </h3>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              minHeight: '200px',
+              color: '#666',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              <div style={{ fontSize: '3rem' }}>📊</div>
+              <div>Лайкнутые новости, посты и активность</div>
+              <div style={{ fontSize: '0.875rem' }}>(В разработке)</div>
+            </div>
           </div>
-        </div>
+        </SectionErrorBoundary>
 
         {/* Games Section */}
-        <div style={{
-          background: 'var(--gray)',
-          border: '2px solid var(--gray-light)',
-          borderRadius: '8px',
-          padding: '2rem',
-          marginBottom: '2rem',
-          minHeight: '300px'
-        }}>
-          <h3 style={{ 
-            fontFamily: 'Unbounded', 
-            marginBottom: '1.5rem', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.5rem' 
+        <SectionErrorBoundary sectionName="Игры">
+          <div style={{
+            background: 'var(--gray)',
+            border: '2px solid var(--gray-light)',
+            borderRadius: '8px',
+            padding: '2rem',
+            marginBottom: '2rem',
+            minHeight: '300px'
           }}>
-            <Gamepad2 size={24} style={{ color: 'var(--accent)' }} />
-            ИГРЫ, РЕЙТИНГ И ЛЮБИМЫЕ ГЕРОИ
-          </h3>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            minHeight: '200px',
-            color: '#666',
-            flexDirection: 'column',
-            gap: '1rem'
-          }}>
-            <div style={{ fontSize: '3rem' }}>🎮</div>
-            <div>Рейтинг в играх и любимые герои</div>
-            <div style={{ fontSize: '0.875rem' }}>(В разработке)</div>
+            <h3 style={{ 
+              fontFamily: 'Unbounded', 
+              marginBottom: '1.5rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem' 
+            }}>
+              <Gamepad2 size={24} style={{ color: 'var(--accent)' }} />
+              ИГРЫ, РЕЙТИНГ И ЛЮБИМЫЕ ГЕРОИ
+            </h3>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              minHeight: '200px',
+              color: '#666',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              <div style={{ fontSize: '3rem' }}>🎮</div>
+              <div>Рейтинг в играх и любимые герои</div>
+              <div style={{ fontSize: '0.875rem' }}>(В разработке)</div>
+            </div>
           </div>
-        </div>
+        </SectionErrorBoundary>
 
         <Footer />
       </main>
-    </>
+    </PageErrorBoundary>
   )
 }

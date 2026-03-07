@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { Navigation, Footer, SkipToContent } from '../components/layout'
 import { HeroSection, NewsSection, EventsSection, FeedSection, DiscordStats } from '../components/home'
+import { PageErrorBoundary } from '../components/PageErrorBoundary'
+import { SectionErrorBoundary } from '../components/SectionErrorBoundary'
 import { lazyLoadModal } from '../lib/lazyLoad'
 import './mobile-styles.css'
 
@@ -96,7 +98,7 @@ export default function Home() {
   }, [])
 
   return (
-    <>
+    <PageErrorBoundary pageName="Главная">
       {/* Skip to content для keyboard navigation */}
       <SkipToContent />
 
@@ -118,25 +120,35 @@ export default function Home() {
       {/* Основной контент */}
       <main id="main-content" className="container" tabIndex={-1}>
         {/* Hero секция */}
-        <HeroSection
-          discordUrl={commonSettings?.discord_join_url || '#'}
-        />
+        <SectionErrorBoundary sectionName="Hero">
+          <HeroSection
+            discordUrl={commonSettings?.discord_join_url || '#'}
+          />
+        </SectionErrorBoundary>
 
         {/* Секция новостей */}
-        <NewsSection />
+        <SectionErrorBoundary sectionName="Новости">
+          <NewsSection />
+        </SectionErrorBoundary>
 
         {/* Секция событий */}
-        <EventsSection />
+        <SectionErrorBoundary sectionName="События">
+          <EventsSection />
+        </SectionErrorBoundary>
 
         {/* Секция ленты */}
-        <FeedSection />
+        <SectionErrorBoundary sectionName="Лента активности">
+          <FeedSection />
+        </SectionErrorBoundary>
 
         {/* Discord статистика */}
-        <DiscordStats />
+        <SectionErrorBoundary sectionName="Discord статистика">
+          <DiscordStats />
+        </SectionErrorBoundary>
 
         {/* Футер */}
         <Footer />
       </main>
-    </>
+    </PageErrorBoundary>
   )
 }

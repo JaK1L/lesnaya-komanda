@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { NewsCard } from './NewsCard'
 import { NewsModal } from './NewsModal'
+import { NewsSkeleton } from '../skeletons'
 import styles from './NewsSection.module.css'
 
 interface News {
@@ -55,7 +56,13 @@ export function NewsSection() {
     return (
       <section className={styles.section}>
         <div className={styles.container}>
-          <div className={styles.loading}>Загрузка новостей...</div>
+          <header className={styles.header}>
+            <h2 className={styles.title}>
+              📰 Новости
+            </h2>
+            <p className={styles.subtitle}>Последние новости лесной команды</p>
+          </header>
+          <NewsSkeleton />
         </div>
       </section>
     )

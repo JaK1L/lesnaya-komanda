@@ -40,9 +40,9 @@ async def create_admin():
         ''')
         print("✅ Таблица admin_users создана")
         
-        # Данные админа
-        username = "LesnoyBOSS"
-        password = "LesnoyBOSS909!"
+        # Данные админа (из переменных окружения)
+        username = os.getenv('ADMIN_USERNAME', 'admin')
+        password = os.getenv('ADMIN_PASSWORD', 'admin123')
         role = "admin"
         
         # Хешируем пароль

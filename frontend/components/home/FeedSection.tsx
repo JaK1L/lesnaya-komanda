@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { FeedCard } from './FeedCard'
+import { FeedSkeleton } from '../skeletons'
 import styles from './FeedSection.module.css'
 
 interface FeedItem {
@@ -43,7 +44,13 @@ export function FeedSection() {
     return (
       <section className={styles.section}>
         <div className={styles.container}>
-          <div className={styles.loading}>Загрузка ленты...</div>
+          <header className={styles.header}>
+            <h2 className={styles.title}>
+              📋 Лента
+            </h2>
+            <p className={styles.subtitle}>Достижения и новости команды</p>
+          </header>
+          <FeedSkeleton />
         </div>
       </section>
     )

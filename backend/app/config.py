@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # Режим разработки
     DEBUG: bool = False
     
+    # Admin credentials (for initial setup)
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_PASSWORD: str = "admin123"
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

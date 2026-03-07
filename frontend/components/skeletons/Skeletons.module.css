@@ -1,0 +1,130 @@
+/* News Skeleton */
+.newsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.newsCard {
+  background: var(--gray);
+  border: 2px solid var(--gray-light);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.newsImage {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.newsContent {
+  padding: 1.5rem;
+}
+
+.newsDate {
+  margin: 0.5rem 0 1rem 0;
+}
+
+/* Events Skeleton */
+.eventsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.eventCard {
+  background: var(--gray);
+  border: 2px solid var(--gray-light);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.eventHeader {
+  margin-bottom: 1rem;
+}
+
+.eventFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+/* Feed Skeleton */
+.feedList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.feedItem {
+  background: var(--gray);
+  border: 2px solid var(--gray-light);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.feedHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.feedHeaderText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Admin Table Skeleton */
+.adminTable {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.adminRow {
+  background: var(--gray);
+  border: 2px solid var(--gray-light);
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.adminRowContent {
+  flex: 1;
+}
+
+.adminRowActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Tablet: 768px+ */
+@media (min-width: 768px) {
+  .newsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .eventsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop: 1024px+ */
+@media (min-width: 1024px) {
+  .newsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .eventsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

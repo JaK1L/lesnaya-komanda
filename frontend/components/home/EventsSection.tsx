@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { EventCard } from './EventCard'
+import { EventsSkeleton } from '../skeletons'
 import styles from './EventsSection.module.css'
 
 interface Event {
@@ -50,7 +51,13 @@ export function EventsSection() {
     return (
       <section className={styles.section}>
         <div className={styles.container}>
-          <div className={styles.loading}>Загрузка событий...</div>
+          <header className={styles.header}>
+            <h2 className={styles.title}>
+              📅 События
+            </h2>
+            <p className={styles.subtitle}>Турниры и мероприятия лесной команды</p>
+          </header>
+          <EventsSkeleton />
         </div>
       </section>
     )

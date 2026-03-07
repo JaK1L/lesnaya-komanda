@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { uploadImage } from '../../../lib/imageUpload'
+import { AdminTableSkeleton } from '../../../components/skeletons'
 import styles from '../news/page.module.css'
 
 interface Merch {
@@ -194,7 +195,18 @@ export default function AdminMerchPage() {
   }
 
   if (isLoading) {
-    return <div className={styles.loading}>Загрузка...</div>
+    return (
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <button onClick={() => router.push('/admin')} className={styles.backButton}>
+            ← Назад
+          </button>
+          <h1>🛍️ Управление магазином</h1>
+          <div style={{ width: '120px' }} /> {/* Spacer */}
+        </header>
+        <AdminTableSkeleton rows={5} />
+      </div>
+    )
   }
 
   return (

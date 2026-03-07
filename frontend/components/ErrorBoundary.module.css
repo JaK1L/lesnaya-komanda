@@ -133,3 +133,48 @@
     margin-bottom: 1.5rem;
   }
 }
+
+/* Button styles for error boundaries */
+.primaryButton,
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  font-family: inherit;
+}
+
+.primaryButton {
+  background: var(--accent);
+  color: var(--background);
+  border-color: var(--accent);
+}
+
+.primaryButton:hover {
+  background: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 255, 117, 0.3);
+}
+
+.secondaryButton {
+  background: transparent;
+  color: var(--foreground);
+  border-color: var(--gray-light);
+}
+
+.secondaryButton:hover {
+  background: var(--gray);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.primaryButton:active,
+.secondaryButton:active {
+  transform: translateY(0);
+}
