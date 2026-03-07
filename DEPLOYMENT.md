@@ -216,12 +216,12 @@ NEXT_PUBLIC_SENTRY_DSN=https://xxxxx@xxxxx.ingest.sentry.io/xxxxx
 **Google Analytics:**
 1. Перейти на [analytics.google.com](https://analytics.google.com)
 2. Создать аккаунт и ресурс
-3. Скопировать Measurement ID (G-XXXXXXXXXX)
+3. Скопировать Measurement ID (G-3437T4EM9D)
 
 **Yandex Metrika:**
 1. Перейти на [metrika.yandex.ru](https://metrika.yandex.ru)
 2. Добавить счетчик
-3. Скопировать номер счетчика (XXXXXXXX)
+3. Скопировать номер счетчика (107194144)
 
 ### 4. Деплой
 
