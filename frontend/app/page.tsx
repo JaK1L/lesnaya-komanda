@@ -25,7 +25,6 @@ const TOKEN_KEY = 'lesnaya_token'
 
 export default function Home() {
   // State
-  const [loading, setLoading] = useState(true)
   const [token, setToken] = useState<string | null>(null)
   const [commonSettings, setCommonSettings] = useState<CommonSettings | null>(null)
   const [showGamePreferencesModal, setShowGamePreferencesModal] = useState(false)
@@ -75,14 +74,10 @@ export default function Home() {
   // Загрузка данных с API (мемоизирована)
   const fetchData = useCallback(async (): Promise<void> => {
     try {
-      setLoading(true)
-      
       const commonRes = await axios.get<CommonSettings>(`${API_URL}/api/settings/common`)
       setCommonSettings(commonRes.data)
     } catch (err) {
       console.error('Error fetching data:', err)
-    } finally {
-      setLoading(false)
     }
   }, [])
 
