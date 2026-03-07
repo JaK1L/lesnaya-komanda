@@ -1,0 +1,128 @@
+.header {
+  background: var(--gray);
+  border: 2px solid var(--gray-light);
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.content {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.avatarWrapper {
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent);
+}
+
+.avatarPlaceholder {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: var(--accent-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: var(--accent);
+  border: 3px solid var(--accent);
+}
+
+.info {
+  flex: 1;
+  min-width: 250px;
+}
+
+.nickname {
+  font-size: 1.75rem;
+  font-family: 'Unbounded', sans-serif;
+  font-weight: bold;
+  color: var(--accent);
+  margin-bottom: 0.25rem;
+}
+
+.username {
+  font-size: 1rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
+.age {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.bioSection {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--background);
+  border: 1px solid var(--gray-light);
+  border-radius: 4px;
+  min-height: 80px;
+}
+
+.bioLabel {
+  font-size: 0.875rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
+.bioText {
+  color: white;
+  line-height: 1.6;
+}
+
+.bioEmpty {
+  color: #666;
+  font-style: italic;
+}
+
+.actions {
+  flex-shrink: 0;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .header {
+    padding: 1.5rem;
+  }
+
+  .content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .avatar,
+  .avatarPlaceholder {
+    width: 120px;
+    height: 120px;
+  }
+
+  .nickname {
+    font-size: 1.5rem;
+  }
+
+  .info {
+    width: 100%;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}
