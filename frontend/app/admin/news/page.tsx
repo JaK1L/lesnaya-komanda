@@ -19,6 +19,7 @@ export default function AdminNewsPage() {
   const [news, setNews] = useState<News[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editingNews, setEditingNews] = useState<News | null>(null)
   
   const [formData, setFormData] = useState({
     title: '',
@@ -60,8 +61,14 @@ export default function AdminNewsPage() {
     
     try {
       const token = localStorage.getItem('admin_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/news`, {
-        method: 'POST',
+      const url = editingNews
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/admin/news/${editingNews.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/admin/news`
+      
+      const method = editingNews ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -69,14 +76,15 @@ export default function AdminNewsPage() {
         body: JSON.stringify(formData),
       })
 
-      if (!response.ok) throw new Error('Failed to create')
+      if (!response.ok) throw new Error('Failed to save')
       
       await fetchNews()
       setShowForm(false)
+      setEditingNews(null)
       setFormData({ title: '', content: '', published: true })
     } catch (error) {
-      console.error('Error creating news:', error)
-      alert('Ошибка при создании новости')
+      console.error('Error saving news:', error)
+      alert('Ошибка при сохранении новости')
     }
   }
 
@@ -101,6 +109,22 @@ export default function AdminNewsPage() {
     }
   }
 
+  const handleEdit = (item: News) => {
+    setEditingNews(item)
+    setFormData({
+      title: item.title,
+      content: item.content,
+      published: item.published,
+    })
+    setShowForm(true)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingNews(null)
+    setFormData({ title: '', content: '', published: true })
+    setShowForm(false)
+  }
+
   if (isLoading) {
     return <div className={styles.loading}>Загрузка...</div>
   }
@@ -112,7 +136,13 @@ export default function AdminNewsPage() {
           ← Назад
         </button>
         <h1>📰 Управление новостями</h1>
-        <button onClick={() => setShowForm(!showForm)} className={styles.addButton}>
+        <button onClick={() => {
+          if (showForm && editingNews) {
+            handleCancelEdit()
+          } else {
+            setShowForm(!showForm)
+          }
+        }} className={styles.addButton}>
           {showForm ? 'Отмена' : '+ Добавить'}
         </button>
       </header>
@@ -120,6 +150,9 @@ export default function AdminNewsPage() {
       {showForm && (
         <div className={styles.formContainer}>
           <form onSubmit={handleSubmit} className={styles.form}>
+            <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
+              {editingNews ? 'Редактировать новость' : 'Создать новость'}
+            </h2>
             <div className={styles.formGroup}>
               <label htmlFor="title">Заголовок</label>
               <input
@@ -158,7 +191,7 @@ export default function AdminNewsPage() {
             </div>
 
             <button type="submit" className={styles.submitButton}>
-              Создать новость
+              {editingNews ? 'Сохранить изменения' : 'Создать новость'}
             </button>
           </form>
         </div>
@@ -182,8 +215,16 @@ export default function AdminNewsPage() {
                     {item.published ? '✓ Опубликовано' : '○ Черновик'}
                   </span>
                   <button
+                    onClick={() => handleEdit(item)}
+                    className={styles.editButton}
+                    title="Редактировать"
+                  >
+                    ✏️
+                  </button>
+                  <button
                     onClick={() => handleDelete(item.id)}
                     className={styles.deleteButton}
+                    title="Удалить"
                   >
                     🗑️
                   </button>

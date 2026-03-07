@@ -20,6 +20,7 @@ export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   
   const [formData, setFormData] = useState({
     title: '',
@@ -63,8 +64,14 @@ export default function AdminEventsPage() {
     
     try {
       const token = localStorage.getItem('admin_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events`, {
-        method: 'POST',
+      const url = editingEvent
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/admin/events/${editingEvent.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/admin/events`
+      
+      const method = editingEvent ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -72,10 +79,11 @@ export default function AdminEventsPage() {
         body: JSON.stringify(formData),
       })
 
-      if (!response.ok) throw new Error('Failed to create')
+      if (!response.ok) throw new Error('Failed to save')
       
       await fetchEvents()
       setShowForm(false)
+      setEditingEvent(null)
       setFormData({
         title: '',
         description: '',
@@ -84,8 +92,8 @@ export default function AdminEventsPage() {
         status: 'Планируется',
       })
     } catch (error) {
-      console.error('Error creating event:', error)
-      alert('Ошибка при создании события')
+      console.error('Error saving event:', error)
+      alert('Ошибка при сохранении события')
     }
   }
 
@@ -110,6 +118,36 @@ export default function AdminEventsPage() {
     }
   }
 
+  const handleEdit = (item: Event) => {
+    setEditingEvent(item)
+    // Преобразуем дату в формат datetime-local
+    const eventDate = new Date(item.event_date)
+    const localDate = new Date(eventDate.getTime() - eventDate.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16)
+    
+    setFormData({
+      title: item.title,
+      description: item.description,
+      game: item.game,
+      event_date: localDate,
+      status: item.status,
+    })
+    setShowForm(true)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingEvent(null)
+    setFormData({
+      title: '',
+      description: '',
+      game: 'Общее',
+      event_date: '',
+      status: 'Планируется',
+    })
+    setShowForm(false)
+  }
+
   if (isLoading) {
     return <div className={styles.loading}>Загрузка...</div>
   }
@@ -121,7 +159,13 @@ export default function AdminEventsPage() {
           ← Назад
         </button>
         <h1>📅 Управление событиями</h1>
-        <button onClick={() => setShowForm(!showForm)} className={styles.addButton}>
+        <button onClick={() => {
+          if (showForm && editingEvent) {
+            handleCancelEdit()
+          } else {
+            setShowForm(!showForm)
+          }
+        }} className={styles.addButton}>
           {showForm ? 'Отмена' : '+ Добавить'}
         </button>
       </header>
@@ -129,6 +173,9 @@ export default function AdminEventsPage() {
       {showForm && (
         <div className={styles.formContainer}>
           <form onSubmit={handleSubmit} className={styles.form}>
+            <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
+              {editingEvent ? 'Редактировать событие' : 'Создать событие'}
+            </h2>
             <div className={styles.formGroup}>
               <label htmlFor="title">Название события</label>
               <input
@@ -198,7 +245,7 @@ export default function AdminEventsPage() {
             </div>
 
             <button type="submit" className={styles.submitButton}>
-              Создать событие
+              {editingEvent ? 'Сохранить изменения' : 'Создать событие'}
             </button>
           </form>
         </div>
@@ -222,8 +269,16 @@ export default function AdminEventsPage() {
                     {item.game}
                   </span>
                   <button
+                    onClick={() => handleEdit(item)}
+                    className={styles.editButton}
+                    title="Редактировать"
+                  >
+                    ✏️
+                  </button>
+                  <button
                     onClick={() => handleDelete(item.id)}
                     className={styles.deleteButton}
+                    title="Удалить"
                   >
                     🗑️
                   </button>

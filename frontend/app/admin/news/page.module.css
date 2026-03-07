@@ -233,6 +233,7 @@
   color: #ddd;
 }
 
+.editButton,
 .deleteButton {
   padding: 0.5rem;
   background: transparent;
@@ -242,6 +243,7 @@
   transition: transform 0.2s;
 }
 
+.editButton:hover,
 .deleteButton:hover {
   transform: scale(1.2);
 }

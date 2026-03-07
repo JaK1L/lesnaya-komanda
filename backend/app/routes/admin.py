@@ -84,6 +84,33 @@ async def delete_event(
     return {"status": "ok"}
 
 
+@router.put("/events/{event_id}", response_model=EventOut)
+async def update_event(
+    event_id: int,
+    payload: EventCreate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Обновить событие."""
+    row = await db.fetchrow(
+        """
+        UPDATE events
+        SET title = $2, description = $3, game = $4, event_date = $5, status = $6
+        WHERE id = $1
+        RETURNING id, title, description, game, event_date, created_by, participants, status
+        """,
+        event_id,
+        payload.title,
+        payload.description,
+        payload.game,
+        payload.event_date,
+        payload.status,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+    return EventOut(**dict(row))
+
+
 class NewsCreate(BaseModel):
     title: str = Field(..., max_length=200)
     content: str = Field(..., max_length=5000)
@@ -147,6 +174,31 @@ async def delete_news(
     if result.endswith("0"):
         raise HTTPException(status_code=404, detail="Новость не найдена")
     return {"status": "ok"}
+
+
+@router.put("/news/{news_id}", response_model=NewsOut)
+async def update_news(
+    news_id: int,
+    payload: NewsCreate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Обновить новость."""
+    row = await db.fetchrow(
+        """
+        UPDATE news
+        SET title = $2, content = $3, published = $4, updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, title, content, author_id, published, created_at, updated_at
+        """,
+        news_id,
+        payload.title,
+        payload.content,
+        payload.published,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Новость не найдена")
+    return NewsOut(**dict(row))
 
 
 class FeedCreate(BaseModel):
@@ -221,6 +273,31 @@ async def delete_feed_item(
     if result.endswith("0"):
         raise HTTPException(status_code=404, detail="Запись не найдена")
     return {"status": "ok"}
+
+
+@router.put("/feed/{feed_id}", response_model=FeedOut)
+async def update_feed_item(
+    feed_id: int,
+    payload: FeedCreate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Обновить элемент ленты."""
+    row = await db.fetchrow(
+        """
+        UPDATE home_feed
+        SET kind = $2, title = $3, content = $4
+        WHERE id = $1
+        RETURNING id, kind, title, content, created_at
+        """,
+        feed_id,
+        payload.kind,
+        payload.title,
+        payload.content,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Запись не найдена")
+    return FeedOut(**dict(row))
 
 
 class CommonSettings(BaseModel):

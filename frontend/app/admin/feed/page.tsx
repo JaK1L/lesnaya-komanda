@@ -17,6 +17,7 @@ export default function AdminFeedPage() {
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editingFeed, setEditingFeed] = useState<FeedItem | null>(null)
   
   const [formData, setFormData] = useState({
     kind: 'post' as 'post' | 'achievement',
@@ -58,8 +59,14 @@ export default function AdminFeedPage() {
     
     try {
       const token = localStorage.getItem('admin_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/feed`, {
-        method: 'POST',
+      const url = editingFeed
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/admin/feed/${editingFeed.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/admin/feed`
+      
+      const method = editingFeed ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -70,14 +77,15 @@ export default function AdminFeedPage() {
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to create')
+      if (!response.ok) throw new Error('Failed to save')
       
       await fetchFeed()
       setShowForm(false)
+      setEditingFeed(null)
       setFormData({ kind: 'post', title: '', content: '' })
     } catch (error) {
-      console.error('Error creating feed item:', error)
-      alert('Ошибка при создании записи')
+      console.error('Error saving feed item:', error)
+      alert('Ошибка при сохранении записи')
     }
   }
 
@@ -102,6 +110,22 @@ export default function AdminFeedPage() {
     }
   }
 
+  const handleEdit = (item: FeedItem) => {
+    setEditingFeed(item)
+    setFormData({
+      kind: item.kind,
+      title: item.title,
+      content: item.content || '',
+    })
+    setShowForm(true)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingFeed(null)
+    setFormData({ kind: 'post', title: '', content: '' })
+    setShowForm(false)
+  }
+
   if (isLoading) {
     return <div className={styles.loading}>Загрузка...</div>
   }
@@ -113,7 +137,13 @@ export default function AdminFeedPage() {
           ← Назад
         </button>
         <h1>📝 Управление лентой</h1>
-        <button onClick={() => setShowForm(!showForm)} className={styles.addButton}>
+        <button onClick={() => {
+          if (showForm && editingFeed) {
+            handleCancelEdit()
+          } else {
+            setShowForm(!showForm)
+          }
+        }} className={styles.addButton}>
           {showForm ? 'Отмена' : '+ Добавить'}
         </button>
       </header>
@@ -121,6 +151,9 @@ export default function AdminFeedPage() {
       {showForm && (
         <div className={styles.formContainer}>
           <form onSubmit={handleSubmit} className={styles.form}>
+            <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
+              {editingFeed ? 'Редактировать запись' : 'Создать запись'}
+            </h2>
             <div className={styles.formGroup}>
               <label htmlFor="kind">Тип записи</label>
               <select
@@ -163,7 +196,7 @@ export default function AdminFeedPage() {
             </div>
 
             <button type="submit" className={styles.submitButton}>
-              Создать запись
+              {editingFeed ? 'Сохранить изменения' : 'Создать запись'}
             </button>
           </form>
         </div>
@@ -187,8 +220,16 @@ export default function AdminFeedPage() {
                     {item.kind === 'post' ? '📝 Пост' : '🏆 Достижение'}
                   </span>
                   <button
+                    onClick={() => handleEdit(item)}
+                    className={styles.editButton}
+                    title="Редактировать"
+                  >
+                    ✏️
+                  </button>
+                  <button
                     onClick={() => handleDelete(item.id)}
                     className={styles.deleteButton}
+                    title="Удалить"
                   >
                     🗑️
                   </button>
