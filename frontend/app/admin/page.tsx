@@ -35,9 +35,13 @@ export default function AdminPage() {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
+          grant_type: '',
           username,
           password,
-        }),
+          scope: '',
+          client_id: '',
+          client_secret: '',
+        }).toString(),
       })
 
       console.log('Login response status:', response.status)
