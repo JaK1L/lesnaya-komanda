@@ -8,7 +8,7 @@ import asyncpg
 from pydantic import BaseModel, Field
 
 from ..database import get_db
-from ..auth import get_current_user, get_current_admin_user
+from ..auth import get_current_user, get_current_admin_user, get_optional_current_user
 from ..models import User
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -51,7 +51,7 @@ class EventWithRegistration(BaseModel):
 async def list_events(
     upcoming_only: bool = True,
     db: asyncpg.Connection = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     """Получить список событий с информацией о регистрации."""
     

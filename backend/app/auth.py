@@ -144,6 +144,48 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     return current_user
 
 
+async def get_optional_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    db = Depends(get_db)
+) -> Optional[User]:
+    """Получение текущего пользователя (опционально, без ошибки если токена нет)."""
+    if not credentials:
+        return None
+    
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+        sub = payload.get("sub")
+        token_type = payload.get("type")
+        if sub is None:
+            return None
+    except JWTError:
+        return None
+
+    # Вход через Discord OAuth
+    if token_type == "discord":
+        try:
+            discord_id = int(sub)
+        except (ValueError, TypeError):
+            return None
+        row = await db.fetchrow(
+            "SELECT id, discord_username FROM users WHERE discord_id = $1",
+            discord_id,
+        )
+        if not row:
+            return None
+        return User(id=row["id"], username=row["discord_username"], role="user")
+
+    # Обычный админ (логин/пароль)
+    user = await get_user_by_username(db, username=sub)
+    if user is None:
+        return None
+    return User(id=user.id, username=user.username, role=user.role)
+
+
 async def get_current_admin_user(
     current_user: User = Depends(get_current_user),
     db = Depends(get_db)
