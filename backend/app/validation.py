@@ -120,7 +120,7 @@ def validate_telegram_url(url: Optional[str]) -> Optional[str]:
 class ContentValidationMixin:
     """Mixin для валидации контента в Pydantic моделях"""
     
-    @field_validator('title', mode='before')
+    @field_validator('title', mode='before', check_fields=False)
     @classmethod
     def validate_title(cls, v: str) -> str:
         """Валидация заголовка"""
@@ -154,7 +154,7 @@ class ContentValidationMixin:
         
         return v
     
-    @field_validator('description', mode='before')
+    @field_validator('description', mode='before', check_fields=False)
     @classmethod
     def validate_description(cls, v: Optional[str]) -> Optional[str]:
         """Валидация описания"""
