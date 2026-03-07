@@ -29,6 +29,8 @@ async def list_public_events(db: asyncpg.Connection = Depends(get_db)):
     Публичный список событий для сайта.
     Показываем ближайшие и прошедшие, отсортированные по дате.
     """
+    from fastapi import Response
+    
     rows = await db.fetch(
         """
         SELECT id, title, description, game, event_date, telegram_url
