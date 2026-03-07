@@ -1,215 +1,241 @@
 # 🌲 Лесная Команда
 
-> Платформа игрового сообщества с интеграцией Discord
+Веб-платформа для игрового сообщества с системой профилей, достижений, событий и интеграцией с Discord.
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791)](https://www.postgresql.org/)
-[![Discord.py](https://img.shields.io/badge/Discord.py-2.3-5865F2)](https://discordpy.readthedocs.io/)
-
-## 📋 О проекте
-
-**Лесная Команда** - это полнофункциональная веб-платформа для игрового сообщества с интеграцией Discord. Проект включает в себя сайт, API и Discord бота для управления сообществом.
-
-### ✨ Основные возможности
-
-- 👥 **Профили игроков** - персональные страницы с статистикой и достижениями
-- 📊 **Рейтинговая система** - отслеживание активности и прогресса
-- 🎮 **Discord интеграция** - синхронизация данных, статусы, активность
-- 📰 **Новости и события** - информация о турнирах и мероприятиях
-- 🎬 **Стримы** - список стримеров команды с live статусом
-- 🌐 **Соцсети** - все каналы команды в одном месте
-- 🤖 **Discord бот** - команды для взаимодействия с сайтом
+[![Deploy](https://github.com/your-username/lesnaya-komanda/actions/workflows/deploy.yml/badge.svg)](https://github.com/your-username/lesnaya-komanda/actions/workflows/deploy.yml)
+[![Tests](https://github.com/your-username/lesnaya-komanda/actions/workflows/test.yml/badge.svg)](https://github.com/your-username/lesnaya-komanda/actions/workflows/test.yml)
 
 ## 🚀 Быстрый старт
 
-### Требования
-
-- Node.js 18+
-- Python 3.11+
-- PostgreSQL 15+
-- Discord Bot Token
-
-### Установка
+### Деплой за 5 минут
 
 ```bash
-# Клонировать репозиторий
-git clone https://github.com/JaK1L/lesnaya-komanda.git
-cd lesnaya-komanda
+# Windows
+.\deploy.ps1
 
-# Установить зависимости frontend
-cd frontend
-npm install
-
-# Установить зависимости backend
-cd ../backend
-pip install -r requirements.txt
-
-# Установить зависимости бота
-cd ../bot
-pip install -r requirements.txt
+# Linux/Mac
+chmod +x deploy.sh && ./deploy.sh
 ```
 
-### Настройка
-
-1. **Frontend** - создать `.env.local`:
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
-NEXT_PUBLIC_YM_ID=XXXXXXXX
-```
-
-2. **Backend** - создать `.env`:
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/lesnaya
-SECRET_KEY=your-secret-key
-DISCORD_CLIENT_ID=your-client-id
-DISCORD_CLIENT_SECRET=your-client-secret
-ALLOWED_ORIGINS=http://localhost:3000
-```
-
-3. **Bot** - создать `.env`:
-```env
-DISCORD_BOT_TOKEN=your-bot-token
-DISCORD_GUILD_ID=your-guild-id
-DATABASE_URL=postgresql://user:password@localhost:5432/lesnaya
-API_URL=http://localhost:8000
-WEBSITE_URL=http://localhost:3000
-```
-
-### Запуск
+### Локальная разработка
 
 ```bash
-# Frontend (в папке frontend)
-npm run dev
-# Откроется на http://localhost:3000
+# С Docker
+make dev-docker
 
-# Backend (в папке backend)
-python -m uvicorn app.main:app --reload
-# Откроется на http://localhost:8000
-
-# Bot (в папке bot)
-python main.py
+# Без Docker
+make dev
+cd backend && uvicorn app.main:app --reload
+cd frontend && npm run dev
 ```
 
-## 📁 Структура проекта
+📖 Подробнее: [QUICK-START.md](./QUICK-START.md)
+
+---
+
+## 📋 Возможности
+
+### Для пользователей
+- 🎮 **Профили игроков** - статистика, достижения, игровые аккаунты
+- 🏆 **Система достижений** - 36 уникальных достижений
+- 📅 **Календарь событий** - турниры, стримы, встречи
+- 📰 **Новости** - актуальная информация о сообществе
+- 🛍️ **Мерч** - магазин товаров сообщества
+- 📺 **Стримеры** - список активных стримеров
+- 🔐 **Discord OAuth** - вход через Discord
+
+### Для администраторов
+- ⚙️ **Админ-панель** - управление контентом
+- ✏️ **Редактирование** - новости, события, достижения
+- 👥 **Управление пользователями** - роли, статистика
+- 📊 **Аналитика** - Google Analytics, Yandex Metrika
+
+### Технические
+- ⚡ **Высокая производительность** - Next.js 14, FastAPI
+- 🔒 **Безопасность** - JWT, CORS, rate limiting
+- 📱 **Адаптивный дизайн** - работает на всех устройствах
+- 🌐 **SEO оптимизация** - meta tags, sitemap
+- 🤖 **Discord бот** - интеграция с сервером
+
+---
+
+## 🏗️ Архитектура
+
+```
+┌─────────────────┐
+│   Пользователь  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐      ┌──────────────┐
+│  Frontend       │─────▶│  Backend     │
+│  Next.js 14     │      │  FastAPI     │
+│  (Vercel)       │      │  (Render)    │
+└─────────────────┘      └──────┬───────┘
+                                │
+                                ▼
+                         ┌──────────────┐
+                         │  Database    │
+                         │  PostgreSQL  │
+                         │  (Neon)      │
+                         └──────────────┘
+                                ▲
+                                │
+                         ┌──────┴───────┐
+                         │  Discord Bot │
+                         │  (Railway)   │
+                         └──────────────┘
+```
+
+---
+
+## 🛠️ Технологии
+
+### Frontend
+- **Framework:** Next.js 14 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Animations:** Framer Motion
+- **HTTP Client:** Axios
+- **Icons:** Lucide React
+- **Testing:** Vitest, Testing Library
+
+### Backend
+- **Framework:** FastAPI
+- **Language:** Python 3.12
+- **Database:** PostgreSQL (asyncpg)
+- **Cache:** Redis
+- **Auth:** JWT (python-jose)
+- **Password:** bcrypt
+- **Server:** Uvicorn
+
+### Infrastructure
+- **Frontend Hosting:** Vercel
+- **Backend Hosting:** Render
+- **Database:** Neon (PostgreSQL)
+- **Bot Hosting:** Railway
+- **CI/CD:** GitHub Actions
+- **Monitoring:** Google Analytics, Yandex Metrika
+
+---
+
+## 📦 Структура проекта
 
 ```
 lesnaya-komanda/
 ├── frontend/              # Next.js приложение
-│   ├── app/              # Страницы (App Router)
+│   ├── app/              # App Router страницы
 │   ├── components/       # React компоненты
-│   ├── lib/              # Утилиты
-│   └── hooks/            # Custom hooks
-│
-├── backend/              # FastAPI сервер
-│   ├── app/
-│   │   ├── routes/      # API эндпоинты
-│   │   ├── services/    # Бизнес-логика
-│   │   └── models/      # Pydantic модели
-│   └── seed_data.sql    # Тестовые данные
-│
-└── bot/                  # Discord бот
-    ├── cogs/            # Модули команд
-    └── main.py          # Основной файл
+│   ├── lib/              # Утилиты и API клиент
+│   └── public/           # Статические файлы
+├── backend/              # FastAPI приложение
+│   ├── app/              # Исходный код
+│   │   ├── routes/       # API эндпоинты
+│   │   ├── services/     # Бизнес-логика
+│   │   └── models/       # Модели данных
+│   └── migrations/       # SQL миграции
+├── bot/                  # Discord бот
+│   ├── cogs/             # Команды бота
+│   └── main.py           # Точка входа
+├── .github/              # GitHub Actions
+│   └── workflows/        # CI/CD пайплайны
+└── docs/                 # Документация
 ```
 
-## 🎯 Технологии
+---
 
-### Frontend
-- **Next.js 14** - React фреймворк с App Router
-- **TypeScript** - Типизация
-- **CSS Modules** - Стили
-- **Framer Motion** - Анимации
-- **Axios** - HTTP клиент
+## 🌐 URLs
 
-### Backend
-- **FastAPI** - Python веб-фреймворк
-- **PostgreSQL** - База данных
-- **asyncpg** - Async PostgreSQL драйвер
-- **Pydantic** - Валидация данных
-- **JWT** - Аутентификация
+### Production
+- **Frontend:** https://lesnaya-komanda.vercel.app
+- **Backend:** https://lesnayakomanda.onrender.com
+- **API Docs:** https://lesnayakomanda.onrender.com/api/docs
+- **Admin:** https://lesnaya-komanda.vercel.app/admin
 
-### Bot
-- **Discord.py** - Discord API
-- **asyncpg** - База данных
-- **aiohttp** - HTTP клиент
+### Дашборды
+- **Render:** https://dashboard.render.com/
+- **Vercel:** https://vercel.com/dashboard
+- **Railway:** https://railway.app/dashboard
+- **Neon:** https://console.neon.tech/
+
+---
 
 ## 📚 Документация
 
-- [API Documentation](http://localhost:8000/api/docs) - Swagger UI
-- [Bot Commands](./bot/BOT-COMMANDS.md) - Команды Discord бота
-- [Seed Data Guide](./backend/SEED_DATA_README.md) - Заполнение БД
-- [Monitoring Setup](./MONITORING-SETUP.md) - Настройка аналитики
-- [SEO Checklist](./frontend/SEO-CHECKLIST.md) - SEO оптимизация
+### Деплой
+- [QUICK-START.md](./QUICK-START.md) - Быстрый старт
+- [DEPLOY-GUIDE.md](./DEPLOY-GUIDE.md) - Краткий гайд по деплою
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Полная документация по деплою
+- [ENV-VARIABLES.md](./ENV-VARIABLES.md) - Переменные окружения
 
-## 🎮 Discord бот
+### Разработка
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - Как контрибьютить
+- [frontend/SEO-CHECKLIST.md](./frontend/SEO-CHECKLIST.md) - SEO чеклист
 
-### Основные команды
+### Настройка
+- [IMAGE-UPLOAD-SETUP.md](./IMAGE-UPLOAD-SETUP.md) - Загрузка изображений
+- [ANALYTICS-SETUP.md](./ANALYTICS-SETUP.md) - Настройка аналитики
+- [ERROR-BOUNDARIES-SETUP.md](./ERROR-BOUNDARIES-SETUP.md) - Обработка ошибок
 
-```
-!помощь              # Список всех команд
-!сайт                # Ссылка на сайт
-!мойпрофиль          # Твой профиль
-!новости             # Последние новости
-!события             # Ближайшие события
-!стримы              # Страница стримов
-!профиль @user       # Профиль пользователя
-!топ                 # Топ по активности
-```
+---
 
-Полный список команд: [BOT-COMMANDS.md](./bot/BOT-COMMANDS.md)
-
-## 🗄️ База данных
-
-### Инициализация
+## 🔧 Команды
 
 ```bash
-# Создать базу данных
-createdb lesnaya_komanda
+# Разработка
+make dev              # Запустить локально
+make dev-docker       # Запустить в Docker
+make install          # Установить зависимости
 
-# Применить миграции (выполняется автоматически при запуске backend)
-# Или вручную через psql
-psql -d lesnaya_komanda -f backend/init.sql
+# Деплой
+make deploy           # Задеплоить на production
+make check            # Проверить деплой
+
+# Тестирование
+make test             # Запустить тесты
+make lint             # Проверить код
+
+# База данных
+make db-migrate       # Применить миграции
+make db-seed          # Заполнить тестовыми данными
+make admin-create     # Создать админа
+
+# Утилиты
+make clean            # Очистить временные файлы
+make status           # Показать статус сервисов
+make urls             # Показать все URLs
+make help             # Показать все команды
 ```
 
-### Заполнение тестовыми данными
+---
 
-```bash
-cd backend
-python seed_database.py
+## 🔐 Переменные окружения
+
+### Backend (Render)
+```env
+DATABASE_URL=postgresql://...
+SECRET_KEY=<генерировать случайно>
+ALLOWED_ORIGINS=https://lesnaya-komanda.vercel.app
+DISCORD_CLIENT_ID=...
+DISCORD_CLIENT_SECRET=...
+FRONTEND_URL=https://lesnaya-komanda.vercel.app
+BACKEND_URL=https://lesnayakomanda.onrender.com
+ADMIN_USERNAME=LesnoyBOSS
+ADMIN_PASSWORD=LesnoyBOSS909!
+DEBUG=False
 ```
-
-Или через SQL:
-```bash
-psql -d lesnaya_komanda -f backend/seed_data.sql
-```
-
-## 🚀 Деплой
 
 ### Frontend (Vercel)
+```env
+NEXT_PUBLIC_API_URL=https://lesnayakomanda.onrender.com
+NEXT_PUBLIC_GA_ID=G-3437T4EM9D
+NEXT_PUBLIC_YM_ID=107194144
+NEXT_PUBLIC_IMGBB_API_KEY=...
+```
 
-1. Подключить GitHub репозиторий к Vercel
-2. Настроить переменные окружения
-3. Деплой происходит автоматически при push
+📖 Подробнее: [ENV-VARIABLES.md](./ENV-VARIABLES.md)
 
-### Backend (Render/Railway)
-
-1. Создать новый проект
-2. Подключить GitHub
-3. Добавить PostgreSQL
-4. Настроить переменные окружения
-5. Деплой автоматический
-
-### Bot (Railway)
-
-1. Создать новый проект
-2. Подключить GitHub
-3. Указать папку `bot` как root
-4. Настроить переменные окружения
-5. Деплой автоматический
-
-Подробнее: [DEPLOYMENT.md](./DEPLOYMENT.md)
+---
 
 ## 🧪 Тестирование
 
@@ -218,105 +244,140 @@ psql -d lesnaya_komanda -f backend/seed_data.sql
 cd frontend
 npm test
 
-# Backend тесты (если добавлены)
+# Backend проверка
 cd backend
-pytest
+python -m py_compile app/*.py
 
-# Проверка типов
-npm run type-check
+# Проверка деплоя
+make check
 ```
+
+---
+
+## 🚀 Деплой
+
+### Автоматический (рекомендуется)
+
+```bash
+git push origin main
+```
+
+После пуша автоматически запустятся:
+- ✅ GitHub Actions проверит код
+- ✅ Vercel задеплоит frontend
+- ✅ Render задеплоит backend
+- ✅ Railway задеплоит бота
+
+### С проверкой
+
+```bash
+# Windows
+.\deploy.ps1
+
+# Linux/Mac
+./deploy.sh
+```
+
+Скрипт автоматически проверит все сервисы после деплоя.
+
+---
 
 ## 📊 Мониторинг
 
-Проект поддерживает интеграцию с:
-- **Google Analytics** - веб-аналитика
-- **Yandex Metrika** - российская аналитика
-- **Sentry** - отслеживание ошибок (опционально)
+### Uptime мониторинг
+Настроить на https://uptimerobot.com:
+- Frontend: https://lesnaya-komanda.vercel.app
+- Backend: https://lesnayakomanda.onrender.com/api/
 
-Настройка: [MONITORING-SETUP.md](./MONITORING-SETUP.md)
+### Логи
+- **Frontend:** Vercel Dashboard → Logs
+- **Backend:** Render Dashboard → Logs
+- **Bot:** Railway Dashboard → Logs
+- **Database:** Neon Dashboard → Monitoring
 
-## 🤝 Участие в разработке
+### Аналитика
+- **Google Analytics:** https://analytics.google.com
+- **Yandex Metrika:** https://metrika.yandex.ru
 
-Мы приветствуем вклад в проект! 
+---
 
-1. Fork репозитория
+## 🐛 Troubleshooting
+
+### Backend не запускается
+```bash
+# Проверить логи
+https://dashboard.render.com/ → Logs
+
+# Частые проблемы:
+# - DATABASE_URL неправильный
+# - SECRET_KEY слишком короткий
+# - Зависимости не установились
+```
+
+### CORS ошибка
+```bash
+# Проверить ALLOWED_ORIGINS на Render
+# Должен содержать: https://lesnaya-komanda.vercel.app
+```
+
+### Frontend не подключается к API
+```bash
+# Проверить NEXT_PUBLIC_API_URL на Vercel
+# Должен быть: https://lesnayakomanda.onrender.com
+```
+
+📖 Подробнее: [DEPLOYMENT.md](./DEPLOYMENT.md#troubleshooting)
+
+---
+
+## 💰 Стоимость
+
+Все сервисы на бесплатных планах:
+- **Neon:** 0.25 vCPU, 1GB storage
+- **Vercel:** 100GB bandwidth
+- **Render:** 750 часов/месяц
+- **Railway:** $5 кредитов/месяц
+
+**Итого: $0/месяц**
+
+---
+
+## 🤝 Контрибьюция
+
+Мы приветствуем вклад в проект! См. [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+1. Fork репозиторий
 2. Создать ветку: `git checkout -b feature/amazing-feature`
-3. Commit изменений: `git commit -m 'Add amazing feature'`
-4. Push в ветку: `git push origin feature/amazing-feature`
+3. Закоммитить: `git commit -m 'Add amazing feature'`
+4. Запушить: `git push origin feature/amazing-feature`
 5. Открыть Pull Request
 
-### Стандарты кода
-
-- TypeScript strict mode
-- ESLint + Prettier
-- Тесты для новых фич
-- Документация в коде
+---
 
 ## 📝 Лицензия
 
 MIT License - см. [LICENSE](./LICENSE)
 
+---
+
 ## 👥 Команда
 
-- **JaK1L** - Основатель и разработчик
-
-## 🔗 Ссылки
-
-- **Сайт**: https://lesnaya-komanda.vercel.app
-- **Discord**: https://discord.gg/YgX4RQZ
-- **GitHub**: https://github.com/JaK1L/lesnaya-komanda
-
-## 📈 Статус проекта
-
-- ✅ MVP готов
-- ✅ Production Ready
-- ✅ Все основные фичи реализованы
-- 🔄 Активная разработка
-
-## 🎯 Roadmap
-
-- [x] Базовый функционал
-- [x] Discord интеграция
-- [x] Система профилей
-- [x] Новости и события
-- [x] Стримы и соцсети
-- [ ] Админ-панель
-- [ ] Расширенная система достижений
-- [ ] Интеграция с игровыми API
-- [ ] Мобильное приложение
-
-## 💡 Особенности
-
-### Производительность
-- ⚡ Lighthouse Score: 95+
-- 📦 Bundle size: < 200KB (gzipped)
-- 🎨 Mobile-First дизайн
-- ♿ WCAG 2.1 AA совместимость
-
-### Безопасность
-- 🔐 JWT аутентификация
-- 🛡️ CORS настроен
-- 🔒 HTTPS only
-- 🚫 XSS защита
-
-### SEO
-- 📱 Responsive meta tags
-- 🔍 Sitemap.xml
-- 🤖 Robots.txt
-- 📊 Structured data (JSON-LD)
-
-## 🐛 Известные проблемы
-
-Нет критичных проблем. Минорные улучшения отслеживаются в [Issues](https://github.com/JaK1L/lesnaya-komanda/issues).
-
-## 📞 Поддержка
-
-Если у вас есть вопросы или проблемы:
-- Создайте [Issue](https://github.com/JaK1L/lesnaya-komanda/issues)
-- Напишите в [Discord](https://discord.gg/YgX4RQZ)
+- **Разработка:** Лесная Команда
+- **Discord:** [Присоединиться](https://discord.gg/lesnaya-komanda)
+- **Сайт:** https://lesnaya-komanda.vercel.app
 
 ---
 
-**Сделано с 🌲 в лесу**
+## 🙏 Благодарности
 
-*Последнее обновление: 07.03.2026*
+- [Next.js](https://nextjs.org/) - React фреймворк
+- [FastAPI](https://fastapi.tiangolo.com/) - Python веб-фреймворк
+- [Vercel](https://vercel.com/) - Frontend хостинг
+- [Render](https://render.com/) - Backend хостинг
+- [Neon](https://neon.tech/) - PostgreSQL база данных
+- [Railway](https://railway.app/) - Bot хостинг
+
+---
+
+**Последнее обновление:** 07.03.2026  
+**Версия:** 1.0.0

@@ -52,7 +52,7 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
       }
 
       // Send to API
-      const response = await axios.post(
+      await axios.post(
         `${API_URL}/api/users/game-preferences`,
         { preferences },
         {

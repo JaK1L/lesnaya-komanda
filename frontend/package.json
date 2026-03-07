@@ -26,6 +26,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/ui": "^4.0.18",
     "autoprefixer": "^10.4.27",
+    "eslint": "^10.0.3",
     "fast-check": "^4.5.3",
     "jsdom": "^28.1.0",
     "postcss": "^8.5.6",
