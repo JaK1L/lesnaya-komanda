@@ -29,16 +29,15 @@ export default function AdminPage() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL
       console.log('Attempting login with:', { username, api_url: apiUrl })
       
-      const formData = new URLSearchParams()
-      formData.append('username', username)
-      formData.append('password', password)
-      
       const response = await fetch(`${apiUrl}/api/token`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+          username,
+          password,
+        }),
       })
 
       console.log('Login response status:', response.status)
