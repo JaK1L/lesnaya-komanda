@@ -7,10 +7,35 @@ interface EventCardProps {
   game: string | null
   event_date: string | null
   telegram_url: string | null
+  status: string
+  max_participants: number | null
+  registration_enabled: boolean
+  registered_count: number
+  is_registered: boolean
+  can_register: boolean
   onClick: () => void
+  onRegister?: () => void
+  onUnregister?: () => void
+  isAuthenticated: boolean
 }
 
-export function EventCard({ title, description, game, event_date, telegram_url, onClick }: EventCardProps) {
+export function EventCard({ 
+  title, 
+  description, 
+  game, 
+  event_date, 
+  telegram_url, 
+  status,
+  max_participants,
+  registration_enabled,
+  registered_count,
+  is_registered,
+  can_register,
+  onClick,
+  onRegister,
+  onUnregister,
+  isAuthenticated
+}: EventCardProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Дата уточняется'
     
@@ -30,28 +55,30 @@ export function EventCard({ title, description, game, event_date, telegram_url, 
     })
   }
 
-  const getStatus = (dateString: string | null) => {
-    if (!dateString) return { text: 'Планируется', className: styles.statusPlanned }
-    
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffHours = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
-    
-    if (diffHours < 0 && diffHours > -3) {
-      return { text: 'Идет сейчас', className: styles.statusLive }
-    } else if (diffHours < 0) {
-      return { text: 'Завершено', className: styles.statusCompleted }
-    } else if (diffHours < 24) {
-      return { text: 'Скоро', className: styles.statusOpen }
+  const getStatusStyle = (statusText: string) => {
+    const lower = statusText.toLowerCase()
+    if (lower.includes('идет') || lower.includes('live')) {
+      return styles.statusLive
+    } else if (lower.includes('завершен') || lower.includes('completed')) {
+      return styles.statusCompleted
+    } else if (lower.includes('скоро') || lower.includes('open')) {
+      return styles.statusOpen
     } else {
-      return { text: 'Планируется', className: styles.statusPlanned }
+      return styles.statusPlanned
     }
   }
 
-  const status = getStatus(event_date)
+  const handleRegisterClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (is_registered && onUnregister) {
+      onUnregister()
+    } else if (onRegister) {
+      onRegister()
+    }
+  }
 
   return (
-    <article className={styles.card} onClick={onClick}>
+    <article className={styles.card}>
       <div className={styles.header}>
         <h3 className={styles.title}>{title}</h3>
         {game && <span className={styles.gameTag}>{game}</span>}
@@ -64,15 +91,42 @@ export function EventCard({ title, description, game, event_date, telegram_url, 
           <div className={styles.date}>
             📅 {formatDate(event_date)}
           </div>
+          
+          {registration_enabled && (
+            <div className={styles.registrationInfo}>
+              👥 {registered_count}
+              {max_participants && ` / ${max_participants}`} участников
+            </div>
+          )}
+          
           {telegram_url && (
-            <div className={styles.telegramHint}>
+            <div className={styles.telegramHint} onClick={onClick}>
               Подробнее в Telegram →
             </div>
           )}
         </div>
-        <span className={`${styles.status} ${status.className}`}>
-          {status.text}
-        </span>
+        
+        <div className={styles.actions}>
+          <span className={`${styles.status} ${getStatusStyle(status)}`}>
+            {status}
+          </span>
+          
+          {registration_enabled && isAuthenticated && (
+            <button
+              onClick={handleRegisterClick}
+              className={is_registered ? styles.unregisterButton : styles.registerButton}
+              disabled={!can_register && !is_registered}
+            >
+              {is_registered ? '✓ Зарегистрирован' : can_register ? 'Записаться' : 'Мест нет'}
+            </button>
+          )}
+          
+          {registration_enabled && !isAuthenticated && (
+            <div className={styles.authHint}>
+              Войдите для регистрации
+            </div>
+          )}
+        </div>
       </div>
     </article>
   )
