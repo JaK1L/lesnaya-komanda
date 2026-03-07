@@ -113,6 +113,8 @@ app = FastAPI(
 
 # Настройка CORS
 print(f"🌐 CORS: Разрешенные origins: {settings.ALLOWED_ORIGINS}")
+print(f"🌐 DEBUG mode: {settings.DEBUG}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,

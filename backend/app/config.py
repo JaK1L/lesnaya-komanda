@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # CORS: в .env можно указать один origin или несколько через запятую
-    ALLOWED_ORIGINS: Union[list, str] = ["http://localhost:3000"]
+    ALLOWED_ORIGINS: Union[list, str] = ["http://localhost:3000", "https://lesnaya-komanda.vercel.app"]
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
