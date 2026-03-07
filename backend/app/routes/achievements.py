@@ -67,13 +67,20 @@ async def list_achievement_types(
     return [AchievementTypeOut(**dict(row)) for row in rows]
 
 
-@router.get("/user/{user_id}", response_model=List[UserAchievementOut])
+@router.get("/user/{discord_id}", response_model=List[UserAchievementOut])
 async def get_user_achievements(
-    user_id: int,
+    discord_id: int,
     completed_only: bool = False,
     db: asyncpg.Connection = Depends(get_db),
 ):
-    """Получить достижения пользователя."""
+    """Получить достижения пользователя по Discord ID."""
+    # Получаем user_id по discord_id
+    user = await db.fetchrow("SELECT id FROM users WHERE discord_id = $1", discord_id)
+    if not user:
+        return []  # Возвращаем пустой список если пользователь не найден
+    
+    user_id = user['id']
+    
     query = """
         SELECT 
             ua.id, ua.user_id, ua.achievement_type_id, ua.progress, ua.max_progress,
@@ -93,12 +100,24 @@ async def get_user_achievements(
     return [UserAchievementOut(**dict(row)) for row in rows]
 
 
-@router.get("/user/{user_id}/stats")
+@router.get("/user/{discord_id}/stats")
 async def get_user_achievement_stats(
-    user_id: int,
+    discord_id: int,
     db: asyncpg.Connection = Depends(get_db),
 ):
-    """Получить статистику достижений пользователя."""
+    """Получить статистику достижений пользователя по Discord ID."""
+    # Получаем user_id по discord_id
+    user = await db.fetchrow("SELECT id FROM users WHERE discord_id = $1", discord_id)
+    if not user:
+        return {
+            "total_achievements": 0,
+            "completed_achievements": 0,
+            "completion_percentage": 0,
+            "total_points": 0,
+            "by_category": [],
+        }
+    
+    user_id = user['id']
     
     # Общая статистика
     total_achievements = await db.fetchval(

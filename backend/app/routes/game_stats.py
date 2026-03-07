@@ -184,12 +184,19 @@ async def get_valorant_mmr(riot_id: str, tag: str, region: str = "eu"):
     return mmr
 
 
-@router.get("/user/{user_id}/stats")
+@router.get("/user/{discord_id}/stats")
 async def get_user_game_stats(
-    user_id: int,
+    discord_id: int,
     db: asyncpg.Connection = Depends(get_db),
 ):
-    """Получить игровую статистику пользователя по всем играм"""
+    """Получить игровую статистику пользователя по всем играм (по Discord ID)"""
+    
+    # Получаем user_id по discord_id
+    user = await db.fetchrow("SELECT id FROM users WHERE discord_id = $1", discord_id)
+    if not user:
+        return {}  # Возвращаем пустой объект если пользователь не найден
+    
+    user_id = user['id']
     
     # Получаем привязанные аккаунты
     accounts = await db.fetch(
