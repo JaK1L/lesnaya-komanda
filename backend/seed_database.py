@@ -6,15 +6,25 @@ import asyncio
 import asyncpg
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Загружаем переменные окружения из .env
+load_dotenv()
 
 # Получаем DATABASE_URL из переменных окружения
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/lesnaya_komanda')
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if not DATABASE_URL:
+    print("❌ Ошибка: DATABASE_URL не найден в .env файле")
+    exit(1)
 
 async def seed_database():
     """Заполнить базу данных тестовыми данными"""
     
     print("🌲 Лесная Команда - Заполнение базы данных")
     print("=" * 50)
+    
+    conn = None
     
     try:
         # Подключение к БД
@@ -31,7 +41,19 @@ async def seed_database():
         
         # Выполняем SQL
         print("⚙️  Выполнение SQL скрипта...")
-        await conn.execute(sql)
+        
+        # Разбиваем на отдельные команды и выполняем
+        commands = [cmd.strip() for cmd in sql.split(';') if cmd.strip() and not cmd.strip().startswith('--')]
+        
+        for i, cmd in enumerate(commands):
+            if cmd.upper().startswith('SELECT'):
+                # Пропускаем SELECT команды для вывода
+                continue
+            try:
+                await conn.execute(cmd)
+            except Exception as e:
+                if 'duplicate key' not in str(e).lower():
+                    print(f"⚠️  Предупреждение при выполнении команды {i+1}: {e}")
         
         print("\n✅ База данных успешно заполнена!")
         print("=" * 50)
@@ -91,11 +113,12 @@ async def seed_database():
         import traceback
         traceback.print_exc()
     finally:
-        try:
-            await conn.close()
-            print("\n🔌 Соединение с базой данных закрыто")
-        except:
-            pass
+        if conn:
+            try:
+                await conn.close()
+                print("\n🔌 Соединение с базой данных закрыто")
+            except:
+                pass
 
 if __name__ == "__main__":
     print("\n")
