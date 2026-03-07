@@ -192,6 +192,14 @@ stats = StatsCollector()
 async def on_ready():
     print(f'✅ Бот {bot.user} запущен!')
     await stats.init_db()
+    
+    # Загружаем cogs
+    try:
+        await bot.load_extension('cogs.website')
+        print('✅ Загружен cog: website')
+    except Exception as e:
+        print(f'❌ Ошибка загрузки cog website: {e}')
+    
     guild = bot.get_guild(GUILD_ID)
     if guild:
         print(f'🌲 Подключен к серверу: {guild.name}')
@@ -264,6 +272,39 @@ async def on_presence_update(before: discord.Member, after: discord.Member):
         await stats.upsert_presence(after)
     except Exception:
         pass
+
+@bot.command(name='помощь', aliases=['help', 'команды'])
+async def help_command(ctx):
+    """Список всех команд бота"""
+    embed = discord.Embed(
+        title="🌲 Команды Лесной Команды",
+        description="Список доступных команд бота",
+        color=0x4aff75
+    )
+    
+    # Основные команды
+    embed.add_field(
+        name="📊 Статистика",
+        value="`!лес` - Информация о сервере\n"
+              "`!профиль [@user]` - Профиль игрока\n"
+              "`!топ [число]` - Топ по активности",
+        inline=False
+    )
+    
+    # Команды сайта
+    embed.add_field(
+        name="🌐 Сайт",
+        value="`!сайт` - Ссылка на сайт\n"
+              "`!мойпрофиль` - Твой профиль на сайте\n"
+              "`!новости` - Последние новости\n"
+              "`!события` - Ближайшие события\n"
+              "`!стримы` - Страница стримов\n"
+              "`!соцсети` - Наши соцсети",
+        inline=False
+    )
+    
+    embed.set_footer(text="Используй ! перед командой")
+    await ctx.send(embed=embed)
 
 @bot.command(name='лес')
 async def forest_info(ctx):
