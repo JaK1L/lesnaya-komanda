@@ -139,50 +139,6 @@ export default function ProfilePage() {
     setGamePreferencesChanged(true)
   }
 
-  const saveGamePreferences = async () => {
-    if (!token) return
-
-    try {
-      // Validate: if "Другое" is selected, custom_name must be filled
-      if (selectedGames.has('Другое') && !customGameName.trim()) {
-        setError('Введите название игры для "Другое"')
-        return
-      }
-
-      const preferences: GamePreference[] = Array.from(selectedGames).map(game => ({
-        game,
-        custom_name: game === 'Другое' ? customGameName.trim() : null
-      }))
-
-      await axios.put(
-        `${API_URL}/api/users/game-preferences`,
-        { preferences },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
-
-      setGamePreferencesChanged(false)
-      setSuccess('Игровые предпочтения обновлены')
-      setTimeout(() => setSuccess(null), 3000)
-    } catch (err: any) {
-      console.error('Error saving game preferences:', err)
-      console.error('Error response:', err.response?.data)
-      
-      let errorMessage = 'Не удалось сохранить игровые предпочтения'
-      if (err.response?.data?.detail) {
-        const detail = err.response.data.detail
-        if (typeof detail === 'string') {
-          errorMessage = detail
-        } else if (Array.isArray(detail)) {
-          errorMessage = detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
-        }
-      }
-      
-      setError(errorMessage)
-    }
-  }
-
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -217,6 +173,13 @@ export default function ProfilePage() {
       setSaving(true)
       setError(null)
       setSuccess(null)
+
+      // Validate: if "Другое" is selected, custom_name must be filled
+      if (selectedGames.has('Другое') && !customGameName.trim()) {
+        setError('Введите название игры для "Другое"')
+        setSaving(false)
+        return
+      }
 
       // Upload avatar file if selected
       if (avatarFile) {
@@ -257,8 +220,27 @@ export default function ProfilePage() {
       )
 
       setProfile(response.data)
-      setSuccess('Профиль успешно обновлен!')
       setAvatarFile(null)
+
+      // Save game preferences
+      if (gamePreferencesChanged || selectedGames.size > 0) {
+        const preferences: GamePreference[] = Array.from(selectedGames).map(game => ({
+          game,
+          custom_name: game === 'Другое' ? customGameName.trim() : null
+        }))
+
+        await axios.put(
+          `${API_URL}/api/users/game-preferences`,
+          { preferences },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        )
+        setGamePreferencesChanged(false)
+      }
+
+      setSuccess('Профиль и игровые предпочтения успешно обновлены!')
+      setIsEditMode(false)
 
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000)
@@ -266,7 +248,16 @@ export default function ProfilePage() {
     } catch (err) {
       console.error('Error saving profile:', err)
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.detail || 'Не удалось сохранить профиль')
+        const detail = err.response?.data?.detail
+        let errorMessage = 'Не удалось сохранить профиль'
+        
+        if (typeof detail === 'string') {
+          errorMessage = detail
+        } else if (Array.isArray(detail)) {
+          errorMessage = detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
+        }
+        
+        setError(errorMessage)
       } else {
         setError('Не удалось сохранить профиль')
       }
@@ -642,6 +633,115 @@ export default function ProfilePage() {
               </label>
             </div>
 
+            {/* Game Preferences */}
+            <div style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+              <h4 style={{ 
+                fontFamily: 'Unbounded', 
+                fontSize: '1rem',
+                marginBottom: '1rem',
+                color: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <Gamepad2 size={20} />
+                ИГРОВЫЕ ПРЕДПОЧТЕНИЯ
+              </h4>
+              <p style={{ color: '#888', marginBottom: '1rem', fontSize: '0.875rem' }}>
+                Выберите игры, в которые вы играете
+              </p>
+
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
+                gap: '1rem',
+                marginBottom: '1rem'
+              }}>
+                {VALID_GAMES.map((game) => (
+                  <label 
+                    key={game}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      cursor: 'pointer',
+                      padding: '0.75rem',
+                      background: 'var(--gray-light)',
+                      border: `2px solid ${selectedGames.has(game) ? 'var(--accent)' : 'transparent'}`,
+                      borderRadius: '4px',
+                      transition: 'all 0.2s',
+                      userSelect: 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!selectedGames.has(game)) {
+                        e.currentTarget.style.opacity = '0.8'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = '1'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedGames.has(game)}
+                      onChange={() => handleGameToggle(game)}
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        cursor: 'pointer',
+                        accentColor: 'var(--accent)'
+                      }}
+                    />
+                    <span style={{ fontSize: '0.875rem', color: 'white' }}>
+                      {game}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Custom game name input */}
+              {selectedGames.has('Другое') && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '0.5rem', 
+                    fontSize: '0.875rem',
+                    color: '#888'
+                  }}>
+                    Название игры: <span style={{ color: '#ff6b6b' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customGameName}
+                    onChange={(e) => {
+                      setCustomGameName(e.target.value)
+                      setGamePreferencesChanged(true)
+                    }}
+                    placeholder="Введите название игры"
+                    maxLength={50}
+                    style={{
+                      width: '100%',
+                      background: 'var(--background)',
+                      border: `2px solid ${!customGameName.trim() ? '#ff6b6b' : 'var(--gray-light)'}`,
+                      color: 'white',
+                      padding: '0.75rem',
+                      fontSize: '1rem',
+                      borderRadius: '4px',
+                      fontFamily: 'Inter',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
+                    onBlur={(e) => e.target.style.borderColor = !customGameName.trim() ? '#ff6b6b' : 'var(--gray-light)'}
+                  />
+                  {!customGameName.trim() && (
+                    <div style={{ fontSize: '0.75rem', color: '#ff6b6b', marginTop: '0.5rem' }}>
+                      Обязательное поле для игры "Другое"
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Save Button */}
             <button
               type="button"
@@ -735,408 +835,6 @@ export default function ProfilePage() {
               fontSize: '0.875rem',
               fontWeight: 700,
               borderRadius: '4px',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'white'
-              e.currentTarget.style.color = 'white'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#666'
-              e.currentTarget.style.color = '#666'
-            }}
-          >
-            ВЫЙТИ
-          </button>
-        </div>
-
-        {/* Profile Info */}
-        <div style={{ marginBottom: '3rem', display: 'none' }}>
-          <div className="stat-grid" style={{ marginBottom: '2rem' }}>
-            <div className="stat-item">
-              <div className="stat-label">DISCORD</div>
-              <div className="stat-number" style={{ fontSize: '1.5rem' }}>{profile.discord_username}</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-label">РАНГ</div>
-              <div className="stat-number" style={{ fontSize: '1.5rem' }}>{profile.forest_rank}</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-label">РЕЙТИНГ</div>
-              <div className="stat-number" style={{ fontSize: '1.5rem' }}>{profile.rating}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Profile Form */}
-        <div className="lunacy-card" style={{ marginBottom: '3rem' }}>
-          <h3 style={{ marginBottom: '2rem' }}>РЕДАКТИРОВАТЬ ПРОФИЛЬ</h3>
-
-          {/* Site Nickname */}
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '0.5rem', 
-              fontFamily: 'Unbounded',
-              fontSize: '0.875rem',
-              color: 'var(--accent)'
-            }}>
-              НИКНЕЙМ НА САЙТЕ
-            </label>
-            <input
-              type="text"
-              value={siteNickname}
-              onChange={(e) => setSiteNickname(e.target.value)}
-              maxLength={50}
-              placeholder={profile.discord_username}
-              style={{
-                width: '100%',
-                background: 'var(--gray)',
-                border: '2px solid var(--gray-light)',
-                color: 'white',
-                padding: '1rem',
-                fontSize: '1rem',
-                fontFamily: 'Inter',
-                outline: 'none'
-              }}
-              onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={(e) => e.target.style.borderColor = 'var(--gray-light)'}
-            />
-            <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem' }}>
-              Оставьте пустым, чтобы использовать Discord никнейм
-            </div>
-          </div>
-
-          {/* Avatar */}
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '0.5rem', 
-              fontFamily: 'Unbounded',
-              fontSize: '0.875rem',
-              color: 'var(--accent)'
-            }}>
-              АВАТАР
-            </label>
-            
-            {/* Avatar Preview */}
-            {avatarPreview && (
-              <div style={{ marginBottom: '1rem' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={avatarPreview} 
-                  alt="Avatar preview" 
-                  style={{ 
-                    width: '120px', 
-                    height: '120px', 
-                    objectFit: 'cover', 
-                    borderRadius: '50%',
-                    border: '2px solid var(--accent)'
-                  }} 
-                />
-              </div>
-            )}
-
-            {/* File Upload */}
-            <div style={{ marginBottom: '1rem' }}>
-              <label 
-                htmlFor="avatar-upload"
-                className="lunacy-button"
-                style={{ 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  padding: '0.75rem 1.5rem'
-                }}
-              >
-                <Upload size={16} />
-                ЗАГРУЗИТЬ ФАЙЛ
-              </label>
-              <input
-                id="avatar-upload"
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                onChange={handleAvatarFileChange}
-                style={{ display: 'none' }}
-              />
-              <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem' }}>
-                JPEG, PNG, GIF, WebP • Максимум 5MB
-              </div>
-            </div>
-
-            {/* Avatar URL */}
-            <div>
-              <div style={{ fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
-                Или укажите URL:
-              </div>
-              <input
-                type="url"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="https://example.com/avatar.jpg"
-                style={{
-                  width: '100%',
-                  background: 'var(--gray)',
-                  border: '2px solid var(--gray-light)',
-                  color: 'white',
-                  padding: '1rem',
-                  fontSize: '1rem',
-                  fontFamily: 'Inter',
-                  outline: 'none'
-                }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--gray-light)'}
-              />
-            </div>
-          </div>
-
-          {/* Bio */}
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '0.5rem', 
-              fontFamily: 'Unbounded',
-              fontSize: '0.875rem',
-              color: 'var(--accent)'
-            }}>
-              О СЕБЕ
-            </label>
-            <textarea
-              value={bio}
-              onChange={(e) => {
-                if (e.target.value.length <= bioMaxLength) {
-                  setBio(e.target.value)
-                }
-              }}
-              maxLength={bioMaxLength}
-              rows={5}
-              placeholder="Расскажите о себе..."
-              style={{
-                width: '100%',
-                background: 'var(--gray)',
-                border: '2px solid var(--gray-light)',
-                color: 'white',
-                padding: '1rem',
-                fontSize: '1rem',
-                fontFamily: 'Inter',
-                outline: 'none',
-                resize: 'vertical'
-              }}
-              onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={(e) => e.target.style.borderColor = 'var(--gray-light)'}
-            />
-            <div style={{ 
-              fontSize: '0.75rem', 
-              color: bioLength > 450 ? '#ff6b6b' : '#666', 
-              marginTop: '0.5rem' 
-            }}>
-              {bioLength} / {bioMaxLength} символов
-            </div>
-          </div>
-
-          {/* Visibility Toggle */}
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '1rem',
-              cursor: 'pointer'
-            }}>
-              <input
-                type="checkbox"
-                checked={isHidden}
-                onChange={(e) => setIsHidden(e.target.checked)}
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  cursor: 'pointer',
-                  accentColor: 'var(--accent)'
-                }}
-              />
-              <span style={{ fontSize: '1rem' }}>
-                Скрыть профиль из публичных списков
-              </span>
-            </label>
-            <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', marginLeft: '2.5rem' }}>
-              Ваш профиль останется доступен по прямой ссылке
-            </div>
-          </div>
-        </div>
-
-        {/* Game Preferences Section */}
-        <div className="lunacy-card" style={{ marginBottom: '3rem' }}>
-          <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Gamepad2 size={24} style={{ color: 'var(--accent)' }} />
-            ИГРОВЫЕ ПРЕДПОЧТЕНИЯ
-          </h3>
-          <p style={{ color: '#888', marginBottom: '2rem', fontSize: '0.875rem' }}>
-            Выберите игры, в которые вы играете. Это поможет показывать актуальную статистику.
-          </p>
-
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
-            gap: '1rem',
-            marginBottom: '1.5rem'
-          }}>
-            {VALID_GAMES.map((game) => (
-              <label 
-                key={game}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  padding: '0.75rem',
-                  background: 'var(--gray-light)',
-                  border: `2px solid ${selectedGames.has(game) ? 'var(--accent)' : 'transparent'}`,
-                  transition: 'all 0.2s',
-                  userSelect: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (!selectedGames.has(game)) {
-                    e.currentTarget.style.borderColor = 'var(--gray-light)'
-                    e.currentTarget.style.opacity = '0.8'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!selectedGames.has(game)) {
-                    e.currentTarget.style.borderColor = 'transparent'
-                    e.currentTarget.style.opacity = '1'
-                  }
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedGames.has(game)}
-                  onChange={() => handleGameToggle(game)}
-                  style={{
-                    width: '20px',
-                    height: '20px',
-                    cursor: 'pointer',
-                    accentColor: 'var(--accent)'
-                  }}
-                />
-                <span style={{ fontSize: '0.875rem', color: 'white' }}>
-                  {game}
-                </span>
-              </label>
-            ))}
-          </div>
-
-          {/* Custom game name input */}
-          {selectedGames.has('Другое') && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ 
-                display: 'block', 
-                marginBottom: '0.5rem', 
-                fontSize: '0.875rem',
-                color: '#888'
-              }}>
-                Название игры: <span style={{ color: '#ff6b6b' }}>*</span>
-              </label>
-              <input
-                type="text"
-                value={customGameName}
-                onChange={(e) => {
-                  setCustomGameName(e.target.value)
-                  setGamePreferencesChanged(true)
-                }}
-                placeholder="Введите название игры"
-                maxLength={50}
-                style={{
-                  width: '100%',
-                  background: 'var(--gray)',
-                  border: `2px solid ${!customGameName.trim() ? '#ff6b6b' : 'var(--gray-light)'}`,
-                  color: 'white',
-                  padding: '0.75rem',
-                  fontSize: '1rem',
-                  fontFamily: 'Inter',
-                  outline: 'none'
-                }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
-                onBlur={(e) => e.target.style.borderColor = !customGameName.trim() ? '#ff6b6b' : 'var(--gray-light)'}
-              />
-              {!customGameName.trim() && (
-                <div style={{ fontSize: '0.75rem', color: '#ff6b6b', marginTop: '0.5rem' }}>
-                  Обязательное поле для игры "Другое"
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Save game preferences button */}
-          {gamePreferencesChanged && (
-            <button
-              type="button"
-              onClick={saveGamePreferences}
-              disabled={
-                saving || 
-                selectedGames.size === 0 || 
-                (selectedGames.has('Другое') && !customGameName.trim())
-              }
-              className="lunacy-button"
-              style={{ 
-                padding: '0.75rem 1.5rem',
-                opacity: (
-                  saving || 
-                  selectedGames.size === 0 || 
-                  (selectedGames.has('Другое') && !customGameName.trim())
-                ) ? 0.5 : 1,
-                cursor: (
-                  saving || 
-                  selectedGames.size === 0 || 
-                  (selectedGames.has('Другое') && !customGameName.trim())
-                ) ? 'not-allowed' : 'pointer',
-                marginBottom: '1rem'
-              }}
-            >
-              СОХРАНИТЬ ИГРЫ
-            </button>
-          )}
-        </div>
-
-        {/* Profile Save Section */}
-        <div className="lunacy-card" style={{ marginBottom: '3rem' }}>
-          <h3 style={{ marginBottom: '2rem' }}>СОХРАНИТЬ ИЗМЕНЕНИЯ ПРОФИЛЯ</h3>
-
-          {/* Save Button */}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="lunacy-button"
-            style={{ 
-              padding: '1rem 2.5rem',
-              opacity: saving ? 0.5 : 1,
-              cursor: saving ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {saving ? (
-              <>
-                <Loader2 size={16} className="animate-spin" style={{ display: 'inline', marginRight: '0.5rem' }} />
-                СОХРАНЕНИЕ...
-              </>
-            ) : (
-              'СОХРАНИТЬ ПРОФИЛЬ'
-            )}
-          </button>
-        </div>
-
-        {/* Logout Button */}
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              background: 'transparent',
-              border: '2px solid #666',
-              color: '#666',
-              padding: '0.75rem 2rem',
-              cursor: 'pointer',
-              fontFamily: 'Unbounded',
-              fontSize: '0.875rem',
-              fontWeight: 700,
               transition: 'all 0.2s'
             }}
             onMouseEnter={(e) => {
