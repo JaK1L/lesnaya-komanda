@@ -172,14 +172,12 @@ export default function AdminAchievementsPage() {
             ← Назад
           </button>
           <h1>🏆 Управление достижениями</h1>
-          <div className={styles.headerActions}>
-            <button onClick={() => setShowGrantModal(true)} className={styles.grantButton}>
-              🎁 Выдать достижение
-            </button>
-            <button onClick={handleCreate} className={styles.createButton}>
-              + Создать
-            </button>
-          </div>
+          <button onClick={() => setShowGrantModal(true)} className={styles.grantButton}>
+            🎁 Выдать
+          </button>
+          <button onClick={handleCreate} className={styles.createButton}>
+            + Создать
+          </button>
         </header>
 
         {error && <div className={styles.error}>{error}</div>}
