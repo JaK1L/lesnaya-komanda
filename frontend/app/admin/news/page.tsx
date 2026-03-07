@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { uploadImage } from '../../../lib/imageUpload'
 import styles from './page.module.css'
 
 interface News {
@@ -28,6 +29,7 @@ export default function AdminNewsPage() {
     image_url: '',
     published: true,
   })
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -128,6 +130,26 @@ export default function AdminNewsPage() {
     setShowForm(false)
   }
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const result = await uploadImage(file)
+      if (result.success && result.url) {
+        setFormData({ ...formData, image_url: result.url })
+      } else {
+        alert(result.error || 'Ошибка загрузки изображения')
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert('Ошибка при загрузке изображения')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   if (isLoading) {
     return <div className={styles.loading}>Загрузка...</div>
   }
@@ -183,20 +205,46 @@ export default function AdminNewsPage() {
             </div>
 
             <div className={styles.formGroup}>
-              <label htmlFor="image_url">URL изображения (необязательно)</label>
-              <input
-                id="image_url"
-                type="url"
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://example.com/image.jpg"
-                maxLength={500}
-              />
+              <label htmlFor="image_url">Изображение</label>
+              
+              <div className={styles.imageUploadContainer}>
+                <input
+                  type="file"
+                  id="image_file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                  className={styles.fileInput}
+                />
+                <label htmlFor="image_file" className={styles.uploadButton}>
+                  {uploading ? 'Загрузка...' : '📁 Выбрать файл'}
+                </label>
+                
+                <span className={styles.orText}>или</span>
+                
+                <input
+                  id="image_url"
+                  type="url"
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  placeholder="Вставить URL изображения"
+                  maxLength={500}
+                  className={styles.urlInput}
+                />
+              </div>
+
               {formData.image_url && (
                 <div className={styles.imagePreview}>
                   <img src={formData.image_url} alt="Превью" onError={(e) => {
                     e.currentTarget.style.display = 'none'
                   }} />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, image_url: '' })}
+                    className={styles.removeImageButton}
+                  >
+                    ✕ Удалить
+                  </button>
                 </div>
               )}
             </div>
