@@ -1,12 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { Navigation, Footer, SkipToContent } from '../components/layout'
-import { HeroSection, StreamersSection, NewsSection } from '../components/home'
-import { StreamersSkeleton } from '../components/home/StreamersSkeleton'
-import { NewsSkeleton } from '../components/home/NewsSkeleton'
-import { ErrorMessage } from '../components/ui'
+import { HeroSection } from '../components/home'
 import { lazyLoadModal } from '../lib/lazyLoad'
 import './mobile-styles.css'
 
@@ -16,23 +13,6 @@ const GamePreferencesModal = lazyLoadModal(
 )
 
 // Types
-interface Player {
-  discord_username: string
-  forest_rank: string
-  rating: number
-  discord_id: number
-  avatar_url?: string | null
-  is_online?: boolean
-}
-
-interface FeedItem {
-  id: number
-  kind: 'post' | 'achievement'
-  title: string
-  content: string | null
-  created_at: string
-}
-
 interface CommonSettings {
   discord_join_url: string
   maintenance_enabled: boolean
@@ -45,11 +25,8 @@ const TOKEN_KEY = 'lesnaya_token'
 
 export default function Home() {
   // State
-  const [elitePlayers, setElitePlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
-  const [feed, setFeed] = useState<FeedItem[]>([])
   const [commonSettings, setCommonSettings] = useState<CommonSettings | null>(null)
   const [showGamePreferencesModal, setShowGamePreferencesModal] = useState(false)
 
@@ -99,21 +76,11 @@ export default function Home() {
   const fetchData = useCallback(async (): Promise<void> => {
     try {
       setLoading(true)
-      setError(null)
       
-      const [feedRes, commonRes, eliteRes] = await Promise.all([
-        axios.get<FeedItem[]>(`${API_URL}/api/feed`),
-        axios.get<CommonSettings>(`${API_URL}/api/settings/common`),
-        axios.get<Player[]>(`${API_URL}/api/discord/elite`),
-      ])
-
-      setFeed(feedRes.data)
+      const commonRes = await axios.get<CommonSettings>(`${API_URL}/api/settings/common`)
       setCommonSettings(commonRes.data)
-      setElitePlayers(eliteRes.data)
     } catch (err) {
       console.error('Error fetching data:', err)
-      setError('Не удалось загрузить данные. Проверьте подключение к интернету.')
-      setElitePlayers([])
     } finally {
       setLoading(false)
     }
@@ -132,16 +99,6 @@ export default function Home() {
   const handleGamePreferencesSkipped = useCallback(() => {
     // Просто закрываем модалку
   }, [])
-
-  const handleRetry = useCallback(() => {
-    fetchData()
-  }, [fetchData])
-
-  // Мемоизируем фильтрацию постов
-  const posts = useMemo(
-    () => feed.filter((item) => item.kind === 'post'),
-    [feed]
-  )
 
   return (
     <>
@@ -169,38 +126,6 @@ export default function Home() {
         <HeroSection
           discordUrl={commonSettings?.discord_join_url || '#'}
         />
-
-        {/* Ошибка загрузки */}
-        {error && !loading && (
-          <ErrorMessage 
-            message={error}
-            onRetry={handleRetry}
-          />
-        )}
-
-        {/* Стримеры */}
-        {loading ? (
-          <section id="streamers" style={{ marginTop: '6rem' }} aria-label="Загрузка стримеров">
-            <h2 style={{ textAlign: 'center', marginBottom: '3rem', fontSize: 'clamp(2rem, 5vw, 3rem)' }}>
-              СТРИМЕРЫ ЛЕСНОЙ КОМАНДЫ
-            </h2>
-            <StreamersSkeleton />
-          </section>
-        ) : !error ? (
-          <StreamersSection players={elitePlayers} />
-        ) : null}
-
-        {/* Новости */}
-        {loading ? (
-          <section id="news" style={{ marginTop: '6rem' }} aria-label="Загрузка новостей">
-            <h2 style={{ textAlign: 'center', marginBottom: '3rem', fontSize: 'clamp(2rem, 5vw, 3rem)' }}>
-              НОВОСТИ
-            </h2>
-            <NewsSkeleton />
-          </section>
-        ) : !error ? (
-          <NewsSection posts={posts} />
-        ) : null}
 
         {/* Футер */}
         <Footer />
