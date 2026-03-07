@@ -29,8 +29,7 @@ export function Card({
       <a
         href={href}
         className={classNames}
-        style={{ textDecoration: 'none', color: 'inherit' }}
-        {...props}
+        style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
       >
         {children}
       </a>
