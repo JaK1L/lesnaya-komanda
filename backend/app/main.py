@@ -9,7 +9,7 @@ import sys
 import signal
 
 from .config import settings
-from .database import database
+from .database import database, get_db
 from .routes import users, auth, discord_oauth, content, websocket, discord, profile, migration, game_preferences, admin, achievements, events, game_stats
 from .auth import get_password_hash
 from .rate_limit import setup_rate_limiting
