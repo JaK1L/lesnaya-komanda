@@ -217,6 +217,12 @@
   font-weight: 600;
 }
 
+.statSubtext {
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .header {

@@ -12,15 +12,35 @@ export default function AdminPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [stats, setStats] = useState<any>(null)
 
   useEffect(() => {
     // Проверяем есть ли токен
     const token = localStorage.getItem('admin_token')
     if (token) {
       setIsAuthenticated(true)
+      fetchStats()
     }
     setIsLoading(false)
   }, [])
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (err) {
+      console.error('Error fetching stats:', err)
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -140,6 +160,9 @@ export default function AdminPage() {
           <button onClick={() => router.push('/admin/feed')} className={styles.navButton}>
             📝 Лента
           </button>
+          <button onClick={() => router.push('/admin/users')} className={styles.navButton}>
+            👥 Пользователи
+          </button>
           <button onClick={() => router.push('/admin/streamers')} className={styles.navButton}>
             🎮 Стримеры
           </button>
@@ -162,7 +185,10 @@ export default function AdminPage() {
               <div className={styles.statIcon}>📰</div>
               <div className={styles.statInfo}>
                 <div className={styles.statLabel}>Новости</div>
-                <div className={styles.statValue}>-</div>
+                <div className={styles.statValue}>
+                  {stats ? `${stats.news.published}/${stats.news.total}` : '-'}
+                </div>
+                {stats && <div className={styles.statSubtext}>опубликовано</div>}
               </div>
             </div>
 
@@ -170,7 +196,10 @@ export default function AdminPage() {
               <div className={styles.statIcon}>📅</div>
               <div className={styles.statInfo}>
                 <div className={styles.statLabel}>События</div>
-                <div className={styles.statValue}>-</div>
+                <div className={styles.statValue}>
+                  {stats ? `${stats.events.upcoming}/${stats.events.total}` : '-'}
+                </div>
+                {stats && <div className={styles.statSubtext}>предстоящих</div>}
               </div>
             </div>
 
@@ -178,7 +207,42 @@ export default function AdminPage() {
               <div className={styles.statIcon}>📝</div>
               <div className={styles.statInfo}>
                 <div className={styles.statLabel}>Записи ленты</div>
-                <div className={styles.statValue}>-</div>
+                <div className={styles.statValue}>
+                  {stats ? stats.feed.total : '-'}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.statCard}>
+              <div className={styles.statIcon}>👥</div>
+              <div className={styles.statInfo}>
+                <div className={styles.statLabel}>Пользователи</div>
+                <div className={styles.statValue}>
+                  {stats ? `${stats.users.online}/${stats.users.total}` : '-'}
+                </div>
+                {stats && <div className={styles.statSubtext}>онлайн</div>}
+              </div>
+            </div>
+
+            <div className={styles.statCard}>
+              <div className={styles.statIcon}>🎮</div>
+              <div className={styles.statInfo}>
+                <div className={styles.statLabel}>Стримеры</div>
+                <div className={styles.statValue}>
+                  {stats ? `${stats.streamers.active}/${stats.streamers.total}` : '-'}
+                </div>
+                {stats && <div className={styles.statSubtext}>активных</div>}
+              </div>
+            </div>
+
+            <div className={styles.statCard}>
+              <div className={styles.statIcon}>🛍️</div>
+              <div className={styles.statInfo}>
+                <div className={styles.statLabel}>Товары</div>
+                <div className={styles.statValue}>
+                  {stats ? `${stats.merch.in_stock}/${stats.merch.total}` : '-'}
+                </div>
+                {stats && <div className={styles.statSubtext}>в наличии</div>}
               </div>
             </div>
           </div>

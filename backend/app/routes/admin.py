@@ -16,6 +16,68 @@ from ..models import User
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+# Статистика для админ-панели
+@router.get("/stats")
+async def get_admin_stats(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Получить статистику для главной страницы админки."""
+    
+    # Подсчет новостей
+    news_count = await db.fetchval("SELECT COUNT(*) FROM news")
+    news_published = await db.fetchval("SELECT COUNT(*) FROM news WHERE published = true")
+    
+    # Подсчет событий
+    events_count = await db.fetchval("SELECT COUNT(*) FROM events")
+    events_upcoming = await db.fetchval(
+        "SELECT COUNT(*) FROM events WHERE event_date > NOW() OR event_date IS NULL"
+    )
+    
+    # Подсчет записей ленты
+    feed_count = await db.fetchval("SELECT COUNT(*) FROM home_feed")
+    
+    # Подсчет пользователей
+    users_count = await db.fetchval("SELECT COUNT(*) FROM users")
+    users_online = await db.fetchval(
+        "SELECT COUNT(*) FROM discord_presence WHERE status IN ('online', 'idle', 'dnd')"
+    )
+    
+    # Подсчет стримеров
+    streamers_count = await db.fetchval("SELECT COUNT(*) FROM streamers")
+    streamers_active = await db.fetchval("SELECT COUNT(*) FROM streamers WHERE is_active = true")
+    
+    # Подсчет товаров
+    merch_count = await db.fetchval("SELECT COUNT(*) FROM merch")
+    merch_in_stock = await db.fetchval("SELECT COUNT(*) FROM merch WHERE in_stock = true")
+    
+    return {
+        "news": {
+            "total": news_count or 0,
+            "published": news_published or 0,
+        },
+        "events": {
+            "total": events_count or 0,
+            "upcoming": events_upcoming or 0,
+        },
+        "feed": {
+            "total": feed_count or 0,
+        },
+        "users": {
+            "total": users_count or 0,
+            "online": users_online or 0,
+        },
+        "streamers": {
+            "total": streamers_count or 0,
+            "active": streamers_active or 0,
+        },
+        "merch": {
+            "total": merch_count or 0,
+            "in_stock": merch_in_stock or 0,
+        },
+    }
+
+
 class EventCreate(BaseModel):
     title: str = Field(..., max_length=200)
     description: str = Field(..., max_length=2000)
@@ -591,3 +653,49 @@ async def update_common_settings(
     return payload
 
 
+
+
+# Управление пользователями
+class UserUpdate(BaseModel):
+    forest_rank: Optional[str] = None
+    rating: Optional[float] = None
+
+
+@router.put("/users/{user_id}")
+async def update_user(
+    user_id: int,
+    payload: UserUpdate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Обновить данные пользователя (только для админов)."""
+    
+    # Проверяем существует ли пользователь
+    user = await db.fetchrow("SELECT id FROM users WHERE id = $1", user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    # Обновляем данные
+    update_fields = []
+    values = []
+    param_count = 1
+    
+    if payload.forest_rank is not None:
+        update_fields.append(f"forest_rank = ${param_count}")
+        values.append(payload.forest_rank)
+        param_count += 1
+    
+    if payload.rating is not None:
+        update_fields.append(f"rating = ${param_count}")
+        values.append(payload.rating)
+        param_count += 1
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="Нет данных для обновления")
+    
+    values.append(user_id)
+    query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = ${param_count}"
+    
+    await db.execute(query, *values)
+    
+    return {"message": "Пользователь обновлен"}
