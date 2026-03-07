@@ -83,7 +83,7 @@ export default function AdminNewsPage() {
       await fetchNews()
       setShowForm(false)
       setEditingNews(null)
-      setFormData({ title: '', content: '', published: true })
+      setFormData({ title: '', content: '', image_url: '', published: true })
     } catch (error) {
       console.error('Error saving news:', error)
       alert('Ошибка при сохранении новости')
