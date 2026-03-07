@@ -137,7 +137,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=[
         "Content-Type",
         "Authorization",
@@ -147,19 +147,33 @@ app.add_middleware(
         "DNT",
         "Cache-Control",
         "X-Requested-With",
+        "X-CSRF-Token",
+        "Accept-Language",
+    ],
+    expose_headers=[
+        "Content-Length",
+        "Content-Type",
+        "X-Total-Count",
     ],
     max_age=3600,  # Кэшировать preflight запросы на 1 час
 )
 
-# Middleware для отключения кэша
+# Middleware для отключения кэша и логирования CORS
 @app.middleware("http")
 async def add_cache_control_header(request, call_next):
+    # Логируем Origin для отладки CORS
+    origin = request.headers.get("origin")
+    if origin:
+        logger.debug(f"🌐 Request from origin: {origin}")
+    
     response = await call_next(request)
+    
     # Отключаем кэш для всех API эндпоинтов
     if request.url.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
+    
     return response
 
 # Подключение маршрутов
