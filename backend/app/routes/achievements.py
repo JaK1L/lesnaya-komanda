@@ -72,7 +72,7 @@ async def list_achievement_types(
     except Exception as e:
         # Логируем ошибку и возвращаем пустой список вместо 500
         import logging
-        logging.error(f"Error fetching achievement types: {e}")
+        logging.error(f"Error fetching achievement types: {e}", exc_info=True)
         return []
 
 
