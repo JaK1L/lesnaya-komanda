@@ -133,23 +133,17 @@ logger.info(f"🌐 DEBUG mode: {settings.DEBUG}")
 # Настройка Rate Limiting
 setup_rate_limiting(app)
 
+# ВРЕМЕННО: Разрешаем все origins для отладки CORS
+# TODO: Вернуть settings.ALLOWED_ORIGINS после исправления
+cors_origins = ["*"] if settings.DEBUG else settings.ALLOWED_ORIGINS
+logger.info(f"🌐 CORS origins для middleware: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=[
-        "Content-Type",
-        "Authorization",
-        "Accept",
-        "Origin",
-        "User-Agent",
-        "DNT",
-        "Cache-Control",
-        "X-Requested-With",
-        "X-CSRF-Token",
-        "Accept-Language",
-    ],
+    allow_headers=["*"],  # Разрешаем все заголовки
     expose_headers=[
         "Content-Length",
         "Content-Type",
