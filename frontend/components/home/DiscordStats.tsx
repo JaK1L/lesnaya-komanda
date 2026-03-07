@@ -14,27 +14,38 @@ interface EliteUser {
   is_online: boolean
 }
 
+interface DiscordStats {
+  total_members: number
+  online_members: number
+  activity_percent: number
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export function DiscordStats() {
   const [eliteUsers, setEliteUsers] = useState<EliteUser[]>([])
+  const [stats, setStats] = useState<DiscordStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchEliteUsers()
+    fetchData()
     // Обновляем каждые 30 секунд
-    const interval = setInterval(fetchEliteUsers, 30000)
+    const interval = setInterval(fetchData, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  const fetchEliteUsers = async () => {
+  const fetchData = async () => {
     try {
       setError(null)
-      const response = await axios.get<EliteUser[]>(`${API_URL}/api/discord/elite`)
-      setEliteUsers(response.data)
+      const [eliteResponse, statsResponse] = await Promise.all([
+        axios.get<EliteUser[]>(`${API_URL}/api/discord/elite`),
+        axios.get<DiscordStats>(`${API_URL}/api/discord/stats`)
+      ])
+      setEliteUsers(eliteResponse.data)
+      setStats(statsResponse.data)
     } catch (err) {
-      console.error('Error fetching elite users:', err)
+      console.error('Error fetching Discord data:', err)
       setError('Не удалось загрузить данные Discord')
     } finally {
       setLoading(false)
@@ -54,8 +65,8 @@ export function DiscordStats() {
     }
   }
 
-  const onlineCount = eliteUsers.filter(u => u.is_online).length
-  const totalCount = eliteUsers.length
+  // Фильтруем только онлайн админов
+  const onlineElite = eliteUsers.filter(u => u.is_online)
 
   if (loading) {
     return (
@@ -93,13 +104,13 @@ export function DiscordStats() {
             <h3 className={styles.sectionTitle}>
               👑 Элита Леса
             </h3>
-            {eliteUsers.length === 0 ? (
+            {onlineElite.length === 0 ? (
               <div className={styles.empty}>
                 <p>Элита отдыхает</p>
               </div>
             ) : (
               <div className={styles.eliteGrid}>
-                {eliteUsers.map((user) => (
+                {onlineElite.map((user) => (
                   <div key={user.discord_id} className={styles.eliteCard}>
                     <div className={styles.avatarContainer}>
                       <img
@@ -126,15 +137,15 @@ export function DiscordStats() {
               <div className={styles.statIcon}>🟢</div>
               <div className={styles.statInfo}>
                 <p className={styles.statLabel}>Онлайн сейчас</p>
-                <p className={styles.statValue}>{onlineCount}</p>
+                <p className={styles.statValue}>{stats?.online_members || 0}</p>
               </div>
             </div>
 
             <div className={styles.statCard}>
               <div className={styles.statIcon}>👥</div>
               <div className={styles.statInfo}>
-                <p className={styles.statLabel}>Всего элиты</p>
-                <p className={styles.statValue}>{totalCount}</p>
+                <p className={styles.statLabel}>Всего участников</p>
+                <p className={styles.statValue}>{stats?.total_members || 0}</p>
               </div>
             </div>
 
@@ -142,9 +153,7 @@ export function DiscordStats() {
               <div className={styles.statIcon}>⚡</div>
               <div className={styles.statInfo}>
                 <p className={styles.statLabel}>Активность</p>
-                <p className={styles.statValue}>
-                  {totalCount > 0 ? Math.round((onlineCount / totalCount) * 100) : 0}%
-                </p>
+                <p className={styles.statValue}>{stats?.activity_percent || 0}%</p>
               </div>
             </div>
           </div>

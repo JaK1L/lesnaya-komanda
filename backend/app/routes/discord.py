@@ -85,6 +85,37 @@ async def get_presence_data(db: asyncpg.Connection = Depends(get_db)):
     return result
 
 
+@router.get("/stats")
+async def get_discord_stats(db: asyncpg.Connection = Depends(get_db)):
+    """
+    Получить статистику Discord сервера
+    
+    Returns:
+        dict: Статистика сервера (всего участников, онлайн и т.д.)
+    """
+    # Получаем общее количество участников (уникальных discord_id в presence)
+    total_row = await db.fetchrow("""
+        SELECT COUNT(DISTINCT discord_id) as total
+        FROM discord_presence
+    """)
+    
+    # Получаем количество онлайн участников
+    online_row = await db.fetchrow("""
+        SELECT COUNT(DISTINCT discord_id) as online
+        FROM discord_presence
+        WHERE status IN ('online', 'idle', 'dnd')
+    """)
+    
+    total_members = total_row["total"] if total_row else 0
+    online_members = online_row["online"] if online_row else 0
+    
+    return {
+        "total_members": total_members,
+        "online_members": online_members,
+        "activity_percent": round((online_members / total_members * 100) if total_members > 0 else 0)
+    }
+
+
 @router.get("/elite", response_model=List[dict])
 async def get_elite_users(db: asyncpg.Connection = Depends(get_db)):
     """
