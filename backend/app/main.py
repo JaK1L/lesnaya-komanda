@@ -130,17 +130,29 @@ app = FastAPI(
 logger.info(f"🌐 CORS: Разрешенные origins: {settings.ALLOWED_ORIGINS}")
 logger.info(f"🌐 DEBUG mode: {settings.DEBUG}")
 
-# ВРЕМЕННО: Разрешаем все origins для отладки CORS
-# TODO: Вернуть settings.ALLOWED_ORIGINS после исправления
-if settings.DEBUG:
-    cors_origins = ["*"]
-else:
-    # Явно добавляем Vercel origin на случай если переменные не обновлены
-    cors_origins = list(settings.ALLOWED_ORIGINS) + [
-        "https://lesnaya-komanda.vercel.app",
-        "http://localhost:3000",
-        "http://localhost:3001",
-    ]
+# Собираем все разрешенные origins
+cors_origins = list(settings.ALLOWED_ORIGINS)
+
+# Добавляем локальные origins для разработки (если их еще нет)
+local_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
+for origin in local_origins:
+    if origin not in cors_origins:
+        cors_origins.append(origin)
+
+# Добавляем production origins (если их еще нет)
+production_origins = [
+    "https://lesnaya-komanda.vercel.app",
+    "https://lesnayakomanda.onrender.com",
+]
+for origin in production_origins:
+    if origin not in cors_origins:
+        cors_origins.append(origin)
+
 logger.info(f"🌐 CORS origins для middleware: {cors_origins}")
 
 # ВАЖНО: CORSMiddleware должен быть ПЕРВЫМ!
@@ -167,23 +179,28 @@ async def add_cache_control_header(request, call_next):
     # Логируем Origin для отладки CORS
     origin = request.headers.get("origin")
     if origin:
-        logger.debug(f"🌐 Request from origin: {origin}")
+        logger.info(f"🌐 Request from origin: {origin} to {request.url.path}")
     
     # Обрабатываем OPTIONS запросы (preflight) сразу
     if request.method == "OPTIONS":
         from starlette.responses import Response
         response = Response()
-        response.headers["Access-Control-Allow-Origin"] = origin or "*"
+        # Проверяем, что origin в списке разрешенных
+        if origin and origin in cors_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+        else:
+            response.headers["Access-Control-Allow-Origin"] = cors_origins[0] if cors_origins else "*"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
         response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Access-Control-Max-Age"] = "3600"
+        logger.info(f"✅ OPTIONS preflight handled for {origin}")
         return response
     
     response = await call_next(request)
     
     # ФОРСИРУЕМ CORS заголовки для всех запросов
-    if origin:
+    if origin and origin in cors_origins:
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
