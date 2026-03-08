@@ -112,42 +112,59 @@ async def list_events(
     current_user: User = Depends(get_current_admin_user),
 ):
     """Список всех событий с пагинацией (для админки)."""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"list_events called: page={page}, limit={limit}, user={current_user.username}")
+    
     offset = (page - 1) * limit
     
-    try:
-        rows = await db.fetch(
-            """
-            SELECT id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
-            FROM events
-            ORDER BY event_date DESC NULLS LAST, id DESC
-            LIMIT $1 OFFSET $2
-            """,
-            limit, offset
-        )
+    logger.info(f"Fetching events from DB...")
+    rows = await db.fetch(
+        """
+        SELECT id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
+        FROM events
+        ORDER BY event_date DESC NULLS LAST, id DESC
+        LIMIT $1 OFFSET $2
+        """,
+        limit, offset
+    )
+    logger.info(f"Fetched {len(rows)} events")
+    
+    total = await db.fetchval("SELECT COUNT(*) FROM events")
+    logger.info(f"Total events: {total}")
+    
+    # Преобразуем participants из asyncpg array в list
+    items = []
+    for i, row in enumerate(rows):
+        logger.info(f"Processing event {i+1}/{len(rows)}")
+        row_dict = dict(row)
+        logger.info(f"  Row data: {list(row_dict.keys())}")
         
-        total = await db.fetchval("SELECT COUNT(*) FROM events")
+        # Преобразуем participants в обычный список
+        if row_dict.get('participants') is None:
+            row_dict['participants'] = []
+        else:
+            row_dict['participants'] = list(row_dict['participants'])
         
-        # Преобразуем participants из asyncpg array в list
-        items = []
-        for row in rows:
-            row_dict = dict(row)
-            # Преобразуем participants в обычный список
-            if row_dict.get('participants') is None:
-                row_dict['participants'] = []
-            else:
-                row_dict['participants'] = list(row_dict['participants'])
-            items.append(EventOut(**row_dict))
-        
-        return PaginatedResponse.create(
-            items=items,
-            total=total,
-            page=page,
-            limit=limit
-        )
-    except Exception as e:
-        import logging
-        logging.error(f"Error in list_events: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.info(f"  Creating EventOut model...")
+        try:
+            event = EventOut(**row_dict)
+            items.append(event)
+            logger.info(f"  ✅ Event {event.id} created successfully")
+        except Exception as e:
+            logger.error(f"  ❌ Error creating EventOut: {e}")
+            logger.error(f"  Row dict: {row_dict}")
+            raise
+    
+    logger.info(f"Creating paginated response...")
+    result = PaginatedResponse.create(
+        items=items,
+        total=total,
+        page=page,
+        limit=limit
+    )
+    logger.info(f"✅ list_events completed successfully")
+    return result
 
 
 @router.post("/events", response_model=EventOut)
