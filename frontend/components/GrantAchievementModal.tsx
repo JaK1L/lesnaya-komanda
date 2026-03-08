@@ -105,6 +105,12 @@ export function GrantAchievementModal({ isOpen, onClose, onSuccess }: GrantAchie
 
       if (!response.ok) {
         const errorData = await response.json()
+        
+        // Специальная обработка для 404
+        if (response.status === 404) {
+          throw new Error('Эндпоинт еще не задеплоен на backend. Подождите 5-10 минут пока Render обновится.')
+        }
+        
         throw new Error(errorData.detail || 'Ошибка при выдаче достижения')
       }
 
