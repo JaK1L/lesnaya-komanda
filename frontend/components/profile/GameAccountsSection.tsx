@@ -16,7 +16,7 @@ interface GameAccount {
 interface Props {
   isOwnProfile: boolean
   apiUrl: string
-  token?: string
+  token?: string | null
 }
 
 const GAME_NAMES: Record<string, string> = {
