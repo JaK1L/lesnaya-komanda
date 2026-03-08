@@ -42,7 +42,7 @@ class GameAPIService:
                                 "avatar_url": player.get("avatarfull"),
                                 "profile_url": player.get("profileurl"),
                                 "status": self._get_steam_status(player.get("personastate", 0)),
-                                "last_logoff": datetime.fromtimestamp(player.get("lastlogoff", 0)) if player.get("lastlogoff") else None,
+                                "last_logoff": datetime.fromtimestamp(player.get("lastlogoff", 0)).isoformat() if player.get("lastlogoff") else None,
                             }
         except Exception as e:
             logger.error(f"Error fetching Steam profile for {steam_id}: {e}", exc_info=True)

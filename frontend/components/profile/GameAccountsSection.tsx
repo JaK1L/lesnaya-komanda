@@ -202,39 +202,65 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
 
   const renderStats = (game: string) => {
     if (loadingStats) {
-      return <div className={styles.statsLoading}>Загрузка статистики...</div>
+      return (
+        <div className={styles.statsContent}>
+          <div className={styles.statsLoading}>Загрузка статистики...</div>
+        </div>
+      )
     }
 
     if (game === 'steam' && stats.steam) {
       const { profile, cs2_stats } = stats.steam
       return (
-        <div className={styles.stats}>
+        <div className={styles.statsContent}>
           {profile && (
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Профиль:</span>
-              <span className={styles.statValue}>{profile.personaname || 'N/A'}</span>
+            <div className={styles.profileInfo}>
+              {profile.avatar_url && (
+                <img src={profile.avatar_url} alt="Avatar" className={styles.avatar} />
+              )}
+              <div>
+                <div className={styles.username}>{profile.username || 'N/A'}</div>
+                <div className={styles.status}>{profile.status}</div>
+              </div>
             </div>
           )}
           {cs2_stats && (
-            <>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Убийств:</span>
-                <span className={styles.statValue}>{cs2_stats.total_kills || 0}</span>
+            <div className={styles.statsGrid}>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Убийств</div>
+                <div className={styles.statValue}>{cs2_stats.kills?.toLocaleString() || 0}</div>
               </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Смертей:</span>
-                <span className={styles.statValue}>{cs2_stats.total_deaths || 0}</span>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Смертей</div>
+                <div className={styles.statValue}>{cs2_stats.deaths?.toLocaleString() || 0}</div>
               </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>K/D:</span>
-                <span className={styles.statValue}>
-                  {cs2_stats.total_deaths > 0 
-                    ? (cs2_stats.total_kills / cs2_stats.total_deaths).toFixed(2)
-                    : cs2_stats.total_kills}
-                </span>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>K/D</div>
+                <div className={styles.statValue}>{cs2_stats.kd_ratio || '0.00'}</div>
               </div>
-            </>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Побед</div>
+                <div className={styles.statValue}>{cs2_stats.wins?.toLocaleString() || 0}</div>
+              </div>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>MVP</div>
+                <div className={styles.statValue}>{cs2_stats.mvps?.toLocaleString() || 0}</div>
+              </div>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Хедшотов</div>
+                <div className={styles.statValue}>{cs2_stats.headshots?.toLocaleString() || 0}</div>
+              </div>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Точность</div>
+                <div className={styles.statValue}>{cs2_stats.accuracy || 0}%</div>
+              </div>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Матчей</div>
+                <div className={styles.statValue}>{cs2_stats.matches_played?.toLocaleString() || 0}</div>
+              </div>
+            </div>
           )}
+          {!cs2_stats && <div className={styles.noStats}>Статистика CS2 недоступна</div>}
         </div>
       )
     }
@@ -242,37 +268,53 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
     if (game === 'dota2' && stats.dota2) {
       const { profile, stats: dota2Stats } = stats.dota2
       return (
-        <div className={styles.stats}>
+        <div className={styles.statsContent}>
           {profile && (
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Никнейм:</span>
-              <span className={styles.statValue}>{profile.profile?.personaname || 'N/A'}</span>
+            <div className={styles.profileInfo}>
+              {profile.avatar_url && (
+                <img src={profile.avatar_url} alt="Avatar" className={styles.avatar} />
+              )}
+              <div>
+                <div className={styles.username}>{profile.username || 'N/A'}</div>
+                {profile.rank_tier && (
+                  <div className={styles.rank}>Ранг: {Math.floor(profile.rank_tier / 10)} звезд {profile.rank_tier % 10}</div>
+                )}
+              </div>
             </div>
           )}
           {dota2Stats && (
-            <>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>MMR:</span>
-                <span className={styles.statValue}>{dota2Stats.mmr_estimate?.estimate || 'N/A'}</span>
+            <div className={styles.statsGrid}>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Побед</div>
+                <div className={styles.statValue}>{dota2Stats.wins?.toLocaleString() || 0}</div>
               </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Побед:</span>
-                <span className={styles.statValue}>{dota2Stats.win || 0}</span>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Поражений</div>
+                <div className={styles.statValue}>{dota2Stats.losses?.toLocaleString() || 0}</div>
               </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Поражений:</span>
-                <span className={styles.statValue}>{dota2Stats.lose || 0}</span>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Всего матчей</div>
+                <div className={styles.statValue}>{dota2Stats.total_matches?.toLocaleString() || 0}</div>
               </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Винрейт:</span>
-                <span className={styles.statValue}>
-                  {dota2Stats.win + dota2Stats.lose > 0
-                    ? ((dota2Stats.win / (dota2Stats.win + dota2Stats.lose)) * 100).toFixed(1) + '%'
-                    : 'N/A'}
-                </span>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Винрейт</div>
+                <div className={styles.statValue}>{dota2Stats.win_rate || 0}%</div>
               </div>
-            </>
+              {profile?.mmr_estimate && (
+                <div className={styles.statBox}>
+                  <div className={styles.statLabel}>MMR (оценка)</div>
+                  <div className={styles.statValue}>{profile.mmr_estimate.toLocaleString()}</div>
+                </div>
+              )}
+              {profile?.leaderboard_rank && (
+                <div className={styles.statBox}>
+                  <div className={styles.statLabel}>Место в рейтинге</div>
+                  <div className={styles.statValue}>#{profile.leaderboard_rank.toLocaleString()}</div>
+                </div>
+              )}
+            </div>
           )}
+          {!dota2Stats && <div className={styles.noStats}>Статистика Dota 2 недоступна</div>}
         </div>
       )
     }
@@ -280,34 +322,49 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
     if (game === 'valorant' && stats.valorant) {
       const { profile, mmr } = stats.valorant
       return (
-        <div className={styles.stats}>
+        <div className={styles.statsContent}>
           {profile && (
-            <div className={styles.statItem}>
-              <span className={styles.statLabel}>Уровень:</span>
-              <span className={styles.statValue}>{profile.account_level || 'N/A'}</span>
+            <div className={styles.profileInfo}>
+              <div>
+                <div className={styles.username}>{profile.username || 'N/A'}</div>
+                <div className={styles.level}>Уровень: {profile.account_level || 'N/A'}</div>
+              </div>
             </div>
           )}
           {mmr && (
-            <>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Ранг:</span>
-                <span className={styles.statValue}>{mmr.currenttierpatched || 'Unranked'}</span>
+            <div className={styles.statsGrid}>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Текущий ранг</div>
+                <div className={styles.statValue}>{mmr.current_tier || 'Unranked'}</div>
               </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>RR:</span>
-                <span className={styles.statValue}>{mmr.ranking_in_tier || 0}</span>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>RR</div>
+                <div className={styles.statValue}>{mmr.ranking_in_tier || 0}</div>
               </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>Пик ранг:</span>
-                <span className={styles.statValue}>{mmr.peak_rank || 'N/A'}</span>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>ELO</div>
+                <div className={styles.statValue}>{mmr.elo?.toLocaleString() || 'N/A'}</div>
               </div>
-            </>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Изменение MMR</div>
+                <div className={styles.statValue} style={{ color: mmr.mmr_change >= 0 ? '#4ade80' : '#f87171' }}>
+                  {mmr.mmr_change > 0 ? '+' : ''}{mmr.mmr_change || 0}
+                </div>
+              </div>
+              {mmr.games_needed_for_rating > 0 && (
+                <div className={styles.statBox}>
+                  <div className={styles.statLabel}>Игр до калибровки</div>
+                  <div className={styles.statValue}>{mmr.games_needed_for_rating}</div>
+                </div>
+              )}
+            </div>
           )}
+          {!mmr && <div className={styles.noStats}>Статистика Valorant недоступна</div>}
         </div>
       )
     }
 
-    return null
+    return <div className={styles.noStats}>Статистика недоступна</div>
   }
 
   if (!isOwnProfile) {
