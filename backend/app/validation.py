@@ -104,10 +104,10 @@ def validate_telegram_url(url: Optional[str]) -> Optional[str]:
     
     url = url.strip()
     
-    # Разрешенные паттерны Telegram
+    # Разрешенные паттерны Telegram (с поддержкой постов /123)
     telegram_patterns = [
-        r'^https://t\.me/[a-zA-Z0-9_]+$',
-        r'^https://telegram\.me/[a-zA-Z0-9_]+$',
+        r'^https://t\.me/[a-zA-Z0-9_]+(/\d+)?$',  # https://t.me/channel или https://t.me/channel/123
+        r'^https://telegram\.me/[a-zA-Z0-9_]+(/\d+)?$',  # https://telegram.me/channel или https://telegram.me/channel/123
     ]
     
     for pattern in telegram_patterns:
