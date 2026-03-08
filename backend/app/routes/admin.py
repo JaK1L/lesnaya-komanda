@@ -114,24 +114,40 @@ async def list_events(
     """Список всех событий с пагинацией (для админки)."""
     offset = (page - 1) * limit
     
-    rows = await db.fetch(
-        """
-        SELECT id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
-        FROM events
-        ORDER BY event_date DESC NULLS LAST, id DESC
-        LIMIT $1 OFFSET $2
-        """,
-        limit, offset
-    )
-    
-    total = await db.fetchval("SELECT COUNT(*) FROM events")
-    
-    return PaginatedResponse.create(
-        items=[EventOut(**dict(row)) for row in rows],
-        total=total,
-        page=page,
-        limit=limit
-    )
+    try:
+        rows = await db.fetch(
+            """
+            SELECT id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
+            FROM events
+            ORDER BY event_date DESC NULLS LAST, id DESC
+            LIMIT $1 OFFSET $2
+            """,
+            limit, offset
+        )
+        
+        total = await db.fetchval("SELECT COUNT(*) FROM events")
+        
+        # Преобразуем participants из asyncpg array в list
+        items = []
+        for row in rows:
+            row_dict = dict(row)
+            # Преобразуем participants в обычный список
+            if row_dict.get('participants') is None:
+                row_dict['participants'] = []
+            else:
+                row_dict['participants'] = list(row_dict['participants'])
+            items.append(EventOut(**row_dict))
+        
+        return PaginatedResponse.create(
+            items=items,
+            total=total,
+            page=page,
+            limit=limit
+        )
+    except Exception as e:
+        import logging
+        logging.error(f"Error in list_events: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/events", response_model=EventOut)
