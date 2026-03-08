@@ -168,6 +168,17 @@ async def add_cache_control_header(request, call_next):
     if origin:
         logger.debug(f"🌐 Request from origin: {origin}")
     
+    # Обрабатываем OPTIONS запросы (preflight) сразу
+    if request.method == "OPTIONS":
+        from starlette.responses import Response
+        response = Response()
+        response.headers["Access-Control-Allow-Origin"] = origin or "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Max-Age"] = "3600"
+        return response
+    
     response = await call_next(request)
     
     # ФОРСИРУЕМ CORS заголовки для всех запросов
