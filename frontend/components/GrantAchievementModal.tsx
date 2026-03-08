@@ -92,7 +92,9 @@ export function GrantAchievementModal({ isOpen, onClose, onSuccess }: GrantAchie
     
     try {
       const token = localStorage.getItem('admin_token')
-      const response = await fetch(
+      
+      // Пробуем новый эндпоинт (grant-by-discord)
+      let response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/achievements/grant-by-discord/${selectedUser.discord_id}/${selectedAchievement.id}`,
         {
           method: 'POST',
@@ -103,14 +105,23 @@ export function GrantAchievementModal({ isOpen, onClose, onSuccess }: GrantAchie
         }
       )
 
+      // Если 404 - используем старый эндпоинт (grant по user_id)
+      if (response.status === 404) {
+        console.log('Используем старый эндпоинт grant/{user_id}/{achievement_type_id}')
+        response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/achievements/grant/${selectedUser.id}/${selectedAchievement.id}`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+      }
+
       if (!response.ok) {
         const errorData = await response.json()
-        
-        // Специальная обработка для 404
-        if (response.status === 404) {
-          throw new Error('Эндпоинт еще не задеплоен на backend. Подождите 5-10 минут пока Render обновится.')
-        }
-        
         throw new Error(errorData.detail || 'Ошибка при выдаче достижения')
       }
 
@@ -123,7 +134,7 @@ export function GrantAchievementModal({ isOpen, onClose, onSuccess }: GrantAchie
       setSelectedAchievement(null)
       
       // Показать успех
-      alert(`✅ ${result.message}`)
+      alert(`✅ ${result.message || 'Достижение выдано'}`)
       
       onSuccess()
       
