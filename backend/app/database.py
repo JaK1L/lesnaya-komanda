@@ -13,12 +13,16 @@ class Database:
     
     async def connect(self):
         """Создание пула соединений"""
+        # Убираем channel_binding из URL, т.к. asyncpg его не поддерживает
+        db_url = settings.DATABASE_URL.replace('&channel_binding=require', '').replace('?channel_binding=require&', '?').replace('?channel_binding=require', '')
+
         self.pool = await asyncpg.create_pool(
-            settings.DATABASE_URL,
+            db_url,
             min_size=5,
             max_size=20,
             command_timeout=60
         )
+
     
     async def disconnect(self):
         """Закрытие пула соединений"""
