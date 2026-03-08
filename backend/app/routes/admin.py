@@ -85,7 +85,7 @@ class EventCreate(BaseModel, ContentValidationMixin):
     title: str = Field(..., max_length=200)
     description: str = Field(..., max_length=2000)
     game: Optional[str] = Field(default="Общее", max_length=50)
-    event_date: datetime
+    event_date: Optional[datetime] = None  # Может быть NULL в БД
     status: str = Field(default="Планируется", max_length=30)
     telegram_url: Optional[str] = Field(None, max_length=500)
     expires_at: Optional[datetime] = Field(None, description="Дата и время когда событие автоматически скрывается")
