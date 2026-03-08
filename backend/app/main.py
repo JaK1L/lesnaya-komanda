@@ -130,9 +130,6 @@ app = FastAPI(
 logger.info(f"🌐 CORS: Разрешенные origins: {settings.ALLOWED_ORIGINS}")
 logger.info(f"🌐 DEBUG mode: {settings.DEBUG}")
 
-# Настройка Rate Limiting
-setup_rate_limiting(app)
-
 # ВРЕМЕННО: Разрешаем все origins для отладки CORS
 # TODO: Вернуть settings.ALLOWED_ORIGINS после исправления
 if settings.DEBUG:
@@ -146,6 +143,7 @@ else:
     ]
 logger.info(f"🌐 CORS origins для middleware: {cors_origins}")
 
+# ВАЖНО: CORSMiddleware должен быть ПЕРВЫМ!
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -159,6 +157,9 @@ app.add_middleware(
     ],
     max_age=3600,  # Кэшировать preflight запросы на 1 час
 )
+
+# Настройка Rate Limiting (ПОСЛЕ CORS!)
+setup_rate_limiting(app)
 
 # Middleware для отключения кэша и логирования CORS
 @app.middleware("http")
