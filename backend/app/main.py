@@ -170,6 +170,14 @@ async def add_cache_control_header(request, call_next):
     
     response = await call_next(request)
     
+    # ФОРСИРУЕМ CORS заголовки для всех запросов
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Expose-Headers"] = "Content-Length, Content-Type, X-Total-Count"
+    
     # Отключаем кэш для всех API эндпоинтов
     if request.url.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
