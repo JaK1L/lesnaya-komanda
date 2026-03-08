@@ -406,7 +406,7 @@ export default function ProfilePage() {
           <GameAccountsSection
             isOwnProfile={true}
             apiUrl={API_URL}
-            token={token || undefined}
+            token={token}
           />
         </SectionErrorBoundary>
 
