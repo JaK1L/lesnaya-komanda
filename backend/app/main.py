@@ -135,7 +135,15 @@ setup_rate_limiting(app)
 
 # ВРЕМЕННО: Разрешаем все origins для отладки CORS
 # TODO: Вернуть settings.ALLOWED_ORIGINS после исправления
-cors_origins = ["*"] if settings.DEBUG else settings.ALLOWED_ORIGINS
+if settings.DEBUG:
+    cors_origins = ["*"]
+else:
+    # Явно добавляем Vercel origin на случай если переменные не обновлены
+    cors_origins = list(settings.ALLOWED_ORIGINS) + [
+        "https://lesnaya-komanda.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ]
 logger.info(f"🌐 CORS origins для middleware: {cors_origins}")
 
 app.add_middleware(
