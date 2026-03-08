@@ -13,6 +13,21 @@ interface GameAccount {
   linked_at: string
 }
 
+interface GameStats {
+  steam?: {
+    profile?: any
+    cs2_stats?: any
+  }
+  dota2?: {
+    profile?: any
+    stats?: any
+  }
+  valorant?: {
+    profile?: any
+    mmr?: any
+  }
+}
+
 interface Props {
   isOwnProfile: boolean
   apiUrl: string
@@ -33,7 +48,9 @@ const GAME_ICONS: Record<string, string> = {
 
 export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
   const [accounts, setAccounts] = useState<GameAccount[]>([])
+  const [stats, setStats] = useState<GameStats>({})
   const [loading, setLoading] = useState(true)
+  const [loadingStats, setLoadingStats] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   
@@ -65,12 +82,64 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
       )
       
       setAccounts(response.data)
+      
+      // Загружаем статистику для каждого аккаунта
+      if (response.data.length > 0) {
+        loadStats(response.data)
+      }
     } catch (err) {
       console.error('Error loading game accounts:', err)
       setError('Не удалось загрузить привязанные аккаунты')
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadStats = async (accountsList: GameAccount[]) => {
+    setLoadingStats(true)
+    const newStats: GameStats = {}
+
+    for (const account of accountsList) {
+      try {
+        if (account.game === 'steam') {
+          const [profile, cs2Stats] = await Promise.all([
+            axios.get(`${apiUrl}/api/game-stats/steam/${account.account_id}`).catch(() => null),
+            axios.get(`${apiUrl}/api/game-stats/cs2/${account.account_id}`).catch(() => null),
+          ])
+          
+          newStats.steam = {
+            profile: profile?.data,
+            cs2_stats: cs2Stats?.data,
+          }
+        } else if (account.game === 'dota2') {
+          const [profile, stats] = await Promise.all([
+            axios.get(`${apiUrl}/api/game-stats/dota2/${account.account_id}/profile`).catch(() => null),
+            axios.get(`${apiUrl}/api/game-stats/dota2/${account.account_id}/stats`).catch(() => null),
+          ])
+          
+          newStats.dota2 = {
+            profile: profile?.data,
+            stats: stats?.data,
+          }
+        } else if (account.game === 'valorant' && account.account_tag) {
+          const region = account.region || 'eu'
+          const [profile, mmr] = await Promise.all([
+            axios.get(`${apiUrl}/api/game-stats/valorant/${account.account_id}/${account.account_tag}/profile?region=${region}`).catch(() => null),
+            axios.get(`${apiUrl}/api/game-stats/valorant/${account.account_id}/${account.account_tag}/mmr?region=${region}`).catch(() => null),
+          ])
+          
+          newStats.valorant = {
+            profile: profile?.data,
+            mmr: mmr?.data,
+          }
+        }
+      } catch (err) {
+        console.error(`Error loading stats for ${account.game}:`, err)
+      }
+    }
+
+    setStats(newStats)
+    setLoadingStats(false)
   }
 
   const handleAddAccount = async () => {
@@ -131,6 +200,116 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
     }
   }
 
+  const renderStats = (game: string) => {
+    if (loadingStats) {
+      return <div className={styles.statsLoading}>Загрузка статистики...</div>
+    }
+
+    if (game === 'steam' && stats.steam) {
+      const { profile, cs2_stats } = stats.steam
+      return (
+        <div className={styles.stats}>
+          {profile && (
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Профиль:</span>
+              <span className={styles.statValue}>{profile.personaname || 'N/A'}</span>
+            </div>
+          )}
+          {cs2_stats && (
+            <>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Убийств:</span>
+                <span className={styles.statValue}>{cs2_stats.total_kills || 0}</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Смертей:</span>
+                <span className={styles.statValue}>{cs2_stats.total_deaths || 0}</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>K/D:</span>
+                <span className={styles.statValue}>
+                  {cs2_stats.total_deaths > 0 
+                    ? (cs2_stats.total_kills / cs2_stats.total_deaths).toFixed(2)
+                    : cs2_stats.total_kills}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      )
+    }
+
+    if (game === 'dota2' && stats.dota2) {
+      const { profile, stats: dota2Stats } = stats.dota2
+      return (
+        <div className={styles.stats}>
+          {profile && (
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Никнейм:</span>
+              <span className={styles.statValue}>{profile.profile?.personaname || 'N/A'}</span>
+            </div>
+          )}
+          {dota2Stats && (
+            <>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>MMR:</span>
+                <span className={styles.statValue}>{dota2Stats.mmr_estimate?.estimate || 'N/A'}</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Побед:</span>
+                <span className={styles.statValue}>{dota2Stats.win || 0}</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Поражений:</span>
+                <span className={styles.statValue}>{dota2Stats.lose || 0}</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Винрейт:</span>
+                <span className={styles.statValue}>
+                  {dota2Stats.win + dota2Stats.lose > 0
+                    ? ((dota2Stats.win / (dota2Stats.win + dota2Stats.lose)) * 100).toFixed(1) + '%'
+                    : 'N/A'}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      )
+    }
+
+    if (game === 'valorant' && stats.valorant) {
+      const { profile, mmr } = stats.valorant
+      return (
+        <div className={styles.stats}>
+          {profile && (
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Уровень:</span>
+              <span className={styles.statValue}>{profile.account_level || 'N/A'}</span>
+            </div>
+          )}
+          {mmr && (
+            <>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Ранг:</span>
+                <span className={styles.statValue}>{mmr.currenttierpatched || 'Unranked'}</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>RR:</span>
+                <span className={styles.statValue}>{mmr.ranking_in_tier || 0}</span>
+              </div>
+              <div className={styles.statItem}>
+                <span className={styles.statLabel}>Пик ранг:</span>
+                <span className={styles.statValue}>{mmr.peak_rank || 'N/A'}</span>
+              </div>
+            </>
+          )}
+        </div>
+      )
+    }
+
+    return null
+  }
+
   if (!isOwnProfile) {
     return null // Пока показываем только для своего профиля
   }
@@ -165,33 +344,36 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
             <div className={styles.accountsList}>
               {accounts.map((account) => (
                 <div key={account.id} className={styles.accountCard}>
-                  <div className={styles.accountInfo}>
-                    <span className={styles.gameIcon}>
-                      {GAME_ICONS[account.game]}
-                    </span>
-                    <div className={styles.accountDetails}>
-                      <div className={styles.gameName}>
-                        {GAME_NAMES[account.game]}
-                      </div>
-                      <div className={styles.accountId}>
-                        {account.game === 'valorant' && account.account_tag
-                          ? `${account.account_id}#${account.account_tag}`
-                          : account.account_id}
-                      </div>
-                      {account.region && (
-                        <div className={styles.region}>
-                          Регион: {account.region.toUpperCase()}
+                  <div className={styles.accountHeader}>
+                    <div className={styles.accountInfo}>
+                      <span className={styles.gameIcon}>
+                        {GAME_ICONS[account.game]}
+                      </span>
+                      <div className={styles.accountDetails}>
+                        <div className={styles.gameName}>
+                          {GAME_NAMES[account.game]}
                         </div>
-                      )}
+                        <div className={styles.accountId}>
+                          {account.game === 'valorant' && account.account_tag
+                            ? `${account.account_id}#${account.account_tag}`
+                            : account.account_id}
+                        </div>
+                        {account.region && (
+                          <div className={styles.region}>
+                            Регион: {account.region.toUpperCase()}
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    <button
+                      className={styles.removeButton}
+                      onClick={() => handleRemoveAccount(account.game)}
+                      aria-label={`Отвязать ${GAME_NAMES[account.game]}`}
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <button
-                    className={styles.removeButton}
-                    onClick={() => handleRemoveAccount(account.game)}
-                    aria-label={`Отвязать ${GAME_NAMES[account.game]}`}
-                  >
-                    ✕
-                  </button>
+                  {renderStats(account.game)}
                 </div>
               ))}
             </div>
