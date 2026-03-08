@@ -55,7 +55,8 @@ export default function AdminEventsPage() {
       if (!response.ok) throw new Error('Failed to fetch')
       
       const data = await response.json()
-      setEvents(data)
+      // API возвращает пагинированный ответ с полем items
+      setEvents(data.items || data)
     } catch (error) {
       console.error('Error fetching events:', error)
     } finally {
