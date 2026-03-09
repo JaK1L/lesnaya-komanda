@@ -63,8 +63,12 @@ async def login_for_access_token(
         )
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    # Определяем тип токена: для админов из admin_users используем "admin", для обычных пользователей "email"
+    token_type = "admin" if user.role == "admin" else "email"
+    
     access_token = create_access_token(
-        data={"sub": user.username, "user_id": user.id, "type": "email"}, 
+        data={"sub": user.username, "user_id": user.id, "type": token_type}, 
         expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}

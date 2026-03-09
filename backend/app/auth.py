@@ -174,7 +174,14 @@ async def get_current_user(
         role = "admin" if row["is_admin"] else "user"
         return User(id=row["id"], username=row["discord_username"], role=role)
 
-    # Обычный админ (логин/пароль из admin_users)
+    # Админ из таблицы admin_users
+    if token_type == "admin":
+        user = await get_user_by_username(db, username=sub)
+        if user is None:
+            raise credentials_exception
+        return User(id=user.id, username=user.username, role=user.role)
+
+    # Обычный админ (логин/пароль из admin_users) - fallback для старых токенов
     user = await get_user_by_username(db, username=sub)
     if user is None:
         raise credentials_exception
@@ -237,7 +244,14 @@ async def get_optional_current_user(
         role = "admin" if row["is_admin"] else "user"
         return User(id=row["id"], username=row["discord_username"], role=role)
 
-    # Обычный админ (логин/пароль)
+    # Админ из таблицы admin_users
+    if token_type == "admin":
+        user = await get_user_by_username(db, username=sub)
+        if user is None:
+            return None
+        return User(id=user.id, username=user.username, role=user.role)
+
+    # Обычный админ (логин/пароль) - fallback для старых токенов
     user = await get_user_by_username(db, username=sub)
     if user is None:
         return None
