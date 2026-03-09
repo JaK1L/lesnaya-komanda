@@ -65,8 +65,8 @@ export function DiscordStats() {
     }
   }
 
-  // Фильтруем только онлайн админов
-  const onlineElite = eliteUsers.filter(u => u.is_online)
+  // Показываем всех пользователей элиты (онлайн и оффлайн)
+  const displayedElite = eliteUsers.slice(0, 6) // Показываем максимум 6 пользователей
 
   if (loading) {
     return (
@@ -104,13 +104,13 @@ export function DiscordStats() {
             <h3 className={styles.sectionTitle}>
               👑 Элита Леса
             </h3>
-            {onlineElite.length === 0 ? (
+            {displayedElite.length === 0 ? (
               <div className={styles.empty}>
                 <p>Элита отдыхает</p>
               </div>
             ) : (
               <div className={styles.eliteGrid}>
-                {onlineElite.map((user) => (
+                {displayedElite.map((user) => (
                   <div key={user.discord_id} className={styles.eliteCard}>
                     <div className={styles.avatarContainer}>
                       <img
