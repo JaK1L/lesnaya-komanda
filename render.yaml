@@ -40,6 +40,8 @@ services:
       - key: REDIS_URL
         value: redis://localhost:6379/0
       - key: TRACKER_API_KEY
-        value: c2254171-1ce5-46e9-a283-21b0282406ff
+        value: 057f6380-58d8-4ed7-afcb-8a54c510c7c1
+      - key: HENRIK_API_KEY
+        value: HDEV-596140d5-102e-4faa-a2af-3cf68bc94b82
       - key: STEAM_API_KEY
         value: 2B3F8147466380EE76E0985131D2632C

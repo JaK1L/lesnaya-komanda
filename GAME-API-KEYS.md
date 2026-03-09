@@ -1,88 +1,114 @@
 # Настройка API ключей для игровой статистики
 
-Для работы игровой статистики необходимо настроить API ключи для различных сервисов.
+## ⚠️ ВАЖНО: Текущие API ключи не работают!
 
-## Tracker.gg API (CS2/CS:GO)
+### Проблема
+- Tracker.gg API ключ `c2254171-1ce5-46e9-a283-21b0282406ff` возвращает **401 Unauthorized**
+- Henrik Dev API теперь требует авторизацию (раньше работал без ключа)
+- Без валидных ключей Valorant и CS2 статистика недоступна
 
-✅ **Уже настроен**
+## Решение
 
-API ключ: `c2254171-1ce5-46e9-a283-21b0282406ff`
+### 1. Tracker.gg API (для CS2 и Valorant)
 
-Используется для получения статистики CS2/CS:GO.
+**Получение нового ключа:**
+1. Зайдите на https://tracker.gg/developers
+2. Зарегистрируйтесь или войдите
+3. Создайте новое приложение
+4. Получите API ключ
+5. Добавьте в конфигурацию:
 
-## Steam Web API (опционально)
-
-**Статус:** Не настроен
-
-**Для чего:** Получение профилей Steam и резервный источник статистики CS2
-
-**Как получить:**
-1. Перейдите на https://steamcommunity.com/dev/apikey
-2. Войдите через Steam
-3. Заполните форму (Domain Name можно указать любой, например: `lesnaya-komanda.vercel.app`)
-4. Скопируйте полученный ключ
-
-**Где добавить:**
-- `backend/.env`: `STEAM_API_KEY=ваш_ключ`
-- `.env`: `STEAM_API_KEY=ваш_ключ`
-- `render.yaml`: добавить в `envVars`
-
-## Henrik Dev API (Valorant)
-
-**Статус:** Не требуется
-
-Henrik Dev API работает без ключа, но с ограничениями по количеству запросов.
-
-**Опционально:** Можно получить ключ для увеличения лимитов на https://discord.gg/X3GaVkX2YN
-
-## OpenDota API (Dota 2)
-
-**Статус:** Не требуется
-
-✅ OpenDota API работает без ключа
-
-## Текущая конфигурация
-
-### Работает:
-- ✅ Dota 2 (OpenDota API - без ключа)
-- ✅ CS2 (Tracker.gg API - с ключом)
-
-### Требует настройки:
-- ⚠️ Steam профили (нужен Steam API ключ)
-- ⚠️ Valorant (работает, но может быть нестабильно без ключа)
-
-## Инструкция по добавлению Steam API ключа
-
-1. Получите ключ на https://steamcommunity.com/dev/apikey
-
-2. Добавьте в `backend/.env`:
+**backend/.env:**
 ```env
-STEAM_API_KEY=ваш_steam_api_ключ
+TRACKER_API_KEY=ваш_новый_ключ
 ```
 
-3. Добавьте в `.env` (корень проекта):
+**.env (корень):**
 ```env
-STEAM_API_KEY=ваш_steam_api_ключ
+TRACKER_API_KEY=ваш_новый_ключ
 ```
 
-4. Добавьте в `render.yaml` для продакшена:
+**render.yaml:**
 ```yaml
-- key: STEAM_API_KEY
-  value: ваш_steam_api_ключ
+- key: TRACKER_API_KEY
+  value: ваш_новый_ключ
 ```
 
-5. Перезапустите backend:
-```bash
-cd backend
-python -m uvicorn app.main:app --reload
+### 2. Henrik Dev API (для Valorant)
+
+**Получение ключа:**
+1. Присоединитесь к Discord: https://discord.gg/X3GaVkX2YN
+2. Запросите API ключ в соответствующем канале
+3. Добавьте в конфигурацию:
+
+**backend/.env:**
+```env
+HENRIK_API_KEY=ваш_ключ
 ```
 
-## Проверка работы API
+**.env (корень):**
+```env
+HENRIK_API_KEY=ваш_ключ
+```
 
-Запустите тестовый скрипт:
+**render.yaml:**
+```yaml
+- key: HENRIK_API_KEY
+  value: ваш_ключ
+```
+
+### 3. Steam Web API (для Steam профилей)
+
+**Текущий ключ:** `2B3F8147466380EE76E0985131D2632C` ✅ Работает
+
+Если нужен новый:
+1. https://steamcommunity.com/dev/apikey
+2. Войдите через Steam
+3. Зарегистрируйте домен
+4. Получите ключ
+
+### 4. OpenDota API (для Dota 2)
+
+✅ **Работает без ключа**
+
+OpenDota API бесплатный и не требует авторизации.
+
+## Текущий статус API
+
+| Игра | API | Статус | Требуется |
+|------|-----|--------|-----------|
+| Dota 2 | OpenDota | ✅ Работает | Ничего |
+| Steam | Steam Web API | ✅ Работает | Ничего |
+| CS2 | Tracker.gg | ❌ Не работает | Новый API ключ |
+| Valorant | Henrik Dev | ❌ Не работает | API ключ |
+
+## Тестирование API
+
+После добавления ключей запустите тесты:
+
 ```bash
 cd backend
+
+# Тест Tracker.gg API
+python test_tracker_cs2.py
+
+# Тест Henrik API
+python test_henrik_api.py
+
+# Тест всех API
 python test_tracker_api.py
 ```
 
-Скрипт покажет, какие API работают, а какие требуют настройки.
+## Примечание
+
+**Riot Games** не предоставляет персональные API ключи для Valorant. Доступны только:
+- Henrik Dev API (неофициальный, требует ключ)
+- Tracker.gg API (требует ключ)
+- Официальный Riot API (только для production приложений с одобрением)
+
+## Что работает сейчас
+
+- ✅ Dota 2: Полная статистика (профиль + игровые данные)
+- ✅ Steam: Профили пользователей
+- ❌ CS2: Недоступно (нужен валидный Tracker.gg ключ)
+- ❌ Valorant: Недоступно (нужен Henrik API ключ)

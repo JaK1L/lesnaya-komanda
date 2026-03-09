@@ -65,65 +65,91 @@ class GameAPIService:
         return statuses.get(state, "Unknown")
     
     async def get_cs2_stats(self, steam_id: str) -> Optional[Dict[str, Any]]:
-        """Получить статистику CS2 через Tracker.gg API"""
-        # Используем Tracker.gg API для получения статистики CS2
-        url = f"https://public-api.tracker.gg/v2/csgo/standard/profile/steam/{steam_id}"
-        headers = {
-            "TRN-Api-Key": os.getenv("TRACKER_API_KEY", "")  # Можно работать без ключа, но с лимитами
-        }
+        """Получить статистику CS2 через Tracker.gg API или Steam API"""
+        logger.info(f"Fetching CS2 stats for Steam ID: {steam_id}")
         
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers if headers["TRN-Api-Key"] else {}) as response:
-                    if response.status == 200:
-                        data = await response.json()
+        # Сначала пробуем Tracker.gg API
+        tracker_key = os.getenv("TRACKER_API_KEY", "")
+        if tracker_key:
+            url = f"https://public-api.tracker.gg/v2/csgo/standard/profile/steam/{steam_id}"
+            headers = {"TRN-Api-Key": tracker_key}
+            
+            logger.info(f"Trying Tracker.gg API: {url}")
+            
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, headers=headers) as response:
+                        logger.info(f"Tracker.gg response status: {response.status}")
                         
-                        # Извлекаем статистику из ответа
-                        segments = data.get("data", {}).get("segments", [])
-                        if not segments:
-                            return None
-                        
-                        # Берем общую статистику (первый сегмент обычно overview)
-                        overview = segments[0].get("stats", {})
-                        
-                        return {
-                            "kills": overview.get("kills", {}).get("value", 0),
-                            "deaths": overview.get("deaths", {}).get("value", 0),
-                            "kd_ratio": overview.get("kd", {}).get("value", 0),
-                            "wins": overview.get("wins", {}).get("value", 0),
-                            "matches_played": overview.get("matchesPlayed", {}).get("value", 0),
-                            "mvps": overview.get("mvp", {}).get("value", 0),
-                            "headshots": overview.get("headshots", {}).get("value", 0),
-                            "headshot_pct": overview.get("headshotPct", {}).get("value", 0),
-                            "win_rate": overview.get("wlPercentage", {}).get("value", 0),
-                            "damage_per_round": overview.get("damagePerRound", {}).get("value", 0),
-                        }
-                    elif response.status == 404:
-                        # Профиль не найден, пробуем Steam API как fallback
-                        return await self._get_cs2_stats_steam_fallback(steam_id)
-        except Exception as e:
-            logger.error(f"Error fetching CS2 stats from Tracker.gg for {steam_id}: {e}", exc_info=True)
-            # Пробуем Steam API как fallback
+                        if response.status == 200:
+                            data = await response.json()
+                            
+                            # Извлекаем статистику из ответа
+                            segments = data.get("data", {}).get("segments", [])
+                            if not segments:
+                                logger.warning(f"No segments found for {steam_id}")
+                                return await self._get_cs2_stats_steam_fallback(steam_id)
+                            
+                            # Берем общую статистику (первый сегмент обычно overview)
+                            overview = segments[0].get("stats", {})
+                            
+                            return {
+                                "kills": overview.get("kills", {}).get("value", 0),
+                                "deaths": overview.get("deaths", {}).get("value", 0),
+                                "kd_ratio": overview.get("kd", {}).get("value", 0),
+                                "wins": overview.get("wins", {}).get("value", 0),
+                                "matches_played": overview.get("matchesPlayed", {}).get("value", 0),
+                                "mvps": overview.get("mvp", {}).get("value", 0),
+                                "headshots": overview.get("headshots", {}).get("value", 0),
+                                "headshot_pct": overview.get("headshotPct", {}).get("value", 0),
+                                "win_rate": overview.get("wlPercentage", {}).get("value", 0),
+                                "damage_per_round": overview.get("damagePerRound", {}).get("value", 0),
+                            }
+                        elif response.status == 404:
+                            logger.info(f"Tracker.gg: Profile not found for {steam_id}, trying Steam API...")
+                            return await self._get_cs2_stats_steam_fallback(steam_id)
+                        elif response.status == 401:
+                            error_text = await response.text()
+                            logger.warning(f"Tracker.gg API key invalid: {error_text}, trying Steam API...")
+                            return await self._get_cs2_stats_steam_fallback(steam_id)
+                        else:
+                            error_text = await response.text()
+                            logger.error(f"Tracker.gg error {response.status}: {error_text}")
+                            return await self._get_cs2_stats_steam_fallback(steam_id)
+            except Exception as e:
+                logger.error(f"Error fetching CS2 stats from Tracker.gg for {steam_id}: {e}", exc_info=True)
+                return await self._get_cs2_stats_steam_fallback(steam_id)
+        else:
+            logger.info("Tracker.gg API key not set, using Steam API")
             return await self._get_cs2_stats_steam_fallback(steam_id)
     
     async def _get_cs2_stats_steam_fallback(self, steam_id: str) -> Optional[Dict[str, Any]]:
         """Fallback: получить статистику CS2 через Steam API"""
+        logger.info(f"Trying Steam API fallback for {steam_id}")
+        
         if not self.steam_api_key:
+            logger.warning("Steam API key not set")
             return None
             
-        url = f"https://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v2/"
+        url = "https://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v2/"
         params = {
             "key": self.steam_api_key,
             "steamid": steam_id,
-            "appid": "730"
+            "appid": "730"  # CS:GO/CS2
         }
         
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, params=params) as response:
+                    logger.info(f"Steam API response status: {response.status}")
+                    
                     if response.status == 200:
                         data = await response.json()
                         stats = data.get("playerstats", {}).get("stats", [])
+                        
+                        if not stats:
+                            logger.warning(f"No stats found for {steam_id}")
+                            return None
                         
                         # Извлекаем основные статистики
                         stats_dict = {stat["name"]: stat["value"] for stat in stats}
@@ -143,6 +169,17 @@ class GameAPIService:
                             "win_rate": round(stats_dict.get("total_wins", 0) / max(stats_dict.get("total_matches_played", 1), 1) * 100, 2),
                             "damage_per_round": 0,  # Недоступно в Steam API
                         }
+                    elif response.status == 403:
+                        logger.warning(f"Steam API 403: Profile is private or stats are hidden for {steam_id}")
+                        return None
+                    elif response.status == 400:
+                        error_text = await response.text()
+                        logger.warning(f"Steam API 400: Invalid request or no game data for {steam_id}: {error_text}")
+                        return None
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"Steam API error {response.status}: {error_text}")
+                        return None
         except Exception as e:
             logger.error(f"Error fetching CS2 stats from Steam API for {steam_id}: {e}", exc_info=True)
             return None
@@ -208,51 +245,47 @@ class GameAPIService:
             return None
     
     async def get_valorant_profile(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
-        """Получить профиль Valorant через Tracker.gg API"""
+        """Получить профиль Valorant через Henrik API"""
         logger.info(f"Fetching Valorant profile for {riot_id}#{tag} (region: {region})")
         
-        # Используем Tracker.gg API (более стабильный чем Henrik)
-        # URL encode riot_id and tag properly
-        import urllib.parse
-        encoded_name = urllib.parse.quote(riot_id)
-        encoded_tag = urllib.parse.quote(tag)
+        # Henrik API требует API ключ (получить на https://discord.gg/X3GaVkX2YN)
+        henrik_api_key = os.getenv("HENRIK_API_KEY", "")
         
-        url = f"https://public-api.tracker.gg/v2/valorant/standard/profile/riot/{encoded_name}%23{encoded_tag}"
+        if not henrik_api_key:
+            logger.warning("Henrik API key not set. Valorant stats unavailable.")
+            return None
+        
+        url = f"https://api.henrikdev.xyz/valorant/v1/account/{riot_id}/{tag}"
         headers = {
-            "TRN-Api-Key": os.getenv("TRACKER_API_KEY", "")
+            "Authorization": henrik_api_key
         }
         
-        logger.info(f"Tracker.gg URL: {url}")
+        logger.info(f"Henrik API URL: {url}")
         
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers if headers["TRN-Api-Key"] else {}) as response:
-                    logger.info(f"Tracker.gg response status: {response.status}")
+                async with session.get(url, headers=headers) as response:
+                    logger.info(f"Henrik API response status: {response.status}")
                     
                     if response.status == 200:
                         data = await response.json()
-                        platform_info = data.get("data", {}).get("platformInfo", {})
+                        account_data = data.get("data", {})
                         
                         return {
                             "riot_id": riot_id,
                             "tag": tag,
                             "username": f"{riot_id}#{tag}",
-                            "account_level": platform_info.get("platformUserId"),
-                            "avatar_url": platform_info.get("avatarUrl"),
-                            "region": region,
+                            "account_level": account_data.get("account_level"),
+                            "card_url": account_data.get("card", {}).get("wide"),
+                            "region": account_data.get("region"),
                         }
-                    elif response.status == 404:
-                        # Пробуем Henrik API как fallback
-                        logger.info(f"Tracker.gg не нашел профиль {riot_id}#{tag}, пробуем Henrik API...")
-                        return await self._get_valorant_profile_henrik_fallback(riot_id, tag, region)
                     else:
                         error_text = await response.text()
-                        logger.error(f"Tracker.gg error {response.status}: {error_text}")
-                        return await self._get_valorant_profile_henrik_fallback(riot_id, tag, region)
+                        logger.error(f"Henrik API error {response.status}: {error_text}")
+                        return None
         except Exception as e:
-            logger.error(f"Error fetching Valorant profile from Tracker.gg for {riot_id}#{tag}: {e}", exc_info=True)
-            # Пробуем Henrik API как fallback
-            return await self._get_valorant_profile_henrik_fallback(riot_id, tag, region)
+            logger.error(f"Error fetching Valorant profile from Henrik API for {riot_id}#{tag}: {e}", exc_info=True)
+            return None
     
     async def _get_valorant_profile_henrik_fallback(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
         """Fallback: получить профиль Valorant через Henrik API"""
@@ -278,68 +311,47 @@ class GameAPIService:
             return None
     
     async def get_valorant_mmr(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
-        """Получить MMR и ранг Valorant через Tracker.gg API"""
+        """Получить MMR и ранг Valorant через Henrik API"""
         logger.info(f"Fetching Valorant MMR for {riot_id}#{tag} (region: {region})")
         
-        # Используем Tracker.gg API
-        import urllib.parse
-        encoded_name = urllib.parse.quote(riot_id)
-        encoded_tag = urllib.parse.quote(tag)
+        # Henrik API требует API ключ (получить на https://discord.gg/X3GaVkX2YN)
+        henrik_api_key = os.getenv("HENRIK_API_KEY", "")
         
-        url = f"https://public-api.tracker.gg/v2/valorant/standard/profile/riot/{encoded_name}%23{encoded_tag}"
+        if not henrik_api_key:
+            logger.warning("Henrik API key not set. Valorant MMR unavailable.")
+            return None
+        
+        url = f"https://api.henrikdev.xyz/valorant/v2/mmr/{region}/{riot_id}/{tag}"
         headers = {
-            "TRN-Api-Key": os.getenv("TRACKER_API_KEY", "")
+            "Authorization": henrik_api_key
         }
         
-        logger.info(f"Tracker.gg MMR URL: {url}")
+        logger.info(f"Henrik API MMR URL: {url}")
         
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers if headers["TRN-Api-Key"] else {}) as response:
-                    logger.info(f"Tracker.gg MMR response status: {response.status}")
+                async with session.get(url, headers=headers) as response:
+                    logger.info(f"Henrik API MMR response status: {response.status}")
                     
                     if response.status == 200:
                         data = await response.json()
-                        
-                        # Извлекаем статистику из сегментов
-                        segments = data.get("data", {}).get("segments", [])
-                        if not segments:
-                            logger.warning(f"No segments found for {riot_id}#{tag}")
-                            return await self._get_valorant_mmr_henrik_fallback(riot_id, tag, region)
-                        
-                        # Берем первый сегмент (обычно это overview)
-                        overview = segments[0].get("stats", {})
-                        
-                        # Извлекаем ранг
-                        rank_data = overview.get("rank", {})
-                        rating_data = overview.get("rating", {})
-                        peak_rank_data = overview.get("peakRank", {})
+                        mmr_data = data.get("data", {})
+                        current_data = mmr_data.get("current_data", {})
                         
                         return {
-                            "current_tier": rank_data.get("metadata", {}).get("tierName", "Unranked"),
-                            "ranking_in_tier": rating_data.get("value", 0),
-                            "mmr_change": 0,  # Tracker.gg не предоставляет изменение MMR
-                            "elo": rating_data.get("value", 0),
-                            "games_needed_for_rating": 0,
-                            "peak_rank": peak_rank_data.get("metadata", {}).get("tierName"),
-                            "wins": overview.get("matchesWon", {}).get("value", 0),
-                            "losses": overview.get("matchesLost", {}).get("value", 0),
-                            "win_rate": overview.get("matchesWinPct", {}).get("value", 0),
-                            "kd_ratio": overview.get("kDRatio", {}).get("value", 0),
-                            "headshot_pct": overview.get("headshotsPercentage", {}).get("value", 0),
+                            "current_tier": current_data.get("currenttierpatched"),
+                            "ranking_in_tier": current_data.get("ranking_in_tier"),
+                            "mmr_change": current_data.get("mmr_change_to_last_game"),
+                            "elo": current_data.get("elo"),
+                            "games_needed_for_rating": current_data.get("games_needed_for_rating", 0),
                         }
-                    elif response.status == 404:
-                        # Пробуем Henrik API как fallback
-                        logger.info(f"Tracker.gg не нашел MMR {riot_id}#{tag}, пробуем Henrik API...")
-                        return await self._get_valorant_mmr_henrik_fallback(riot_id, tag, region)
                     else:
                         error_text = await response.text()
-                        logger.error(f"Tracker.gg MMR error {response.status}: {error_text}")
-                        return await self._get_valorant_mmr_henrik_fallback(riot_id, tag, region)
+                        logger.error(f"Henrik API MMR error {response.status}: {error_text}")
+                        return None
         except Exception as e:
-            logger.error(f"Error fetching Valorant MMR from Tracker.gg for {riot_id}#{tag}: {e}", exc_info=True)
-            # Пробуем Henrik API как fallback
-            return await self._get_valorant_mmr_henrik_fallback(riot_id, tag, region)
+            logger.error(f"Error fetching Valorant MMR from Henrik API for {riot_id}#{tag}: {e}", exc_info=True)
+            return None
     
     async def _get_valorant_mmr_henrik_fallback(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
         """Fallback: получить MMR Valorant через Henrik API"""
