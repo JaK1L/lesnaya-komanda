@@ -56,7 +56,7 @@ export function NewsSection() {
       setLoading(true)
       setError(null)
       const response = await axios.get<News[]>(`${API_URL}/api/news`)
-      setNews(response.data.slice(0, 2)) // Показываем только 2 новости
+      setNews(response.data.slice(0, 3)) // Показываем 3 последние новости
     } catch (err) {
       console.error('Error fetching news:', err)
       setError('Не удалось загрузить новости')
@@ -86,7 +86,7 @@ export function NewsSection() {
       <section className={styles.section}>
         <h2 className={styles.title}>Последние новости</h2>
         <div className={styles.grid}>
-          {[1, 2].map((i) => (
+          {[1, 2, 3].map((i) => (
             <div key={i} className={styles.card}>
               <div className={styles.skeleton}></div>
             </div>
@@ -109,7 +109,7 @@ export function NewsSection() {
 
   return (
     <>
-      <section className={styles.section}>
+      <section className={styles.section} id="news">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -143,6 +143,16 @@ export function NewsSection() {
                   <p className={styles.cardContent}>
                     {truncateText(item.content, 100)}
                   </p>
+                  <div className={styles.cardFooter}>
+                    <span className={styles.cardDate}>
+                      {new Date(item.created_at).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </span>
+                    <span className={styles.readMore}>Читать далее →</span>
+                  </div>
                 </div>
               </motion.div>
             ))}
