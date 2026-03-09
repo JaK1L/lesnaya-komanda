@@ -35,15 +35,15 @@ interface Props {
 }
 
 const GAME_NAMES: Record<string, string> = {
-  steam: 'Steam',
+  steam: 'Counter Strike',
   dota2: 'Dota 2',
   valorant: 'Valorant',
 }
 
 const GAME_ICONS: Record<string, string> = {
-  steam: '🎮',
-  dota2: '⚔️',
-  valorant: '🎯',
+  steam: 'https://img.icons8.com/ios/50/counter-strike.png',
+  dota2: 'https://img.icons8.com/ios/50/dota.png',
+  valorant: 'https://img.icons8.com/ios/50/valorant.png',
 }
 
 export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
@@ -506,7 +506,12 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
                   <div className={styles.accountHeader}>
                     <div className={styles.accountInfo}>
                       <span className={styles.gameIcon}>
-                        {GAME_ICONS[account.game]}
+                        <img 
+                          src={GAME_ICONS[account.game]} 
+                          alt={GAME_NAMES[account.game]}
+                          width="32"
+                          height="32"
+                        />
                       </span>
                       <div className={styles.accountDetails}>
                         <div className={styles.gameName}>
