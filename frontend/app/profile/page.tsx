@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { Navigation, Footer, SkipToContent } from '../../components/layout'
-import { ProfileHeader, ProfileEditForm, GamePreferencesSection, ProfileSkeleton, AchievementsSection, GameStatsSection, GameAccountsSection } from '../../components/profile'
+import { ProfileHeader, ProfileEditForm, GamePreferencesSection, ProfileSkeleton, AchievementsSection, GameAccountsSection } from '../../components/profile'
 import { ErrorMessage } from '../../components/ui'
 import { PageErrorBoundary } from '../../components/PageErrorBoundary'
 import { SectionErrorBoundary } from '../../components/SectionErrorBoundary'
@@ -408,11 +408,6 @@ export default function ProfilePage() {
             apiUrl={API_URL}
             token={token}
           />
-        </SectionErrorBoundary>
-
-        {/* Game Stats Section */}
-        <SectionErrorBoundary sectionName="Игровая статистика">
-          <GameStatsSection userId={profile.discord_id} isOwnProfile={true} />
         </SectionErrorBoundary>
 
         {/* Activity Section */}
