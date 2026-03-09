@@ -60,27 +60,33 @@ async def debug_database_info(db: asyncpg.Connection = Depends(get_db)):
 
 
 class StreamerPublic(BaseModel):
-    id: int
-    name: str
-    game: Optional[str]
+    discord_id: int
+    discord_username: str
     avatar_url: Optional[str]
-    platform: str
-    stream_url: str
-    schedule: Optional[str]
+    forest_rank: str
+    is_online: Optional[bool] = False
+    game: Optional[str] = None
 
 
 @router.get("/streamers", response_model=List[StreamerPublic])
 async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     """
     Публичный список стримеров для сайта.
-    Показываем только активных стримеров.
+    Показываем пользователей которые являются стримерами.
     """
     rows = await db.fetch(
         """
-        SELECT id, name, game, avatar_url, platform, stream_url, schedule
-        FROM streamers
-        WHERE is_active = true
-        ORDER BY display_order ASC, id ASC
+        SELECT 
+            discord_id,
+            discord_username,
+            avatar_url,
+            forest_rank,
+            false as is_online,
+            NULL as game
+        FROM users
+        WHERE is_streamer = true
+        ORDER BY rating DESC, id ASC
+        LIMIT 10
         """
     )
     return [StreamerPublic(**dict(row)) for row in rows]
