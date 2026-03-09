@@ -208,8 +208,39 @@ class GameAPIService:
             return None
     
     async def get_valorant_profile(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
-        """Получить профиль Valorant через неофициальное API"""
-        # Используем неофициальное API так как официальное требует сложной авторизации
+        """Получить профиль Valorant через Tracker.gg API"""
+        # Используем Tracker.gg API (более стабильный чем Henrik)
+        url = f"https://public-api.tracker.gg/v2/valorant/standard/profile/riot/{riot_id}%23{tag}"
+        headers = {
+            "TRN-Api-Key": os.getenv("TRACKER_API_KEY", "")
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers if headers["TRN-Api-Key"] else {}) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        platform_info = data.get("data", {}).get("platformInfo", {})
+                        
+                        return {
+                            "riot_id": riot_id,
+                            "tag": tag,
+                            "username": f"{riot_id}#{tag}",
+                            "account_level": platform_info.get("platformUserId"),  # Tracker.gg не предоставляет уровень напрямую
+                            "avatar_url": platform_info.get("avatarUrl"),
+                            "region": region,
+                        }
+                    elif response.status == 404:
+                        # Пробуем Henrik API как fallback
+                        logger.info(f"Tracker.gg не нашел профиль {riot_id}#{tag}, пробуем Henrik API...")
+                        return await self._get_valorant_profile_henrik_fallback(riot_id, tag, region)
+        except Exception as e:
+            logger.error(f"Error fetching Valorant profile from Tracker.gg for {riot_id}#{tag}: {e}", exc_info=True)
+            # Пробуем Henrik API как fallback
+            return await self._get_valorant_profile_henrik_fallback(riot_id, tag, region)
+    
+    async def _get_valorant_profile_henrik_fallback(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
+        """Fallback: получить профиль Valorant через Henrik API"""
         url = f"https://api.henrikdev.xyz/valorant/v1/account/{riot_id}/{tag}"
         
         try:
@@ -228,11 +259,60 @@ class GameAPIService:
                             "region": account_data.get("region"),
                         }
         except Exception as e:
-            logger.error(f"Error fetching Valorant profile for {riot_id}#{tag}: {e}", exc_info=True)
+            logger.error(f"Error fetching Valorant profile from Henrik API for {riot_id}#{tag}: {e}", exc_info=True)
             return None
     
     async def get_valorant_mmr(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
-        """Получить MMR и ранг Valorant"""
+        """Получить MMR и ранг Valorant через Tracker.gg API"""
+        # Используем Tracker.gg API
+        url = f"https://public-api.tracker.gg/v2/valorant/standard/profile/riot/{riot_id}%23{tag}"
+        headers = {
+            "TRN-Api-Key": os.getenv("TRACKER_API_KEY", "")
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers if headers["TRN-Api-Key"] else {}) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        
+                        # Извлекаем статистику из сегментов
+                        segments = data.get("data", {}).get("segments", [])
+                        if not segments:
+                            return None
+                        
+                        # Берем первый сегмент (обычно это overview)
+                        overview = segments[0].get("stats", {})
+                        
+                        # Извлекаем ранг
+                        rank_data = overview.get("rank", {})
+                        rating_data = overview.get("rating", {})
+                        peak_rank_data = overview.get("peakRank", {})
+                        
+                        return {
+                            "current_tier": rank_data.get("metadata", {}).get("tierName", "Unranked"),
+                            "ranking_in_tier": rating_data.get("value", 0),
+                            "mmr_change": 0,  # Tracker.gg не предоставляет изменение MMR
+                            "elo": rating_data.get("value", 0),
+                            "games_needed_for_rating": 0,
+                            "peak_rank": peak_rank_data.get("metadata", {}).get("tierName"),
+                            "wins": overview.get("matchesWon", {}).get("value", 0),
+                            "losses": overview.get("matchesLost", {}).get("value", 0),
+                            "win_rate": overview.get("matchesWinPct", {}).get("value", 0),
+                            "kd_ratio": overview.get("kDRatio", {}).get("value", 0),
+                            "headshot_pct": overview.get("headshotsPercentage", {}).get("value", 0),
+                        }
+                    elif response.status == 404:
+                        # Пробуем Henrik API как fallback
+                        logger.info(f"Tracker.gg не нашел MMR {riot_id}#{tag}, пробуем Henrik API...")
+                        return await self._get_valorant_mmr_henrik_fallback(riot_id, tag, region)
+        except Exception as e:
+            logger.error(f"Error fetching Valorant MMR from Tracker.gg for {riot_id}#{tag}: {e}", exc_info=True)
+            # Пробуем Henrik API как fallback
+            return await self._get_valorant_mmr_henrik_fallback(riot_id, tag, region)
+    
+    async def _get_valorant_mmr_henrik_fallback(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
+        """Fallback: получить MMR Valorant через Henrik API"""
         url = f"https://api.henrikdev.xyz/valorant/v2/mmr/{region}/{riot_id}/{tag}"
         
         try:
@@ -251,7 +331,7 @@ class GameAPIService:
                             "games_needed_for_rating": current_data.get("games_needed_for_rating", 0),
                         }
         except Exception as e:
-            logger.error(f"Error fetching Valorant MMR for {riot_id}#{tag}: {e}", exc_info=True)
+            logger.error(f"Error fetching Valorant MMR from Henrik API for {riot_id}#{tag}: {e}", exc_info=True)
             return None
 
 

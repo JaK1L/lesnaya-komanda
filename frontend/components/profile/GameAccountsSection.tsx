@@ -389,7 +389,9 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
             <div className={styles.profileInfo}>
               <div>
                 <div className={styles.username}>{profile.username || 'N/A'}</div>
-                <div className={styles.level}>Уровень: {profile.account_level || 'N/A'}</div>
+                {profile.account_level && (
+                  <div className={styles.level}>Уровень: {profile.account_level}</div>
+                )}
               </div>
             </div>
           )}
@@ -403,16 +405,54 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
                 <div className={styles.statLabel}>RR</div>
                 <div className={styles.statValue}>{mmr.ranking_in_tier || 0}</div>
               </div>
-              <div className={styles.statBox}>
-                <div className={styles.statLabel}>ELO</div>
-                <div className={styles.statValue}>{mmr.elo?.toLocaleString() || 'N/A'}</div>
-              </div>
-              <div className={styles.statBox}>
-                <div className={styles.statLabel}>Изменение MMR</div>
-                <div className={styles.statValue} style={{ color: mmr.mmr_change >= 0 ? '#4ade80' : '#f87171' }}>
-                  {mmr.mmr_change > 0 ? '+' : ''}{mmr.mmr_change || 0}
+              {mmr.peak_rank && (
+                <div className={styles.statBox}>
+                  <div className={styles.statLabel}>Пик ранг</div>
+                  <div className={styles.statValue}>{mmr.peak_rank}</div>
                 </div>
-              </div>
+              )}
+              {mmr.wins > 0 && (
+                <>
+                  <div className={styles.statBox}>
+                    <div className={styles.statLabel}>Побед</div>
+                    <div className={styles.statValue}>{mmr.wins?.toLocaleString() || 0}</div>
+                  </div>
+                  <div className={styles.statBox}>
+                    <div className={styles.statLabel}>Поражений</div>
+                    <div className={styles.statValue}>{mmr.losses?.toLocaleString() || 0}</div>
+                  </div>
+                  <div className={styles.statBox}>
+                    <div className={styles.statLabel}>Винрейт</div>
+                    <div className={styles.statValue}>{mmr.win_rate?.toFixed(1) || 0}%</div>
+                  </div>
+                </>
+              )}
+              {mmr.kd_ratio > 0 && (
+                <div className={styles.statBox}>
+                  <div className={styles.statLabel}>K/D</div>
+                  <div className={styles.statValue}>{mmr.kd_ratio?.toFixed(2) || '0.00'}</div>
+                </div>
+              )}
+              {mmr.headshot_pct > 0 && (
+                <div className={styles.statBox}>
+                  <div className={styles.statLabel}>HS %</div>
+                  <div className={styles.statValue}>{mmr.headshot_pct?.toFixed(1) || 0}%</div>
+                </div>
+              )}
+              {mmr.elo > 0 && (
+                <div className={styles.statBox}>
+                  <div className={styles.statLabel}>ELO</div>
+                  <div className={styles.statValue}>{mmr.elo?.toLocaleString() || 'N/A'}</div>
+                </div>
+              )}
+              {mmr.mmr_change !== undefined && mmr.mmr_change !== 0 && (
+                <div className={styles.statBox}>
+                  <div className={styles.statLabel}>Изменение MMR</div>
+                  <div className={styles.statValue} style={{ color: mmr.mmr_change >= 0 ? '#4ade80' : '#f87171' }}>
+                    {mmr.mmr_change > 0 ? '+' : ''}{mmr.mmr_change || 0}
+                  </div>
+                </div>
+              )}
               {mmr.games_needed_for_rating > 0 && (
                 <div className={styles.statBox}>
                   <div className={styles.statLabel}>Игр до калибровки</div>
