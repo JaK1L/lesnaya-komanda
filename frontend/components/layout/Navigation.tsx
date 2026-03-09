@@ -27,7 +27,7 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
     setMobileMenuOpen(false)
   }
 
-  const handleAuthSuccess = (token: string) => {
+  const handleAuthSuccess = () => {
     window.location.reload()
   }
 
