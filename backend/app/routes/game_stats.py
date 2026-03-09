@@ -14,6 +14,27 @@ from ..services.game_api_service import game_api_service
 router = APIRouter(prefix="/game-stats", tags=["game_stats"])
 
 
+# Test endpoint
+@router.get("/test")
+async def test_game_stats_api():
+    """Тестовый endpoint для проверки работы Game Stats API"""
+    return {
+        "status": "ok",
+        "message": "Game Stats API is working!",
+        "endpoints": [
+            "/game-stats/test",
+            "/game-stats/link",
+            "/game-stats/my-accounts",
+            "/game-stats/steam/{steam_id}",
+            "/game-stats/cs2/{steam_id}",
+            "/game-stats/dota2/{account_id}/profile",
+            "/game-stats/dota2/{account_id}/stats",
+            "/game-stats/valorant/{riot_id}/{tag}/profile",
+            "/game-stats/valorant/{riot_id}/{tag}/mmr",
+        ]
+    }
+
+
 # Модели
 class GameAccountLink(BaseModel):
     game: str = Field(..., pattern="^(steam|dota2|valorant)$")
