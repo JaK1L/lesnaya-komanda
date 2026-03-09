@@ -8,8 +8,8 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({
-  logoText = 'STREAMTEAM',
-  companyName = 'StreamTeam',
+  logoText = 'LK',
+  companyName = 'LesnayaKomanda',
 }) => {
   // Текущий год для копирайта
   const currentYear = new Date().getFullYear();

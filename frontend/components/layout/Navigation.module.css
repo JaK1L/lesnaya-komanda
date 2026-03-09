@@ -69,6 +69,23 @@
   transform: scale(1.02);
 }
 
+.linkButton {
+  background: transparent;
+  border: 2px solid #4d5a8b;
+  color: #e0e6ff;
+  padding: 8px 22px;
+  border-radius: 40px;
+  font-weight: 600;
+  transition: all 0.2s;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.linkButton:hover {
+  border-color: #9147ff;
+  background: rgba(145, 71, 255, 0.1);
+}
+
 .mobileMenuButton {
   display: none;
   background: none;

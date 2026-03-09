@@ -21,8 +21,8 @@
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 28px;
   max-width: 1280px;
   margin: 0 auto;

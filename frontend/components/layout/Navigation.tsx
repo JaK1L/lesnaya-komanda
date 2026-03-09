@@ -75,17 +75,14 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
 
           <div 
             id="main-navigation"
-            className={`${styles.links} ${mobileMenuOpen ? styles.open : ''}`}
+            className={`${styles.navLinks} ${mobileMenuOpen ? styles.open : ''}`}
             role="navigation"
           >
-            <a href="/" className={styles.link}>
-              Главная
-            </a>
             <a href="/streams" className={styles.link}>
               Стримеры
             </a>
-            <a href="/#news" className={styles.link}>
-              Новости
+            <a href="/clips" className={styles.link}>
+              Клипы
             </a>
             <a href="/social" className={styles.link}>
               Соцсети

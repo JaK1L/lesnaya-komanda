@@ -223,3 +223,188 @@ async def get_common_settings(db: asyncpg.Connection = Depends(get_db)):
         )
 
 
+
+
+# News Reactions and Comments
+
+from ..auth import get_current_user, get_optional_current_user, User
+
+class NewsReactionsResponse(BaseModel):
+    likes: int
+    dislikes: int
+    user_reaction: Optional[str] = None
+
+
+@router.get("/news/{news_id}/reactions", response_model=NewsReactionsResponse)
+async def get_news_reactions(
+    news_id: int,
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: asyncpg.Connection = Depends(get_db)
+):
+    """
+    Получить количество лайков и дизлайков для новости
+    """
+    # Подсчитываем лайки и дизлайки
+    likes = await db.fetchval(
+        "SELECT COUNT(*) FROM news_reactions WHERE news_id = $1 AND reaction = 'like'",
+        news_id
+    ) or 0
+    
+    dislikes = await db.fetchval(
+        "SELECT COUNT(*) FROM news_reactions WHERE news_id = $1 AND reaction = 'dislike'",
+        news_id
+    ) or 0
+    
+    # Проверяем реакцию текущего пользователя
+    user_reaction = None
+    if current_user:
+        reaction_row = await db.fetchrow(
+            "SELECT reaction FROM news_reactions WHERE news_id = $1 AND user_id = $2",
+            news_id, current_user.id
+        )
+        if reaction_row:
+            user_reaction = reaction_row['reaction']
+    
+    return NewsReactionsResponse(
+        likes=likes,
+        dislikes=dislikes,
+        user_reaction=user_reaction
+    )
+
+
+class NewsReactionRequest(BaseModel):
+    reaction: str  # 'like' or 'dislike'
+
+
+@router.post("/news/{news_id}/react")
+async def react_to_news(
+    news_id: int,
+    request: NewsReactionRequest,
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db)
+):
+    """
+    Поставить лайк или дизлайк на новость
+    """
+    if request.reaction not in ['like', 'dislike']:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Invalid reaction type")
+    
+    # Проверяем существует ли новость
+    news_exists = await db.fetchval(
+        "SELECT EXISTS(SELECT 1 FROM news WHERE id = $1)",
+        news_id
+    )
+    if not news_exists:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="News not found")
+    
+    # Проверяем текущую реакцию пользователя
+    current_reaction = await db.fetchrow(
+        "SELECT reaction FROM news_reactions WHERE news_id = $1 AND user_id = $2",
+        news_id, current_user.id
+    )
+    
+    if current_reaction:
+        if current_reaction['reaction'] == request.reaction:
+            # Убираем реакцию
+            await db.execute(
+                "DELETE FROM news_reactions WHERE news_id = $1 AND user_id = $2",
+                news_id, current_user.id
+            )
+            return {"status": "removed", "reaction": request.reaction}
+        else:
+            # Меняем реакцию
+            await db.execute(
+                "UPDATE news_reactions SET reaction = $1 WHERE news_id = $2 AND user_id = $3",
+                request.reaction, news_id, current_user.id
+            )
+            return {"status": "updated", "reaction": request.reaction}
+    else:
+        # Добавляем новую реакцию
+        await db.execute(
+            "INSERT INTO news_reactions (news_id, user_id, reaction) VALUES ($1, $2, $3)",
+            news_id, current_user.id, request.reaction
+        )
+        return {"status": "added", "reaction": request.reaction}
+
+
+class NewsComment(BaseModel):
+    id: int
+    user_name: str
+    content: str
+    created_at: datetime
+
+
+@router.get("/news/{news_id}/comments", response_model=List[NewsComment])
+async def get_news_comments(
+    news_id: int,
+    db: asyncpg.Connection = Depends(get_db)
+):
+    """
+    Получить комментарии к новости
+    """
+    rows = await db.fetch(
+        """
+        SELECT 
+            nc.id,
+            COALESCE(u.discord_username, u.email) as user_name,
+            nc.content,
+            nc.created_at
+        FROM news_comments nc
+        JOIN users u ON nc.user_id = u.id
+        WHERE nc.news_id = $1
+        ORDER BY nc.created_at DESC
+        """,
+        news_id
+    )
+    
+    return [NewsComment(**dict(row)) for row in rows]
+
+
+class NewsCommentRequest(BaseModel):
+    content: str
+
+
+@router.post("/news/{news_id}/comments")
+async def add_news_comment(
+    news_id: int,
+    request: NewsCommentRequest,
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db)
+):
+    """
+    Добавить комментарий к новости
+    """
+    if not request.content or len(request.content.strip()) == 0:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Comment cannot be empty")
+    
+    if len(request.content) > 1000:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Comment is too long (max 1000 characters)")
+    
+    # Проверяем существует ли новость
+    news_exists = await db.fetchval(
+        "SELECT EXISTS(SELECT 1 FROM news WHERE id = $1)",
+        news_id
+    )
+    if not news_exists:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="News not found")
+    
+    # Добавляем комментарий
+    comment_id = await db.fetchval(
+        """
+        INSERT INTO news_comments (news_id, user_id, content)
+        VALUES ($1, $2, $3)
+        RETURNING id
+        """,
+        news_id, current_user.id, request.content.strip()
+    )
+    
+    return {
+        "status": "success",
+        "comment_id": comment_id,
+        "message": "Comment added successfully"
+    }
