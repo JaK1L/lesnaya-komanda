@@ -49,13 +49,16 @@ export default function AdminPage() {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL
       
-      const response = await fetch(`${apiUrl}/api/token`, {
+      // Определяем это email или username
+      const isEmail = username.includes('@')
+      
+      const response = await fetch(`${apiUrl}/api/auth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username,
+          email: username, // API принимает поле email, но может быть username
           password,
         }),
       })
@@ -68,8 +71,26 @@ export default function AdminPage() {
 
       const data = await response.json()
       
+      // Проверяем права администратора
+      const meResponse = await fetch(`${apiUrl}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${data.access_token}`,
+        },
+      })
+
+      if (!meResponse.ok) {
+        throw new Error('Ошибка проверки прав доступа')
+      }
+
+      const userData = await meResponse.json()
+      
+      if (userData.role !== 'admin') {
+        throw new Error('У вас нет прав администратора')
+      }
+      
       localStorage.setItem('admin_token', data.access_token)
       setIsAuthenticated(true)
+      fetchStats()
     } catch (err) {
       console.error('Login error:', err)
       setError(err instanceof Error ? err.message : 'Ошибка входа')
