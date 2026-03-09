@@ -213,23 +213,49 @@ async def get_dota2_matches(account_id: str, limit: int = 10):
 @router.get("/valorant/{riot_id}/{tag}/profile")
 async def get_valorant_profile(riot_id: str, tag: str, region: str = "eu"):
     """Получить профиль Valorant"""
-    profile = await game_api_service.get_valorant_profile(riot_id, tag, region)
-    
-    if not profile:
-        raise HTTPException(status_code=404, detail="Профиль не найден")
-    
-    return profile
+    try:
+        # Декодируем riot_id если он закодирован
+        import urllib.parse
+        riot_id = urllib.parse.unquote(riot_id)
+        
+        profile = await game_api_service.get_valorant_profile(riot_id, tag, region)
+        
+        if not profile:
+            raise HTTPException(
+                status_code=404, 
+                detail="Профиль не найден. Проверьте правильность Riot ID и тега."
+            )
+        
+        return profile
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in get_valorant_profile: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Ошибка при получении профиля: {str(e)}")
 
 
 @router.get("/valorant/{riot_id}/{tag}/mmr")
 async def get_valorant_mmr(riot_id: str, tag: str, region: str = "eu"):
     """Получить MMR и ранг Valorant"""
-    mmr = await game_api_service.get_valorant_mmr(riot_id, tag, region)
-    
-    if not mmr:
-        raise HTTPException(status_code=404, detail="MMR не найден")
-    
-    return mmr
+    try:
+        # Декодируем riot_id если он закодирован
+        import urllib.parse
+        riot_id = urllib.parse.unquote(riot_id)
+        
+        mmr = await game_api_service.get_valorant_mmr(riot_id, tag, region)
+        
+        if not mmr:
+            raise HTTPException(
+                status_code=404, 
+                detail="MMR не найден. Проверьте правильность Riot ID и тега."
+            )
+        
+        return mmr
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in get_valorant_mmr: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Ошибка при получении MMR: {str(e)}")
 
 
 @router.get("/user/{discord_id}/stats")

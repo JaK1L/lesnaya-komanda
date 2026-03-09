@@ -209,15 +209,26 @@ class GameAPIService:
     
     async def get_valorant_profile(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
         """Получить профиль Valorant через Tracker.gg API"""
+        logger.info(f"Fetching Valorant profile for {riot_id}#{tag} (region: {region})")
+        
         # Используем Tracker.gg API (более стабильный чем Henrik)
-        url = f"https://public-api.tracker.gg/v2/valorant/standard/profile/riot/{riot_id}%23{tag}"
+        # URL encode riot_id and tag properly
+        import urllib.parse
+        encoded_name = urllib.parse.quote(riot_id)
+        encoded_tag = urllib.parse.quote(tag)
+        
+        url = f"https://public-api.tracker.gg/v2/valorant/standard/profile/riot/{encoded_name}%23{encoded_tag}"
         headers = {
             "TRN-Api-Key": os.getenv("TRACKER_API_KEY", "")
         }
         
+        logger.info(f"Tracker.gg URL: {url}")
+        
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, headers=headers if headers["TRN-Api-Key"] else {}) as response:
+                    logger.info(f"Tracker.gg response status: {response.status}")
+                    
                     if response.status == 200:
                         data = await response.json()
                         platform_info = data.get("data", {}).get("platformInfo", {})
@@ -226,13 +237,17 @@ class GameAPIService:
                             "riot_id": riot_id,
                             "tag": tag,
                             "username": f"{riot_id}#{tag}",
-                            "account_level": platform_info.get("platformUserId"),  # Tracker.gg не предоставляет уровень напрямую
+                            "account_level": platform_info.get("platformUserId"),
                             "avatar_url": platform_info.get("avatarUrl"),
                             "region": region,
                         }
                     elif response.status == 404:
                         # Пробуем Henrik API как fallback
                         logger.info(f"Tracker.gg не нашел профиль {riot_id}#{tag}, пробуем Henrik API...")
+                        return await self._get_valorant_profile_henrik_fallback(riot_id, tag, region)
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"Tracker.gg error {response.status}: {error_text}")
                         return await self._get_valorant_profile_henrik_fallback(riot_id, tag, region)
         except Exception as e:
             logger.error(f"Error fetching Valorant profile from Tracker.gg for {riot_id}#{tag}: {e}", exc_info=True)
@@ -264,22 +279,33 @@ class GameAPIService:
     
     async def get_valorant_mmr(self, riot_id: str, tag: str, region: str = "eu") -> Optional[Dict[str, Any]]:
         """Получить MMR и ранг Valorant через Tracker.gg API"""
+        logger.info(f"Fetching Valorant MMR for {riot_id}#{tag} (region: {region})")
+        
         # Используем Tracker.gg API
-        url = f"https://public-api.tracker.gg/v2/valorant/standard/profile/riot/{riot_id}%23{tag}"
+        import urllib.parse
+        encoded_name = urllib.parse.quote(riot_id)
+        encoded_tag = urllib.parse.quote(tag)
+        
+        url = f"https://public-api.tracker.gg/v2/valorant/standard/profile/riot/{encoded_name}%23{encoded_tag}"
         headers = {
             "TRN-Api-Key": os.getenv("TRACKER_API_KEY", "")
         }
         
+        logger.info(f"Tracker.gg MMR URL: {url}")
+        
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, headers=headers if headers["TRN-Api-Key"] else {}) as response:
+                    logger.info(f"Tracker.gg MMR response status: {response.status}")
+                    
                     if response.status == 200:
                         data = await response.json()
                         
                         # Извлекаем статистику из сегментов
                         segments = data.get("data", {}).get("segments", [])
                         if not segments:
-                            return None
+                            logger.warning(f"No segments found for {riot_id}#{tag}")
+                            return await self._get_valorant_mmr_henrik_fallback(riot_id, tag, region)
                         
                         # Берем первый сегмент (обычно это overview)
                         overview = segments[0].get("stats", {})
@@ -305,6 +331,10 @@ class GameAPIService:
                     elif response.status == 404:
                         # Пробуем Henrik API как fallback
                         logger.info(f"Tracker.gg не нашел MMR {riot_id}#{tag}, пробуем Henrik API...")
+                        return await self._get_valorant_mmr_henrik_fallback(riot_id, tag, region)
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"Tracker.gg MMR error {response.status}: {error_text}")
                         return await self._get_valorant_mmr_henrik_fallback(riot_id, tag, region)
         except Exception as e:
             logger.error(f"Error fetching Valorant MMR from Tracker.gg for {riot_id}#{tag}: {e}", exc_info=True)
