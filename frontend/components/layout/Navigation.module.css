@@ -1,163 +1,112 @@
-/* Navigation в стиле Streaming Hub */
 .nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 40px;
-  background: #151515;
+  background: rgba(10, 15, 25, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 16px 0;
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(10px);
 }
 
 .container {
-  width: 100%;
-  max-width: 1400px;
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 24px;
-  font-weight: bold;
-  color: white;
+  font-size: 1.9rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a0b5ff, #ffffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
   text-decoration: none;
-  transition: opacity 0.2s;
-}
-
-.logo:hover {
-  opacity: 0.8;
-}
-
-/* Desktop links */
-.links {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 8px;
+}
+
+.navLinks {
+  display: flex;
+  gap: 36px;
+  font-weight: 500;
+  align-items: center;
 }
 
 .link {
-  color: white;
   text-decoration: none;
-  font-size: 16px;
+  color: #b0bcdd;
   transition: color 0.2s;
-  font-weight: 500;
+  font-size: 1.05rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
 }
 
 .link:hover {
-  color: #9147ff;
+  color: white;
 }
 
 .loginButton {
-  background: transparent;
-  color: #9147ff;
-  border: 2px solid #9147ff;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
+  background: #9147ff;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 40px;
+  font-weight: 600;
   transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
 }
 
 .loginButton:hover {
-  background: #9147ff;
-  color: white;
-  transform: translateY(-1px);
+  background: #a970ff;
+  transform: scale(1.02);
 }
 
-.linkButton {
-  background: #9147ff;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.linkButton:hover {
-  background: #7c3aed;
-  transform: translateY(-1px);
-}
-
-/* Mobile menu button - hidden by default */
 .mobileMenuButton {
   display: none;
-  background: transparent;
-  border: 2px solid #9147ff;
-  color: #9147ff;
-  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
   cursor: pointer;
-  border-radius: 6px;
-  min-width: 44px;
-  min-height: 44px;
+  padding: 8px;
 }
 
-/* Mobile: 768px and below */
 @media (max-width: 768px) {
-  .nav {
-    padding: 15px 20px;
+  .container {
+    padding: 0 16px;
   }
 
   .logo {
-    font-size: 20px;
-    gap: 0.5rem;
+    font-size: 1.5rem;
   }
 
-  /* Show mobile menu button */
+  .navLinks {
+    display: none;
+  }
+
   .mobileMenuButton {
     display: block;
   }
 
-  /* Hide links by default on mobile */
-  .links {
-    display: none;
+  .navLinks.open {
+    display: flex;
+    flex-direction: column;
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
-    background: #151515;
-    border-top: 1px solid #252525;
-    flex-direction: column;
+    background: rgba(10, 15, 25, 0.98);
+    backdrop-filter: blur(10px);
     padding: 20px;
-    gap: 15px;
-  }
-
-  /* Show links when menu is open */
-  .links.open {
-    display: flex;
-  }
-
-  .link {
-    width: 100%;
-    text-align: center;
-    padding: 12px;
-    border-radius: 6px;
-    background: #1b1b1b;
-  }
-
-  .link:hover {
-    background: #252525;
-  }
-
-  .loginButton {
-    width: 100%;
-    text-align: center;
-    padding: 12px;
-  }
-
-  .linkButton {
-    width: 100%;
-    text-align: center;
-    padding: 12px;
+    gap: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 }

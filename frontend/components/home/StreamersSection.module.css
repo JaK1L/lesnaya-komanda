@@ -1,33 +1,48 @@
 .section {
-  padding: 60px 40px;
-  background: #0f0f0f;
+  padding: 70px 0;
+  background: #0c111d;
 }
 
 .title {
-  font-size: 32px;
-  font-weight: bold;
+  font-size: clamp(1.8rem, 4vw, 2.2rem);
+  font-weight: 600;
   margin: 0 0 40px 0;
   color: white;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 6px solid #9147ff;
+  padding-left: 20px;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-right: 24px;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 28px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
 .card {
-  background: #1b1b1b;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
+  background: #141b2b;
+  border-radius: 28px;
+  padding: 24px 20px 20px;
   transition: all 0.3s ease;
+  border: 1px solid #232e44;
+  text-align: center;
+  position: relative;
 }
 
 .card:hover {
-  background: #252525;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  transform: translateY(-6px);
+  box-shadow: 0 25px 35px -12px rgba(145, 71, 255, 0.3);
+  border-color: #9147ff;
 }
 
 .avatarWrapper {
@@ -37,94 +52,101 @@
 }
 
 .avatar {
-  width: 100px;
-  height: 100px;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #9147ff;
+  border: 4px solid #2a3855;
 }
 
 .avatarPlaceholder {
-  width: 100px;
-  height: 100px;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #9147ff 0%, #7c3aed 100%);
+  background: linear-gradient(145deg, #3a4c7a, #1b2740);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
-  font-weight: bold;
-  color: white;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #95abeb;
+  border: 4px solid #2e3d60;
 }
 
 .name {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: white;
+  margin: 0 0 5px 0;
 }
 
 .game {
-  font-size: 14px;
-  color: #b0b0b0;
-  margin: 0 0 20px 0;
+  color: #8fa0cf;
+  margin: 0 0 15px 0;
+  font-size: 1rem;
 }
 
 .button {
   display: inline-block;
   background: #9147ff;
   color: white;
-  padding: 10px 20px;
-  border-radius: 6px;
-  text-decoration: none;
-  font-size: 14px;
+  padding: 10px 24px;
+  border-radius: 40px;
   font-weight: 600;
-  transition: all 0.3s ease;
+  text-decoration: none;
+  transition: all 0.2s;
+  font-size: 0.95rem;
 }
 
 .button:hover {
-  background: #7c3aed;
-  transform: translateY(-2px);
+  background: #a970ff;
+  transform: scale(1.05);
 }
 
 .emptyState {
   text-align: center;
   padding: 60px 20px;
-  color: #666;
+  color: #6f7da0;
   font-size: 18px;
 }
 
-/* Mobile */
 @media (max-width: 768px) {
   .section {
-    padding: 40px 20px;
+    padding: 50px 0;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 1.8rem;
     margin-bottom: 30px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
   .grid {
     grid-template-columns: 1fr;
-    gap: 15px;
+    gap: 20px;
+    padding: 0 16px;
   }
 
   .card {
-    padding: 15px;
+    padding: 20px 16px 16px;
   }
 
   .avatar,
   .avatarPlaceholder {
-    width: 80px;
-    height: 80px;
+    width: 90px;
+    height: 90px;
   }
 
   .avatarPlaceholder {
-    font-size: 32px;
+    font-size: 2rem;
   }
 
   .name {
-    font-size: 18px;
+    font-size: 1.3rem;
+  }
+
+  .game {
+    font-size: 0.9rem;
   }
 }

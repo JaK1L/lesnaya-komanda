@@ -1,11 +1,12 @@
 .section {
-  padding: 60px 40px;
-  background: #0f0f0f;
+  padding: 70px 0;
+  background: #0c111d;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 0 24px;
 }
 
 .header {
@@ -21,72 +22,64 @@
 }
 
 .title {
-  font-size: 32px;
-  font-weight: bold;
+  font-size: clamp(1.8rem, 4vw, 2.2rem);
+  font-weight: 600;
   color: white;
   margin: 0 0 8px 0;
   display: flex;
   align-items: center;
   gap: 12px;
+  border-left: 6px solid #9147ff;
+  padding-left: 20px;
 }
 
 .subtitle {
-  color: #888;
-  font-size: 16px;
+  color: #8192c2;
+  font-size: 1rem;
   margin: 0;
+  padding-left: 38px;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
+  gap: 28px;
 }
 
-.loading {
+.loading,
+.error,
+.empty {
   text-align: center;
-  padding: 3rem;
-  color: #666;
+  padding: 60px 20px;
+  color: #6f7da0;
   font-size: 1.1rem;
 }
 
 .error {
-  text-align: center;
-  padding: 3rem;
   color: #ff6b6b;
-  font-size: 1.1rem;
-}
-
-.empty {
-  text-align: center;
-  padding: 3rem;
-  color: #666;
-}
-
-.empty p {
-  font-size: 1.2rem;
-  margin: 0;
 }
 
 @media (max-width: 768px) {
   .section {
-    padding: 40px 20px;
+    padding: 50px 0;
   }
 
   .container {
-    padding: 0;
+    padding: 0 16px;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 1.8rem;
   }
 
   .subtitle {
-    font-size: 14px;
+    font-size: 0.9rem;
+    padding-left: 32px;
   }
 
   .grid {
     grid-template-columns: 1fr;
-    gap: 15px;
+    gap: 20px;
   }
 }
 

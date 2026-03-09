@@ -1,73 +1,104 @@
 .hero {
-  padding: 100px 40px;
-  text-align: center;
-  background: #0f0f0f;
+  padding: 70px 0 60px;
+  background: radial-gradient(circle at 70% 20%, #1f2a44 0%, #0a0e17 70%);
   min-height: 60vh;
   display: flex;
   align-items: center;
-  justify-content: center;
 }
 
-.content {
-  max-width: 800px;
+.container {
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 0 24px;
+}
+
+.heroContent {
+  max-width: 800px;
 }
 
 .title {
-  font-size: 50px;
-  font-weight: bold;
-  margin: 0 0 20px 0;
-  color: white;
+  font-size: clamp(2.5rem, 6vw, 3.2rem);
+  font-weight: 600;
+  background: linear-gradient(145deg, #ffffff 0%, #c0d0ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   line-height: 1.2;
+  margin-bottom: 25px;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
-  font-size: 20px;
-  color: #b0b0b0;
-  margin: 0 0 40px 0;
+  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  color: #b7c3e6;
+  margin-bottom: 30px;
+  max-width: 600px;
   line-height: 1.6;
 }
 
-.button {
-  display: inline-block;
+.buttons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.btnPrimary,
+.btnOutline {
+  padding: 14px 34px;
+  border-radius: 40px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.btnPrimary {
   background: #9147ff;
   color: white;
-  padding: 15px 30px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 16px;
-  font-weight: 600;
-  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(145, 71, 255, 0.4);
 }
 
-.button:hover {
-  background: #7c3aed;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(145, 71, 255, 0.3);
+.btnPrimary:hover {
+  background: #a970ff;
+  transform: scale(1.02);
 }
 
-.button:active {
-  transform: translateY(0);
+.btnOutline {
+  background: transparent;
+  border: 2px solid #4d5a8b;
+  color: #e0e6ff;
 }
 
-/* Mobile */
+.btnOutline:hover {
+  border-color: #9147ff;
+  background: rgba(145, 71, 255, 0.1);
+}
+
 @media (max-width: 768px) {
   .hero {
-    padding: 60px 20px;
+    padding: 50px 0 40px;
     min-height: 50vh;
   }
 
-  .title {
-    font-size: 36px;
+  .container {
+    padding: 0 16px;
+  }
+
+  .heroContent {
+    text-align: center;
   }
 
   .subtitle {
-    font-size: 16px;
-    margin-bottom: 30px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
-  .button {
-    padding: 12px 24px;
-    font-size: 14px;
+  .buttons {
+    justify-content: center;
   }
 }
