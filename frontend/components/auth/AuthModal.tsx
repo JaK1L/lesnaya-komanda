@@ -55,15 +55,32 @@ export function AuthModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className={styles.modalWrapper}>
           {/* Overlay */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1000,
+              cursor: 'pointer'
+            }}
             onClick={onClose}
-            className={styles.overlay}
-          />
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                width: '100%',
+                height: '100%',
+                background: 'rgba(0, 0, 0, 0.8)',
+                backdropFilter: 'blur(4px)'
+              }}
+            />
+          </div>
 
           {/* Modal */}
           <motion.div
@@ -71,13 +88,24 @@ export function AuthModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2 }}
-            className={styles.modal}
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 1001,
+              maxWidth: '500px',
+              width: '90%',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
           >
-            <button
-              onClick={onClose}
-              className={styles.closeButton}
-              aria-label="Закрыть"
-            >
+            <div className={styles.modalContent}>
+              <button
+                onClick={onClose}
+                className={styles.closeButton}
+                aria-label="Закрыть"
+              >
               <X size={24} />
             </button>
 
@@ -110,8 +138,9 @@ export function AuthModal({
                 Войти через Discord
               </button>
             </div>
+            </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   )
