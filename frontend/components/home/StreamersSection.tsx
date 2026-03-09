@@ -11,6 +11,9 @@ interface Streamer {
   forest_rank: string
   is_online?: boolean
   game?: string
+  twitch_username?: string
+  viewer_count?: number
+  stream_title?: string
 }
 
 interface StreamersSectionProps {
@@ -57,6 +60,12 @@ const StreamerCard = memo(function StreamerCard({
     >
       <div className={styles.card}>
         <div className={styles.avatarWrapper}>
+          {streamer.is_online && (
+            <div className={styles.liveIndicator}>
+              <span className={styles.liveDot}></span>
+              LIVE
+            </div>
+          )}
           {streamer.avatar_url ? (
             <img
               src={streamer.avatar_url}
@@ -71,13 +80,27 @@ const StreamerCard = memo(function StreamerCard({
         </div>
 
         <h3 className={styles.name}>{streamer.discord_username}</h3>
-        <p className={styles.game}>{streamer.game || streamer.forest_rank}</p>
+        
+        {streamer.is_online && streamer.game ? (
+          <p className={styles.game}>
+            🎮 {streamer.game}
+            {streamer.viewer_count && streamer.viewer_count > 0 && (
+              <span className={styles.viewers}> • 👁 {streamer.viewer_count}</span>
+            )}
+          </p>
+        ) : (
+          <p className={styles.game}>{streamer.forest_rank}</p>
+        )}
         
         <a 
-          href={`/profile/${streamer.discord_id}`}
+          href={streamer.is_online && streamer.twitch_username 
+            ? `https://twitch.tv/${streamer.twitch_username}` 
+            : `/profile/${streamer.discord_id}`}
+          target={streamer.is_online && streamer.twitch_username ? '_blank' : '_self'}
+          rel={streamer.is_online && streamer.twitch_username ? 'noopener noreferrer' : undefined}
           className={styles.button}
         >
-          Профиль
+          {streamer.is_online ? 'Смотреть' : 'Профиль'}
         </a>
       </div>
     </motion.div>

@@ -22,6 +22,9 @@ interface Streamer {
   forest_rank: string
   is_online?: boolean
   game?: string
+  twitch_username?: string
+  viewer_count?: number
+  stream_title?: string
 }
 
 // Constants

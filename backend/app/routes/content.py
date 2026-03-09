@@ -59,6 +59,9 @@ async def debug_database_info(db: asyncpg.Connection = Depends(get_db)):
     }
 
 
+from ..services.twitch_service import twitch_service
+
+
 class StreamerPublic(BaseModel):
     discord_id: int
     discord_username: str
@@ -66,13 +69,16 @@ class StreamerPublic(BaseModel):
     forest_rank: str
     is_online: Optional[bool] = False
     game: Optional[str] = None
+    twitch_username: Optional[str] = None
+    viewer_count: Optional[int] = 0
+    stream_title: Optional[str] = None
 
 
 @router.get("/streamers", response_model=List[StreamerPublic])
 async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     """
     Публичный список стримеров для сайта.
-    Показываем пользователей которые являются стримерами.
+    Показываем пользователей которые являются стримерами + данные с Twitch API.
     """
     rows = await db.fetch(
         """
@@ -81,15 +87,42 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
             discord_username,
             avatar_url,
             forest_rank,
-            false as is_online,
-            NULL as game
+            twitch_username
         FROM users
         WHERE is_streamer = true
         ORDER BY rating DESC, id ASC
         LIMIT 10
         """
     )
-    return [StreamerPublic(**dict(row)) for row in rows]
+    
+    # Собираем Twitch usernames
+    twitch_usernames = [row['twitch_username'] for row in rows if row.get('twitch_username')]
+    
+    # Получаем данные о стримах с Twitch
+    twitch_data = {}
+    if twitch_usernames:
+        twitch_data = await twitch_service.get_streams(twitch_usernames)
+    
+    # Формируем результат
+    result = []
+    for row in rows:
+        twitch_username = row.get('twitch_username')
+        stream_info = twitch_data.get(twitch_username.lower()) if twitch_username else None
+        
+        streamer = StreamerPublic(
+            discord_id=row['discord_id'],
+            discord_username=row['discord_username'],
+            avatar_url=row['avatar_url'],
+            forest_rank=row['forest_rank'],
+            twitch_username=twitch_username,
+            is_online=stream_info is not None if stream_info else False,
+            game=stream_info.get('game_name') if stream_info else None,
+            viewer_count=stream_info.get('viewer_count', 0) if stream_info else 0,
+            stream_title=stream_info.get('title') if stream_info else None
+        )
+        result.append(streamer)
+    
+    return result
 
 
 class MerchPublic(BaseModel):

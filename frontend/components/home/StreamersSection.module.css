@@ -49,6 +49,52 @@
   margin-bottom: 15px;
   display: flex;
   justify-content: center;
+  position: relative;
+}
+
+.liveIndicator {
+  position: absolute;
+  top: -8px;
+  right: 50%;
+  transform: translateX(calc(55px + 10px));
+  background: #ff0000;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(255, 0, 0, 0.4);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(255, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 2px 12px rgba(255, 0, 0, 0.7);
+  }
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .avatar {
@@ -84,6 +130,15 @@
   color: #8fa0cf;
   margin: 0 0 15px 0;
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.viewers {
+  color: #9fa8c7;
+  font-size: 0.9rem;
 }
 
 .button {
