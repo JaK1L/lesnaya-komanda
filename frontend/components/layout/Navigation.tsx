@@ -59,8 +59,8 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
     <>
       <nav className={styles.nav} ref={navRef} aria-label="Основная навигация">
         <div className={styles.container}>
-          <a href="/" className={styles.logo} aria-label="Stream Hub - Главная страница">
-            <span>STREAM HUB</span>
+          <a href="/" className={styles.logo} aria-label="Lesnaya Komanda - Главная страница">
+            <span>LESNAYA KOMANDA</span>
           </a>
 
           <button
@@ -84,8 +84,11 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
             <a href="/streams" className={styles.link}>
               Стримеры
             </a>
-            <a href="/social" className={styles.link}>
+            <a href="/#news" className={styles.link}>
               Новости
+            </a>
+            <a href="/social" className={styles.link}>
+              Соцсети
             </a>
 
             {isAuthenticated ? (
@@ -93,7 +96,7 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
                 <a href="/profile" className={styles.link}>
                   Профиль
                 </a>
-                <button onClick={onLogout} className={styles.link} aria-label="Выйти из аккаунта">
+                <button onClick={onLogout} className={styles.loginButton} aria-label="Выйти из аккаунта">
                   Выйти
                 </button>
               </>

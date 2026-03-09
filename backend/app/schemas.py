@@ -165,7 +165,7 @@ class ErrorResponse(BaseModel):
 # Модели для профиля пользователя
 class ProfileResponse(BaseModel):
     """Response model for user profile data"""
-    discord_id: int
+    discord_id: Optional[int] = None
     site_nickname: Optional[str] = None
     discord_username: str
     user_tag: Optional[str] = None

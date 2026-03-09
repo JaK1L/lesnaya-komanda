@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { Navigation, Footer, SkipToContent } from '../components/layout'
-import { HeroSection, NewsSection, StreamersSection } from '../components/home'
+import { HeroSection, NewsSection, StreamersSection, EventsSection } from '../components/home'
 import { PageErrorBoundary } from '../components/PageErrorBoundary'
 import { SectionErrorBoundary } from '../components/SectionErrorBoundary'
 import { lazyLoadModal } from '../lib/lazyLoad'
@@ -135,6 +135,11 @@ export default function Home() {
         {/* Секция новостей */}
         <SectionErrorBoundary sectionName="Новости">
           <NewsSection />
+        </SectionErrorBoundary>
+
+        {/* Секция событий */}
+        <SectionErrorBoundary sectionName="События">
+          <EventsSection />
         </SectionErrorBoundary>
 
         {/* Футер */}

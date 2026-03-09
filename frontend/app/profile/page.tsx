@@ -13,7 +13,7 @@ import './mobile-profile.css'
 
 // Types
 interface ProfileData {
-  discord_id: number
+  discord_id: number | null
   site_nickname: string | null
   discord_username: string
   user_tag: string | null
@@ -400,7 +400,20 @@ export default function ProfilePage() {
 
         {/* Achievements Section */}
         <SectionErrorBoundary sectionName="Достижения">
-          <AchievementsSection discordId={profile.discord_id} />
+          {profile.discord_id ? (
+            <AchievementsSection discordId={profile.discord_id} />
+          ) : (
+            <div style={{
+              background: 'var(--gray)',
+              border: '2px solid var(--gray-light)',
+              borderRadius: '8px',
+              padding: '2rem',
+              textAlign: 'center',
+              color: 'var(--text-secondary)'
+            }}>
+              <p>Достижения доступны только для пользователей Discord</p>
+            </div>
+          )}
         </SectionErrorBoundary>
 
         {/* Game Accounts Section */}

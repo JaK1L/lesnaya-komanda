@@ -84,7 +84,7 @@ class ProfileService:
                 game_prefs = None
             
             return ProfileResponse(
-                discord_id=row['discord_id'],
+                discord_id=row['discord_id'] if row['discord_id'] else None,
                 site_nickname=row['site_nickname'],
                 discord_username=row['discord_username'],
                 user_tag=row.get('user_tag'),
@@ -175,7 +175,7 @@ class ProfileService:
                 raise HTTPException(status_code=500, detail="Failed to update profile")
             
             return ProfileResponse(
-                discord_id=row['discord_id'],
+                discord_id=row['discord_id'] if row['discord_id'] else None,
                 site_nickname=row['site_nickname'],
                 discord_username=row['discord_username'],
                 avatar_url=row['avatar_url'],
