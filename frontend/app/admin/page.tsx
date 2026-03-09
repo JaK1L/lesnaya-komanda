@@ -49,9 +49,6 @@ export default function AdminPage() {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL
       
-      // Определяем это email или username
-      const isEmail = username.includes('@')
-      
       const response = await fetch(`${apiUrl}/api/auth/token`, {
         method: 'POST',
         headers: {
