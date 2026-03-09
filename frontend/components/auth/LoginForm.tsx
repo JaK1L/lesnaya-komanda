@@ -46,13 +46,13 @@ export function LoginForm({ onSuccess, onSwitchToRegister, apiUrl }: LoginFormPr
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className={styles.formContainer}
-    >
-      <h2 className={styles.title}>Вход</h2>
+    <div className={styles.formContainer}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h2 className={styles.title}>Вход</h2>
       
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.inputGroup}>
@@ -90,13 +90,14 @@ export function LoginForm({ onSuccess, onSwitchToRegister, apiUrl }: LoginFormPr
         </div>
 
         {error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={styles.error}
-          >
-            {error}
-          </motion.div>
+          <div className={styles.error}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              {error}
+            </motion.div>
+          </div>
         )}
 
         <button
@@ -120,6 +121,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister, apiUrl }: LoginFormPr
           </button>
         </p>
       </div>
-    </motion.div>
+      </motion.div>
+    </div>
   )
 }
