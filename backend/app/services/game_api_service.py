@@ -62,11 +62,52 @@ class GameAPIService:
         return statuses.get(state, "Unknown")
     
     async def get_cs2_stats(self, steam_id: str) -> Optional[Dict[str, Any]]:
-        """Получить статистику CS2 (Counter-Strike 2)"""
+        """Получить статистику CS2 через Tracker.gg API"""
+        # Используем Tracker.gg API для получения статистики CS2
+        url = f"https://public-api.tracker.gg/v2/csgo/standard/profile/steam/{steam_id}"
+        headers = {
+            "TRN-Api-Key": os.getenv("TRACKER_API_KEY", "")  # Можно работать без ключа, но с лимитами
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers if headers["TRN-Api-Key"] else {}) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        
+                        # Извлекаем статистику из ответа
+                        segments = data.get("data", {}).get("segments", [])
+                        if not segments:
+                            return None
+                        
+                        # Берем общую статистику (первый сегмент обычно overview)
+                        overview = segments[0].get("stats", {})
+                        
+                        return {
+                            "kills": overview.get("kills", {}).get("value", 0),
+                            "deaths": overview.get("deaths", {}).get("value", 0),
+                            "kd_ratio": overview.get("kd", {}).get("value", 0),
+                            "wins": overview.get("wins", {}).get("value", 0),
+                            "matches_played": overview.get("matchesPlayed", {}).get("value", 0),
+                            "mvps": overview.get("mvp", {}).get("value", 0),
+                            "headshots": overview.get("headshots", {}).get("value", 0),
+                            "headshot_pct": overview.get("headshotPct", {}).get("value", 0),
+                            "win_rate": overview.get("wlPercentage", {}).get("value", 0),
+                            "damage_per_round": overview.get("damagePerRound", {}).get("value", 0),
+                        }
+                    elif response.status == 404:
+                        # Профиль не найден, пробуем Steam API как fallback
+                        return await self._get_cs2_stats_steam_fallback(steam_id)
+        except Exception as e:
+            logger.error(f"Error fetching CS2 stats from Tracker.gg for {steam_id}: {e}", exc_info=True)
+            # Пробуем Steam API как fallback
+            return await self._get_cs2_stats_steam_fallback(steam_id)
+    
+    async def _get_cs2_stats_steam_fallback(self, steam_id: str) -> Optional[Dict[str, Any]]:
+        """Fallback: получить статистику CS2 через Steam API"""
         if not self.steam_api_key:
             return None
             
-        # CS2 App ID = 730 (тот же что и CS:GO)
         url = f"https://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v2/"
         params = {
             "key": self.steam_api_key,
@@ -84,18 +125,23 @@ class GameAPIService:
                         # Извлекаем основные статистики
                         stats_dict = {stat["name"]: stat["value"] for stat in stats}
                         
+                        kills = stats_dict.get("total_kills", 0)
+                        deaths = stats_dict.get("total_deaths", 1)
+                        
                         return {
-                            "kills": stats_dict.get("total_kills", 0),
-                            "deaths": stats_dict.get("total_deaths", 0),
-                            "kd_ratio": round(stats_dict.get("total_kills", 0) / max(stats_dict.get("total_deaths", 1), 1), 2),
+                            "kills": kills,
+                            "deaths": deaths,
+                            "kd_ratio": round(kills / max(deaths, 1), 2),
                             "wins": stats_dict.get("total_wins", 0),
                             "matches_played": stats_dict.get("total_matches_played", 0),
                             "mvps": stats_dict.get("total_mvps", 0),
                             "headshots": stats_dict.get("total_kills_headshot", 0),
-                            "accuracy": round(stats_dict.get("total_shots_hit", 0) / max(stats_dict.get("total_shots_fired", 1), 1) * 100, 2),
+                            "headshot_pct": round(stats_dict.get("total_kills_headshot", 0) / max(kills, 1) * 100, 2),
+                            "win_rate": round(stats_dict.get("total_wins", 0) / max(stats_dict.get("total_matches_played", 1), 1) * 100, 2),
+                            "damage_per_round": 0,  # Недоступно в Steam API
                         }
         except Exception as e:
-            logger.error(f"Error fetching CS2 stats for {steam_id}: {e}", exc_info=True)
+            logger.error(f"Error fetching CS2 stats from Steam API for {steam_id}: {e}", exc_info=True)
             return None
     
     async def get_dota2_profile(self, account_id: str) -> Optional[Dict[str, Any]]:

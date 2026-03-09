@@ -236,11 +236,15 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
               </div>
               <div className={styles.statBox}>
                 <div className={styles.statLabel}>K/D</div>
-                <div className={styles.statValue}>{cs2_stats.kd_ratio || '0.00'}</div>
+                <div className={styles.statValue}>{cs2_stats.kd_ratio?.toFixed(2) || '0.00'}</div>
               </div>
               <div className={styles.statBox}>
                 <div className={styles.statLabel}>Побед</div>
                 <div className={styles.statValue}>{cs2_stats.wins?.toLocaleString() || 0}</div>
+              </div>
+              <div className={styles.statBox}>
+                <div className={styles.statLabel}>Винрейт</div>
+                <div className={styles.statValue}>{cs2_stats.win_rate?.toFixed(1) || 0}%</div>
               </div>
               <div className={styles.statBox}>
                 <div className={styles.statLabel}>MVP</div>
@@ -251,9 +255,15 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
                 <div className={styles.statValue}>{cs2_stats.headshots?.toLocaleString() || 0}</div>
               </div>
               <div className={styles.statBox}>
-                <div className={styles.statLabel}>Точность</div>
-                <div className={styles.statValue}>{cs2_stats.accuracy || 0}%</div>
+                <div className={styles.statLabel}>HS %</div>
+                <div className={styles.statValue}>{cs2_stats.headshot_pct?.toFixed(1) || 0}%</div>
               </div>
+              {cs2_stats.damage_per_round > 0 && (
+                <div className={styles.statBox}>
+                  <div className={styles.statLabel}>Урон/раунд</div>
+                  <div className={styles.statValue}>{cs2_stats.damage_per_round?.toFixed(1) || 0}</div>
+                </div>
+              )}
               <div className={styles.statBox}>
                 <div className={styles.statLabel}>Матчей</div>
                 <div className={styles.statValue}>{cs2_stats.matches_played?.toLocaleString() || 0}</div>
