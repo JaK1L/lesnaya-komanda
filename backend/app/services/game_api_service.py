@@ -20,6 +20,7 @@ class GameAPIService:
     async def get_steam_profile(self, steam_id: str) -> Optional[Dict[str, Any]]:
         """Получить профиль Steam пользователя"""
         if not self.steam_api_key:
+            logger.warning("Steam API key not configured")
             return None
             
         url = f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
@@ -44,6 +45,8 @@ class GameAPIService:
                                 "status": self._get_steam_status(player.get("personastate", 0)),
                                 "last_logoff": datetime.fromtimestamp(player.get("lastlogoff", 0)).isoformat() if player.get("lastlogoff") else None,
                             }
+                    else:
+                        logger.error(f"Steam API error: {response.status}")
         except Exception as e:
             logger.error(f"Error fetching Steam profile for {steam_id}: {e}", exc_info=True)
             return None

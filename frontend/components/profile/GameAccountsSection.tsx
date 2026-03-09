@@ -102,9 +102,26 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
     for (const account of accountsList) {
       try {
         if (account.game === 'steam') {
+          console.log(`Loading Steam stats for ${account.account_id}...`)
           const [profile, cs2Stats] = await Promise.all([
-            axios.get(`${apiUrl}/api/game-stats/steam/${account.account_id}`).catch(() => null),
-            axios.get(`${apiUrl}/api/game-stats/cs2/${account.account_id}`).catch(() => null),
+            axios.get(`${apiUrl}/api/game-stats/steam/${account.account_id}`)
+              .then(res => {
+                console.log('Steam profile loaded:', res.data)
+                return res
+              })
+              .catch(err => {
+                console.error('Steam profile error:', err.response?.data || err.message)
+                return null
+              }),
+            axios.get(`${apiUrl}/api/game-stats/cs2/${account.account_id}`)
+              .then(res => {
+                console.log('CS2 stats loaded:', res.data)
+                return res
+              })
+              .catch(err => {
+                console.error('CS2 stats error:', err.response?.data || err.message)
+                return null
+              }),
           ])
           
           newStats.steam = {
@@ -112,9 +129,26 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
             cs2_stats: cs2Stats?.data,
           }
         } else if (account.game === 'dota2') {
+          console.log(`Loading Dota 2 stats for ${account.account_id}...`)
           const [profile, stats] = await Promise.all([
-            axios.get(`${apiUrl}/api/game-stats/dota2/${account.account_id}/profile`).catch(() => null),
-            axios.get(`${apiUrl}/api/game-stats/dota2/${account.account_id}/stats`).catch(() => null),
+            axios.get(`${apiUrl}/api/game-stats/dota2/${account.account_id}/profile`)
+              .then(res => {
+                console.log('Dota 2 profile loaded:', res.data)
+                return res
+              })
+              .catch(err => {
+                console.error('Dota 2 profile error:', err.response?.data || err.message)
+                return null
+              }),
+            axios.get(`${apiUrl}/api/game-stats/dota2/${account.account_id}/stats`)
+              .then(res => {
+                console.log('Dota 2 stats loaded:', res.data)
+                return res
+              })
+              .catch(err => {
+                console.error('Dota 2 stats error:', err.response?.data || err.message)
+                return null
+              }),
           ])
           
           newStats.dota2 = {
@@ -123,9 +157,26 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
           }
         } else if (account.game === 'valorant' && account.account_tag) {
           const region = account.region || 'eu'
+          console.log(`Loading Valorant stats for ${account.account_id}#${account.account_tag} (${region})...`)
           const [profile, mmr] = await Promise.all([
-            axios.get(`${apiUrl}/api/game-stats/valorant/${account.account_id}/${account.account_tag}/profile?region=${region}`).catch(() => null),
-            axios.get(`${apiUrl}/api/game-stats/valorant/${account.account_id}/${account.account_tag}/mmr?region=${region}`).catch(() => null),
+            axios.get(`${apiUrl}/api/game-stats/valorant/${account.account_id}/${account.account_tag}/profile?region=${region}`)
+              .then(res => {
+                console.log('Valorant profile loaded:', res.data)
+                return res
+              })
+              .catch(err => {
+                console.error('Valorant profile error:', err.response?.data || err.message)
+                return null
+              }),
+            axios.get(`${apiUrl}/api/game-stats/valorant/${account.account_id}/${account.account_tag}/mmr?region=${region}`)
+              .then(res => {
+                console.log('Valorant MMR loaded:', res.data)
+                return res
+              })
+              .catch(err => {
+                console.error('Valorant MMR error:', err.response?.data || err.message)
+                return null
+              }),
           ])
           
           newStats.valorant = {
@@ -138,6 +189,7 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
       }
     }
 
+    console.log('Final stats:', newStats)
     setStats(newStats)
     setLoadingStats(false)
   }
