@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { Navigation, Footer, SkipToContent } from '../components/layout'
-import { HeroSection, NewsSection, EventsSection, FeedSection, DiscordStats } from '../components/home'
+import { HeroSection, NewsSection, StreamersSection } from '../components/home'
 import { PageErrorBoundary } from '../components/PageErrorBoundary'
 import { SectionErrorBoundary } from '../components/SectionErrorBoundary'
 import { lazyLoadModal } from '../lib/lazyLoad'
@@ -21,6 +21,15 @@ interface CommonSettings {
   maintenance_message?: string | null
 }
 
+interface Streamer {
+  discord_id: number
+  discord_username: string
+  avatar_url?: string | null
+  forest_rank: string
+  is_online?: boolean
+  game?: string
+}
+
 // Constants
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const TOKEN_KEY = 'lesnaya_token'
@@ -30,6 +39,7 @@ export default function Home() {
   const [token, setToken] = useState<string | null>(null)
   const [commonSettings, setCommonSettings] = useState<CommonSettings | null>(null)
   const [showGamePreferencesModal, setShowGamePreferencesModal] = useState(false)
+  const [streamers, setStreamers] = useState<Streamer[]>([])
 
   // Auth: проверка токена из URL после Discord OAuth
   useEffect(() => {
@@ -76,8 +86,13 @@ export default function Home() {
   // Загрузка данных с API (мемоизирована)
   const fetchData = useCallback(async (): Promise<void> => {
     try {
-      const commonRes = await axios.get<CommonSettings>(`${API_URL}/api/settings/common`)
+      const [commonRes, streamersRes] = await Promise.all([
+        axios.get<CommonSettings>(`${API_URL}/api/settings/common`),
+        axios.get<Streamer[]>(`${API_URL}/api/streamers`)
+      ])
+      
       setCommonSettings(commonRes.data)
+      setStreamers(streamersRes.data || [])
     } catch (err) {
       console.error('Error fetching data:', err)
     }
@@ -118,7 +133,7 @@ export default function Home() {
       />
 
       {/* Основной контент */}
-      <main id="main-content" className="container" tabIndex={-1}>
+      <main id="main-content" tabIndex={-1}>
         {/* Hero секция */}
         <SectionErrorBoundary sectionName="Hero">
           <HeroSection
@@ -126,24 +141,14 @@ export default function Home() {
           />
         </SectionErrorBoundary>
 
+        {/* Секция стримеров */}
+        <SectionErrorBoundary sectionName="Стримеры">
+          <StreamersSection streamers={streamers} />
+        </SectionErrorBoundary>
+
         {/* Секция новостей */}
         <SectionErrorBoundary sectionName="Новости">
           <NewsSection />
-        </SectionErrorBoundary>
-
-        {/* Секция событий */}
-        <SectionErrorBoundary sectionName="События">
-          <EventsSection />
-        </SectionErrorBoundary>
-
-        {/* Секция ленты */}
-        <SectionErrorBoundary sectionName="Лента активности">
-          <FeedSection />
-        </SectionErrorBoundary>
-
-        {/* Discord статистика */}
-        <SectionErrorBoundary sectionName="Discord статистика">
-          <DiscordStats />
         </SectionErrorBoundary>
 
         {/* Футер */}

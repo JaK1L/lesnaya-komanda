@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { TreePine, Menu, X } from 'lucide-react'
-import { Button } from '../ui/Button/Button'
+import { Menu, X } from 'lucide-react'
+import { AuthModal } from '../auth'
 import styles from './Navigation.module.css'
 
 interface NavigationProps {
@@ -13,10 +13,22 @@ interface NavigationProps {
 
 export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const navRef = useRef<HTMLDivElement>(null)
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen)
+  }
+
+  const handleOpenAuth = (mode: 'login' | 'register') => {
+    setAuthMode(mode)
+    setAuthModalOpen(true)
+    setMobileMenuOpen(false)
+  }
+
+  const handleAuthSuccess = (token: string) => {
+    window.location.reload()
   }
 
   // Закрытие меню по ESC
@@ -44,57 +56,76 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
   }, [mobileMenuOpen])
 
   return (
-    <nav className={styles.nav} ref={navRef} aria-label="Основная навигация">
-      <div className={styles.container}>
-        <a href="/" className={styles.logo} aria-label="Lesnaya Komanda - Главная страница">
-          <TreePine size={32} aria-hidden="true" />
-          <span>LESNAYA KOMANDA</span>
-        </a>
-
-        <button
-          className={styles.mobileMenuButton}
-          onClick={toggleMobileMenu}
-          aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
-          aria-expanded={mobileMenuOpen}
-          aria-controls="main-navigation"
-        >
-          {mobileMenuOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
-        </button>
-
-        <div 
-          id="main-navigation"
-          className={`${styles.links} ${mobileMenuOpen ? styles.open : ''}`}
-          role="navigation"
-        >
-          <a href="/" className={styles.link}>
-            Главная
-          </a>
-          <a href="/streams" className={styles.link}>
-            Стримеры
-          </a>
-          <a href="/social" className={styles.link}>
-            Команда
-          </a>
-          <a href="/merch" className={styles.link}>
-            Магазин
+    <>
+      <nav className={styles.nav} ref={navRef} aria-label="Основная навигация">
+        <div className={styles.container}>
+          <a href="/" className={styles.logo} aria-label="Stream Hub - Главная страница">
+            <span>STREAM HUB</span>
           </a>
 
-          {isAuthenticated ? (
-            <>
-              <a href="/profile" className={styles.link}>
-                Профиль
-              </a>
-              <Button onClick={onLogout} size="small" aria-label="Выйти из аккаунта">
-                Выйти
-              </Button>
-            </>
-          ) : (
-            <Button href={`${apiUrl}/api/auth/discord`} size="small" aria-label="Войти через Discord">
-              Войти
-            </Button>
-          )}
+          <button
+            className={styles.mobileMenuButton}
+            onClick={toggleMobileMenu}
+            aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="main-navigation"
+          >
+            {mobileMenuOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
+          </button>
+
+          <div 
+            id="main-navigation"
+            className={`${styles.links} ${mobileMenuOpen ? styles.open : ''}`}
+            role="navigation"
+          >
+            <a href="/" className={styles.link}>
+              Главная
+            </a>
+            <a href="/streams" className={styles.link}>
+              Стримеры
+            </a>
+            <a href="/social" className={styles.link}>
+              Новости
+            </a>
+
+            {isAuthenticated ? (
+              <>
+                <a href="/profile" className={styles.link}>
+                  Профиль
+                </a>
+                <button onClick={onLogout} className={styles.link} aria-label="Выйти из аккаунта">
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  onClick={() => handleOpenAuth('login')} 
+                  className={styles.link}
+                  aria-label="Войти"
+                >
+                  Войти
+                </button>
+                <button 
+                  onClick={() => handleOpenAuth('register')} 
+                  className={styles.linkButton}
+                  aria-label="Регистрация"
+                >
+                  Регистрация
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={handleAuthSuccess}
+        apiUrl={apiUrl}
+        initialMode={authMode}
+      />
+    </>
   )
 }

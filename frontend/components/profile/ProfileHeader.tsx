@@ -4,6 +4,7 @@ import styles from './ProfileHeader.module.css'
 interface ProfileHeaderProps {
   nickname: string | null
   username: string
+  userTag: string | null
   avatarUrl: string | null
   bio: string | null
   age: number | null
@@ -14,6 +15,7 @@ interface ProfileHeaderProps {
 export function ProfileHeader({
   nickname,
   username,
+  userTag,
   avatarUrl,
   bio,
   age,
@@ -47,7 +49,7 @@ export function ProfileHeader({
             {nickname || username}
           </div>
           <div className={styles.username}>
-            {username}
+            {userTag || username}
           </div>
           {age && (
             <div className={styles.age}>

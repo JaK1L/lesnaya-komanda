@@ -68,8 +68,28 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
+async def get_user_by_email(db: asyncpg.Connection, email: str) -> Optional[UserInDB]:
+    """Получение пользователя по email"""
+    query = """
+        SELECT id, email as username, password_hash, 
+               CASE WHEN is_admin THEN 'admin' ELSE 'user' END as role
+        FROM users 
+        WHERE email = $1 AND password_hash IS NOT NULL
+    """
+    row = await db.fetchrow(query, email.lower())
+    
+    if row:
+        return UserInDB(
+            id=row['id'],
+            username=row['username'],
+            role=row['role'],
+            hashed_password=row['password_hash']
+        )
+    return None
+
+
 async def get_user_by_username(db: asyncpg.Connection, username: str) -> Optional[UserInDB]:
-    """Получение пользователя по username"""
+    """Получение пользователя по username (для админов)"""
     query = """
         SELECT id, username, password_hash, role 
         FROM admin_users 
@@ -87,9 +107,15 @@ async def get_user_by_username(db: asyncpg.Connection, username: str) -> Optiona
     return None
 
 
-async def authenticate_user(db: asyncpg.Connection, username: str, password: str) -> Optional[User]:
-    """Аутентификация пользователя"""
-    user = await get_user_by_username(db, username)
+async def authenticate_user(db: asyncpg.Connection, email_or_username: str, password: str) -> Optional[User]:
+    """Аутентификация пользователя (по email или username)"""
+    # Сначала пробуем найти по email (обычные пользователи)
+    user = await get_user_by_email(db, email_or_username)
+    
+    # Если не нашли, пробуем по username (админы)
+    if not user:
+        user = await get_user_by_username(db, email_or_username)
+    
     if not user or not verify_password(password, user.hashed_password):
         return None
     return User(id=user.id, username=user.username, role=user.role)
@@ -99,7 +125,7 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db = Depends(get_db)
 ) -> User:
-    """Получение текущего пользователя по JWT токену (админ по логину или Discord-пользователь по type=discord)."""
+    """Получение текущего пользователя по JWT токену."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -113,6 +139,8 @@ async def get_current_user(
         )
         sub = payload.get("sub")
         token_type = payload.get("type")
+        user_id = payload.get("user_id")
+        
         if sub is None:
             raise credentials_exception
     except JWTError:
@@ -125,14 +153,28 @@ async def get_current_user(
         except (ValueError, TypeError):
             raise credentials_exception
         row = await db.fetchrow(
-            "SELECT id, discord_username FROM users WHERE discord_id = $1",
+            "SELECT id, discord_username, is_admin FROM users WHERE discord_id = $1",
             discord_id,
         )
         if not row:
             raise credentials_exception
-        return User(id=row["id"], username=row["discord_username"], role="user")
+        role = "admin" if row["is_admin"] else "user"
+        return User(id=row["id"], username=row["discord_username"], role=role)
 
-    # Обычный админ (логин/пароль)
+    # Вход через Email/Password
+    if token_type == "email":
+        if not user_id:
+            raise credentials_exception
+        row = await db.fetchrow(
+            "SELECT id, discord_username, email, is_admin FROM users WHERE id = $1 AND email IS NOT NULL",
+            user_id,
+        )
+        if not row:
+            raise credentials_exception
+        role = "admin" if row["is_admin"] else "user"
+        return User(id=row["id"], username=row["discord_username"], role=role)
+
+    # Обычный админ (логин/пароль из admin_users)
     user = await get_user_by_username(db, username=sub)
     if user is None:
         raise credentials_exception
@@ -160,6 +202,8 @@ async def get_optional_current_user(
         )
         sub = payload.get("sub")
         token_type = payload.get("type")
+        user_id = payload.get("user_id")
+        
         if sub is None:
             return None
     except JWTError:
@@ -172,12 +216,26 @@ async def get_optional_current_user(
         except (ValueError, TypeError):
             return None
         row = await db.fetchrow(
-            "SELECT id, discord_username FROM users WHERE discord_id = $1",
+            "SELECT id, discord_username, is_admin FROM users WHERE discord_id = $1",
             discord_id,
         )
         if not row:
             return None
-        return User(id=row["id"], username=row["discord_username"], role="user")
+        role = "admin" if row["is_admin"] else "user"
+        return User(id=row["id"], username=row["discord_username"], role=role)
+
+    # Вход через Email/Password
+    if token_type == "email":
+        if not user_id:
+            return None
+        row = await db.fetchrow(
+            "SELECT id, discord_username, email, is_admin FROM users WHERE id = $1 AND email IS NOT NULL",
+            user_id,
+        )
+        if not row:
+            return None
+        role = "admin" if row["is_admin"] else "user"
+        return User(id=row["id"], username=row["discord_username"], role=role)
 
     # Обычный админ (логин/пароль)
     user = await get_user_by_username(db, username=sub)

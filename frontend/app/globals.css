@@ -6,12 +6,12 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0a;
+  --background: #0f0f0f;
   --foreground: #ffffff;
-  --accent: #4aff75;
-  --accent-dark: #2d5a2d;
-  --gray: #1a1a1a;
-  --gray-light: #2a2a2a;
+  --accent: #9147ff;
+  --accent-dark: #7c3aed;
+  --gray: #1b1b1b;
+  --gray-light: #252525;
 }
 
 * {

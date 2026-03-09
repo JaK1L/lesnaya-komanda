@@ -44,3 +44,7 @@ skills-lock.json
 
 # Docker (ты им не пользуешься)
 Dockerfile.backend
+
+# Документация (не коммитить .md файлы)
+*.md
+!README.md

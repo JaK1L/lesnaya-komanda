@@ -101,13 +101,44 @@ class UserInDB(User):
 
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
-    password: str = Field(..., min_length=6)
-    role: str = Field(default="editor")
+    email: str = Field(..., description="Email адрес")
+    password: str = Field(..., min_length=6, description="Пароль (минимум 6 символов)")
+    
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        """Простая валидация email"""
+        if "@" not in v or "." not in v:
+            raise ValueError("Invalid email format")
+        return v.lower()
+
+
+class UserRegister(BaseModel):
+    """Модель для публичной регистрации"""
+    username: str = Field(..., min_length=3, max_length=50, description="Никнейм")
+    email: str = Field(..., description="Email адрес")
+    password: str = Field(..., min_length=6, description="Пароль (минимум 6 символов)")
+    
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        """Простая валидация email"""
+        if "@" not in v or "." not in v:
+            raise ValueError("Invalid email format")
+        return v.lower()
+    
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: str) -> str:
+        """Валидация никнейма"""
+        if not v.replace("_", "").replace("-", "").isalnum():
+            raise ValueError("Username can only contain letters, numbers, underscores and hyphens")
+        return v
 
 
 class UserLogin(BaseModel):
-    username: str = Field(..., description="Имя пользователя", examples=["LesnoyBOSS"])
-    password: str = Field(..., description="Пароль", examples=["LesnoyBOSS909!"])
+    email: str = Field(..., description="Email адрес")
+    password: str = Field(..., description="Пароль")
 
 
 # Модели для запросов
@@ -137,6 +168,7 @@ class ProfileResponse(BaseModel):
     discord_id: int
     site_nickname: Optional[str] = None
     discord_username: str
+    user_tag: Optional[str] = None
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     is_hidden: bool = False

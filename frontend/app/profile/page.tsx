@@ -16,6 +16,7 @@ interface ProfileData {
   discord_id: number
   site_nickname: string | null
   discord_username: string
+  user_tag: string | null
   avatar_url: string | null
   bio: string | null
   is_hidden: boolean
@@ -346,6 +347,7 @@ export default function ProfilePage() {
           <ProfileHeader
             nickname={profile.site_nickname}
             username={profile.discord_username}
+            userTag={profile.user_tag}
             avatarUrl={avatarPreview || profile.avatar_url}
             bio={profile.bio}
             age={age}

@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import axios from 'axios'
-import { NewsCard } from './NewsCard'
 import { NewsModal } from './NewsModal'
-import { NewsSkeleton } from '../skeletons'
 import styles from './NewsSection.module.css'
 
 interface News {
@@ -16,6 +15,30 @@ interface News {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+// Анимация контейнера
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+// Анимация карточки
+const cardVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+}
 
 export function NewsSection() {
   const [news, setNews] = useState<News[]>([])
@@ -33,7 +56,7 @@ export function NewsSection() {
       setLoading(true)
       setError(null)
       const response = await axios.get<News[]>(`${API_URL}/api/news`)
-      setNews(response.data)
+      setNews(response.data.slice(0, 2)) // Показываем только 2 новости
     } catch (err) {
       console.error('Error fetching news:', err)
       setError('Не удалось загрузить новости')
@@ -52,45 +75,33 @@ export function NewsSection() {
     setTimeout(() => setSelectedNews(null), 300)
   }
 
+  // Функция для обрезки текста
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + '...'
+  }
+
   if (loading) {
     return (
       <section className={styles.section}>
-        <div className={styles.container}>
-          <header className={styles.header}>
-            <h2 className={styles.title}>
-              📰 Новости
-            </h2>
-            <p className={styles.subtitle}>Последние новости лесной команды</p>
-          </header>
-          <NewsSkeleton />
+        <h2 className={styles.title}>Последние новости</h2>
+        <div className={styles.grid}>
+          {[1, 2].map((i) => (
+            <div key={i} className={styles.card}>
+              <div className={styles.skeleton}></div>
+            </div>
+          ))}
         </div>
       </section>
     )
   }
 
-  if (error) {
+  if (error || news.length === 0) {
     return (
       <section className={styles.section}>
-        <div className={styles.container}>
-          <div className={styles.error}>{error}</div>
-        </div>
-      </section>
-    )
-  }
-
-  if (news.length === 0) {
-    return (
-      <section className={styles.section}>
-        <div className={styles.container}>
-          <header className={styles.header}>
-            <h2 className={styles.title}>
-              📰 Новости
-            </h2>
-            <p className={styles.subtitle}>Последние новости лесной команды</p>
-          </header>
-          <div className={styles.empty}>
-            <p>Новостей пока нет</p>
-          </div>
+        <h2 className={styles.title}>Последние новости</h2>
+        <div className={styles.emptyState}>
+          <p>Новостей пока нет</p>
         </div>
       </section>
     )
@@ -99,24 +110,40 @@ export function NewsSection() {
   return (
     <>
       <section className={styles.section}>
-        <div className={styles.container}>
-          <header className={styles.header}>
-            <h2 className={styles.title}>
-              📰 Новости
-            </h2>
-            <p className={styles.subtitle}>Последние новости лесной команды</p>
-          </header>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <h2 className={styles.title}>Последние новости</h2>
+        </motion.div>
 
-          <div className={styles.grid}>
-            {news.map((item) => (
-              <NewsCard
-                key={item.id}
-                {...item}
-                onClick={() => handleNewsClick(item)}
-              />
-            ))}
-          </div>
-        </div>
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          className={styles.grid}
+        >
+          {news.map((item) => (
+            <motion.div
+              key={item.id}
+              variants={cardVariants}
+              whileHover={{ 
+                scale: 1.02,
+                transition: { duration: 0.2 }
+              }}
+              className={styles.card}
+              onClick={() => handleNewsClick(item)}
+            >
+              <h3 className={styles.cardTitle}>{item.title}</h3>
+              <p className={styles.cardContent}>
+                {truncateText(item.content, 100)}
+              </p>
+            </motion.div>
+          ))}
+        </motion.div>
       </section>
 
       <NewsModal

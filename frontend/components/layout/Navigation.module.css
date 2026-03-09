@@ -1,19 +1,20 @@
-/* Mobile-First: Base styles for mobile (320px+) */
+/* Navigation в стиле Streaming Hub */
 .nav {
-  border-bottom: 1px solid var(--gray-light);
-  padding: 1rem 0;
-  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  background: #151515;
   position: sticky;
   top: 0;
-  background: var(--background);
   z-index: 100;
   backdrop-filter: blur(10px);
 }
 
 .container {
   width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -22,11 +23,10 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-family: 'Unbounded', sans-serif;
-  font-weight: 900;
-  font-size: 1.25rem;
-  color: var(--accent);
+  gap: 0.75rem;
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
   text-decoration: none;
   transition: opacity 0.2s;
 }
@@ -35,102 +35,99 @@
   opacity: 0.8;
 }
 
-/* Mobile menu - hidden by default on mobile */
+/* Desktop links */
 .links {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--background);
-  border-bottom: 1px solid var(--gray-light);
-  flex-direction: column;
-  padding: 1rem;
-  gap: 1rem;
-}
-
-.links.open {
   display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .link {
-  color: #666;
+  color: white;
   text-decoration: none;
-  text-transform: uppercase;
-  font-size: 0.875rem;
-  letter-spacing: 0.1em;
+  font-size: 16px;
   transition: color 0.2s;
   font-weight: 500;
-  width: 100%;
-  text-align: center;
-  padding: 0.75rem;
-  /* Touch-friendly */
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .link:hover {
-  color: var(--accent);
+  color: #9147ff;
 }
 
-/* Mobile menu button - visible on mobile */
+.linkButton {
+  background: #9147ff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.linkButton:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+/* Mobile menu button - hidden by default */
 .mobileMenuButton {
-  display: block;
+  display: none;
   background: transparent;
-  border: 2px solid var(--accent);
-  color: var(--accent);
+  border: 2px solid #9147ff;
+  color: #9147ff;
   padding: 0.5rem;
   cursor: pointer;
-  border-radius: 4px;
-  /* Touch-friendly */
+  border-radius: 6px;
   min-width: 44px;
   min-height: 44px;
 }
 
-/* Tablet: 768px+ */
-@media (min-width: 768px) {
+/* Mobile: 768px and below */
+@media (max-width: 768px) {
   .nav {
-    padding: 1.5rem 0;
-    margin-bottom: 4rem;
-  }
-
-  .container {
-    padding: 0 2rem;
+    padding: 15px 20px;
   }
 
   .logo {
-    font-size: 1.5rem;
+    font-size: 20px;
+    gap: 0.5rem;
   }
 
-  /* Show links horizontally on tablet+ */
+  /* Show mobile menu button */
+  .mobileMenuButton {
+    display: block;
+  }
+
+  /* Hide links by default on mobile */
   .links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #151515;
+    border-top: 1px solid #252525;
+    flex-direction: column;
+    padding: 20px;
+    gap: 15px;
+  }
+
+  /* Show links when menu is open */
+  .links.open {
     display: flex;
-    position: static;
-    flex-direction: row;
-    gap: 2rem;
-    border-bottom: none;
-    padding: 0;
-    background: transparent;
   }
 
   .link {
-    width: auto;
-    text-align: left;
-    padding: 0;
-    min-height: auto;
+    width: 100%;
+    text-align: center;
+    padding: 12px;
+    border-radius: 6px;
+    background: #1b1b1b;
   }
 
-  /* Hide mobile menu button on tablet+ */
-  .mobileMenuButton {
-    display: none;
-  }
-}
-
-/* Desktop: 1024px+ */
-@media (min-width: 1024px) {
-  .container {
-    max-width: 1400px;
+  .link:hover {
+    background: #252525;
   }
 }

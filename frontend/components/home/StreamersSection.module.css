@@ -1,45 +1,39 @@
-/* Mobile-First: Base styles for mobile (320px+) */
 .section {
-  margin-top: 4rem;
+  padding: 60px 40px;
+  background: #0f0f0f;
 }
 
 .title {
-  text-align: center;
-  margin-bottom: 2rem;
-  font-size: clamp(2rem, 5vw, 3rem);
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0 0 40px 0;
+  color: white;
+  text-align: left;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1px;
-  background: var(--gray-light);
-  border: 1px solid var(--gray-light);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
 }
 
-.streamerCard {
-  background: var(--gray);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.card {
+  background: #1b1b1b;
+  padding: 20px;
+  border-radius: 10px;
   text-align: center;
-  transition: all 0.2s;
-  text-decoration: none;
-  color: inherit;
-  /* Touch-friendly */
-  min-height: 200px;
+  transition: all 0.3s ease;
 }
 
-.streamerCard:hover {
-  background: var(--gray-light);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(74, 255, 117, 0.2);
+.card:hover {
+  background: #252525;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .avatarWrapper {
-  position: relative;
-  margin-bottom: 1rem;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: center;
 }
 
 .avatar {
@@ -47,124 +41,90 @@
   height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--accent);
+  border: 3px solid #9147ff;
 }
 
 .avatarPlaceholder {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: var(--accent-dark);
+  background: linear-gradient(135deg, #9147ff 0%, #7c3aed 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
-  color: var(--accent);
-  border: 3px solid var(--accent);
-}
-
-.onlineIndicator {
-  position: absolute;
-  bottom: 5px;
-  right: 5px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background-color: #4aff75;
-  border: 3px solid var(--gray);
+  font-size: 40px;
+  font-weight: bold;
+  color: white;
 }
 
 .name {
-  font-family: 'Unbounded', sans-serif;
-  font-weight: 700;
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
-  word-break: break-word;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: white;
 }
 
-.rank {
-  color: var(--accent);
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
+.game {
+  font-size: 14px;
+  color: #b0b0b0;
+  margin: 0 0 20px 0;
 }
 
-.status {
-  font-size: 0.875rem;
-  color: #4aff75;
-  margin-bottom: 1rem;
+.button {
+  display: inline-block;
+  background: #9147ff;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.button:hover {
+  background: #7c3aed;
+  transform: translateY(-2px);
 }
 
 .emptyState {
-  background: var(--gray);
-  grid-column: 1 / -1;
   text-align: center;
-  padding: 2rem 1rem;
-}
-
-.emptyIcon {
-  font-size: 2rem;
-  margin-bottom: 1rem;
-}
-
-.emptyText {
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
-}
-
-.emptySubtext {
+  padding: 60px 20px;
   color: #666;
-  font-size: 1rem;
+  font-size: 18px;
 }
 
-/* Tablet: 768px+ */
-@media (min-width: 768px) {
+/* Mobile */
+@media (max-width: 768px) {
   .section {
-    margin-top: 6rem;
+    padding: 40px 20px;
   }
 
   .title {
-    margin-bottom: 3rem;
+    font-size: 24px;
+    margin-bottom: 30px;
   }
 
   .grid {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: 1fr;
+    gap: 15px;
   }
 
-  .streamerCard {
-    padding: 2rem;
+  .card {
+    padding: 15px;
   }
 
   .avatar,
   .avatarPlaceholder {
-    width: 120px;
-    height: 120px;
-    font-size: 3rem;
+    width: 80px;
+    height: 80px;
   }
 
-  .onlineIndicator {
-    width: 20px;
-    height: 20px;
+  .avatarPlaceholder {
+    font-size: 32px;
   }
 
   .name {
-    font-size: 1.5rem;
-  }
-
-  .emptyState {
-    padding: 3rem;
-  }
-
-  .emptyIcon {
-    font-size: 3rem;
-  }
-
-  .emptyText {
-    font-size: 1.5rem;
-  }
-
-  .emptySubtext {
-    font-size: 1.2rem;
+    font-size: 18px;
   }
 }

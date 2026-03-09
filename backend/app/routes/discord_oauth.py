@@ -94,19 +94,39 @@ async def discord_callback(
         avatar_url = f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar_hash}.png" if avatar_hash else None
 
     # Создать или обновить запись в users (та же таблица, что и у бота)
-    await db.execute(
-        """
-        INSERT INTO users (discord_id, discord_username, avatar_url, last_seen, joined_at)
-        VALUES ($1, $2, $3, NOW(), NOW())
-        ON CONFLICT (discord_id) DO UPDATE SET
-            discord_username = EXCLUDED.discord_username,
-            avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
-            last_seen = NOW()
-        """,
-        discord_id,
-        username,
-        avatar_url,
+    # Сначала проверяем, существует ли пользователь
+    existing_user = await db.fetchrow(
+        "SELECT id, user_tag FROM users WHERE discord_id = $1",
+        discord_id
     )
+    
+    if existing_user:
+        # Обновляем существующего пользователя
+        await db.execute(
+            """
+            UPDATE users SET
+                discord_username = $2,
+                avatar_url = COALESCE($3, avatar_url),
+                last_seen = NOW()
+            WHERE discord_id = $1
+            """,
+            discord_id,
+            username,
+            avatar_url,
+        )
+    else:
+        # Создаем нового пользователя с user_tag
+        user_tag = await db.fetchval("SELECT generate_user_tag($1)", username)
+        await db.execute(
+            """
+            INSERT INTO users (discord_id, discord_username, avatar_url, user_tag, last_seen, joined_at)
+            VALUES ($1, $2, $3, $4, NOW(), NOW())
+            """,
+            discord_id,
+            username,
+            avatar_url,
+            user_tag,
+        )
 
     # Синхронизировать статус администратора на основе Discord роли
     try:

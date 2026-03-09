@@ -1,20 +1,20 @@
 'use client'
 
-import { useMemo, memo } from 'react'
+import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { Button, OptimizedImage } from '../ui'
 import styles from './StreamersSection.module.css'
 
-interface Player {
-  discord_username: string
-  forest_rank: string
+interface Streamer {
   discord_id: number
+  discord_username: string
   avatar_url?: string | null
+  forest_rank: string
   is_online?: boolean
+  game?: string
 }
 
 interface StreamersSectionProps {
-  players: Player[]
+  streamers: Streamer[]
 }
 
 // Анимация контейнера с stagger
@@ -23,18 +23,17 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15,
+      staggerChildren: 0.1,
     },
   },
 }
 
 // Анимация карточки
 const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.9 },
+  hidden: { opacity: 0, y: 30 },
   visible: {
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: {
       duration: 0.5,
       ease: [0.22, 1, 0.36, 1],
@@ -44,128 +43,80 @@ const cardVariants = {
 
 // Мемоизированная карточка стримера
 const StreamerCard = memo(function StreamerCard({ 
-  player
+  streamer
 }: { 
-  player: Player
+  streamer: Streamer
 }) {
   return (
     <motion.div
       variants={cardVariants}
       whileHover={{ 
-        scale: 1.05,
+        scale: 1.03,
         transition: { duration: 0.2 }
       }}
-      whileTap={{ scale: 0.98 }}
+      className={styles.card}
     >
-      <a
-        href={`/profile/${player.discord_id}`}
-        className={styles.streamerCard}
-      >
-        <div className={styles.avatarWrapper}>
-          {player.avatar_url ? (
-            <OptimizedImage
-              src={player.avatar_url}
-              alt={`${player.discord_username} avatar`}
-              width={120}
-              height={120}
-              className={styles.avatar}
-            />
-          ) : (
-            <div className={styles.avatarPlaceholder}>
-              {player.discord_username?.[0] || '🐺'}
-            </div>
-          )}
-          {player.is_online && (
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.2, 1],
-                opacity: [1, 0.8, 1]
-              }}
-              transition={{ 
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            >
-              <div className={styles.onlineIndicator} />
-            </motion.div>
-          )}
-        </div>
-
-        <div className={styles.name}>{player.discord_username}</div>
-        <div className={styles.rank}>{player.forest_rank}</div>
-        {player.is_online && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <div className={styles.status}>● online</div>
-          </motion.div>
+      <div className={styles.avatarWrapper}>
+        {streamer.avatar_url ? (
+          <img
+            src={streamer.avatar_url}
+            alt={`${streamer.discord_username} avatar`}
+            className={styles.avatar}
+          />
+        ) : (
+          <div className={styles.avatarPlaceholder}>
+            {streamer.discord_username?.[0]?.toUpperCase() || '?'}
+          </div>
         )}
+      </div>
 
-        <Button size="small">СМОТРЕТЬ СТРИМ</Button>
+      <h3 className={styles.name}>{streamer.discord_username}</h3>
+      <p className={styles.game}>{streamer.game || streamer.forest_rank}</p>
+      
+      <a 
+        href={`/profile/${streamer.discord_id}`}
+        className={styles.button}
+      >
+        Профиль
       </a>
     </motion.div>
   )
 })
 
-export const StreamersSection = memo(function StreamersSection({ players }: StreamersSectionProps) {
-  // Мемоизируем фильтрацию онлайн игроков
-  const onlinePlayers = useMemo(
-    () => players.filter(p => p.is_online).slice(0, 3),
-    [players]
-  )
+export const StreamersSection = memo(function StreamersSection({ streamers }: StreamersSectionProps) {
+  // Показываем первых 3 стримеров или всех если меньше
+  const displayStreamers = streamers.slice(0, 3)
 
   return (
-    <section id="streamers" className={styles.section}>
+    <section className={styles.section}>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
       >
-        <h2 className={styles.title}>СТРИМЕРЫ ЛЕСНОЙ КОМАНДЫ</h2>
+        <h2 className={styles.title}>Стримеры</h2>
       </motion.div>
       
-      {onlinePlayers.length > 0 ? (
+      {displayStreamers.length > 0 ? (
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: "-50px" }}
+          className={styles.grid}
         >
-          <div className={styles.grid}>
-            {onlinePlayers.map((player) => (
-              <StreamerCard 
-                key={player.discord_id} 
-                player={player}
-              />
-            ))}
-          </div>
+          {displayStreamers.map((streamer) => (
+            <StreamerCard 
+              key={streamer.discord_id} 
+              streamer={streamer}
+            />
+          ))}
         </motion.div>
       ) : (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className={styles.emptyState}>
-            <motion.div 
-              animate={{ 
-                rotate: [0, -10, 10, -10, 0],
-              }}
-              transition={{ 
-                duration: 2,
-                repeat: Infinity,
-                repeatDelay: 1
-              }}
-            >
-              <div className={styles.emptyIcon}>💤</div>
-            </motion.div>
-            <div className={styles.emptyText}>Тише Боссы спят....</div>
-          </div>
-        </motion.div>
+        <div className={styles.emptyState}>
+          <p>Стримеры скоро появятся</p>
+        </div>
       )}
     </section>
   )
