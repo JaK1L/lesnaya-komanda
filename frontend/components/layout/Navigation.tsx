@@ -101,7 +101,7 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
               <>
                 <button 
                   onClick={() => handleOpenAuth('login')} 
-                  className={styles.link}
+                  className={styles.loginButton}
                   aria-label="Войти"
                 >
                   Войти

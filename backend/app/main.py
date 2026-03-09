@@ -217,7 +217,7 @@ async def add_cache_control_header(request, call_next):
 
 # Подключение маршрутов
 app.include_router(users.router, prefix="/api", tags=["users"])
-app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(discord_oauth.router, prefix="/api", tags=["discord"])
 app.include_router(discord.router, tags=["discord"])  # Discord presence API
 app.include_router(content.router, prefix="/api", tags=["content"])

@@ -54,6 +54,24 @@
   color: #9147ff;
 }
 
+.loginButton {
+  background: transparent;
+  color: #9147ff;
+  border: 2px solid #9147ff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.loginButton:hover {
+  background: #9147ff;
+  color: white;
+  transform: translateY(-1px);
+}
+
 .linkButton {
   background: #9147ff;
   color: white;
@@ -129,5 +147,17 @@
 
   .link:hover {
     background: #252525;
+  }
+
+  .loginButton {
+    width: 100%;
+    text-align: center;
+    padding: 12px;
+  }
+
+  .linkButton {
+    width: 100%;
+    text-align: center;
+    padding: 12px;
   }
 }
