@@ -5,11 +5,14 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 import asyncpg
 from pydantic import BaseModel, Field
+import logging
 
 from ..database import get_db
 from ..auth import get_current_user
 from ..models import User
 from ..services.game_api_service import game_api_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/game-stats", tags=["game_stats"])
 
@@ -137,23 +140,41 @@ async def unlink_game_account(
 @router.get("/steam/{steam_id}")
 async def get_steam_profile(steam_id: str):
     """Получить профиль Steam"""
-    profile = await game_api_service.get_steam_profile(steam_id)
-    
-    if not profile:
-        raise HTTPException(status_code=404, detail="Профиль не найден")
-    
-    return profile
+    try:
+        profile = await game_api_service.get_steam_profile(steam_id)
+        
+        if not profile:
+            raise HTTPException(
+                status_code=404, 
+                detail="Профиль не найден. Возможно, Steam API ключ не настроен или профиль приватный."
+            )
+        
+        return profile
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in get_steam_profile: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Ошибка при получении профиля: {str(e)}")
 
 
 @router.get("/cs2/{steam_id}")
 async def get_cs2_stats(steam_id: str):
     """Получить статистику CS2"""
-    stats = await game_api_service.get_cs2_stats(steam_id)
-    
-    if not stats:
-        raise HTTPException(status_code=404, detail="Статистика не найдена")
-    
-    return stats
+    try:
+        stats = await game_api_service.get_cs2_stats(steam_id)
+        
+        if not stats:
+            raise HTTPException(
+                status_code=404, 
+                detail="Статистика не найдена. Возможно, профиль приватный или игрок не играл в CS2."
+            )
+        
+        return stats
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in get_cs2_stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Ошибка при получении статистики: {str(e)}")
 
 
 @router.get("/dota2/{account_id}/profile")
