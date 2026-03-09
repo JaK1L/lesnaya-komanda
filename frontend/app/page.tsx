@@ -136,9 +136,7 @@ export default function Home() {
       <main id="main-content" tabIndex={-1}>
         {/* Hero секция */}
         <SectionErrorBoundary sectionName="Hero">
-          <HeroSection
-            discordUrl={commonSettings?.discord_join_url || '#'}
-          />
+          <HeroSection />
         </SectionErrorBoundary>
 
         {/* Секция стримеров */}

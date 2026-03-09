@@ -3,10 +3,6 @@
 import { motion } from 'framer-motion'
 import styles from './HeroSection.module.css'
 
-interface HeroSectionProps {
-  discordUrl: string
-}
-
 const STREAMS_URL = '/streams'
 
 const containerVariants = {
@@ -32,7 +28,7 @@ const itemVariants = {
   },
 }
 
-export function HeroSection({ discordUrl }: HeroSectionProps) {
+export function HeroSection() {
   return (
     <section className={styles.hero}>
       <div className={styles.content}>
