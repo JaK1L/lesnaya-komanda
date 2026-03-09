@@ -7,7 +7,7 @@ interface FooterProps {
   companyName?: string;
 }
 
-const Footer: React.FC<FooterProps> = ({
+export const Footer: React.FC<FooterProps> = ({
   logoText = 'STREAMTEAM',
   companyName = 'StreamTeam',
 }) => {
@@ -197,5 +197,3 @@ const Footer: React.FC<FooterProps> = ({
     </footer>
   );
 };
-
-export default Footer;
