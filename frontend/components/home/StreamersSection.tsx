@@ -54,31 +54,32 @@ const StreamerCard = memo(function StreamerCard({
         scale: 1.03,
         transition: { duration: 0.2 }
       }}
-      className={styles.card}
     >
-      <div className={styles.avatarWrapper}>
-        {streamer.avatar_url ? (
-          <img
-            src={streamer.avatar_url}
-            alt={`${streamer.discord_username} avatar`}
-            className={styles.avatar}
-          />
-        ) : (
-          <div className={styles.avatarPlaceholder}>
-            {streamer.discord_username?.[0]?.toUpperCase() || '?'}
-          </div>
-        )}
-      </div>
+      <div className={styles.card}>
+        <div className={styles.avatarWrapper}>
+          {streamer.avatar_url ? (
+            <img
+              src={streamer.avatar_url}
+              alt={`${streamer.discord_username} avatar`}
+              className={styles.avatar}
+            />
+          ) : (
+            <div className={styles.avatarPlaceholder}>
+              {streamer.discord_username?.[0]?.toUpperCase() || '?'}
+            </div>
+          )}
+        </div>
 
-      <h3 className={styles.name}>{streamer.discord_username}</h3>
-      <p className={styles.game}>{streamer.game || streamer.forest_rank}</p>
-      
-      <a 
-        href={`/profile/${streamer.discord_id}`}
-        className={styles.button}
-      >
-        Профиль
-      </a>
+        <h3 className={styles.name}>{streamer.discord_username}</h3>
+        <p className={styles.game}>{streamer.game || streamer.forest_rank}</p>
+        
+        <a 
+          href={`/profile/${streamer.discord_id}`}
+          className={styles.button}
+        >
+          Профиль
+        </a>
+      </div>
     </motion.div>
   )
 })
@@ -104,14 +105,15 @@ export const StreamersSection = memo(function StreamersSection({ streamers }: St
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
-          className={styles.grid}
         >
-          {displayStreamers.map((streamer) => (
-            <StreamerCard 
-              key={streamer.discord_id} 
-              streamer={streamer}
-            />
-          ))}
+          <div className={styles.grid}>
+            {displayStreamers.map((streamer) => (
+              <StreamerCard 
+                key={streamer.discord_id} 
+                streamer={streamer}
+              />
+            ))}
+          </div>
         </motion.div>
       ) : (
         <div className={styles.emptyState}>

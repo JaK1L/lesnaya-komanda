@@ -124,25 +124,29 @@ export function NewsSection() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
-          className={styles.grid}
         >
-          {news.map((item) => (
-            <motion.div
-              key={item.id}
-              variants={cardVariants}
-              whileHover={{ 
-                scale: 1.02,
-                transition: { duration: 0.2 }
-              }}
-              className={styles.card}
-              onClick={() => handleNewsClick(item)}
-            >
-              <h3 className={styles.cardTitle}>{item.title}</h3>
-              <p className={styles.cardContent}>
-                {truncateText(item.content, 100)}
-              </p>
-            </motion.div>
-          ))}
+          <div className={styles.grid}>
+            {news.map((item) => (
+              <motion.div
+                key={item.id}
+                variants={cardVariants}
+                whileHover={{ 
+                  scale: 1.02,
+                  transition: { duration: 0.2 }
+                }}
+              >
+                <div 
+                  className={styles.card}
+                  onClick={() => handleNewsClick(item)}
+                >
+                  <h3 className={styles.cardTitle}>{item.title}</h3>
+                  <p className={styles.cardContent}>
+                    {truncateText(item.content, 100)}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
       </section>
 
