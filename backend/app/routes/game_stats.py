@@ -18,9 +18,15 @@ router = APIRouter(prefix="/game-stats", tags=["game_stats"])
 @router.get("/test")
 async def test_game_stats_api():
     """Тестовый endpoint для проверки работы Game Stats API"""
+    import os
     return {
         "status": "ok",
         "message": "Game Stats API is working!",
+        "config": {
+            "tracker_api_key_set": bool(os.getenv("TRACKER_API_KEY")),
+            "steam_api_key_set": bool(os.getenv("STEAM_API_KEY")),
+            "riot_api_key_set": bool(os.getenv("RIOT_API_KEY")),
+        },
         "endpoints": [
             "/game-stats/test",
             "/game-stats/link",
