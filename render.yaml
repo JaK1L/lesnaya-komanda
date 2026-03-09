@@ -39,3 +39,5 @@ services:
         value: "False"
       - key: REDIS_URL
         value: redis://localhost:6379/0
+      - key: TRACKER_API_KEY
+        value: c2254171-1ce5-46e9-a283-21b0282406ff
