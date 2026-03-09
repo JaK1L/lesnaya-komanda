@@ -139,67 +139,67 @@ export function GamePreferencesModal({ isOpen, onClose, onSave, onSkip }: GamePr
             className="modal-container"
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-          <h2 className="modal-title">Выберите игры, в которые вы играете</h2>
-          <p className="modal-subtitle">Это поможет нам показывать актуальную статистику</p>
+            <h2 className="modal-title">Выберите игры, в которые вы играете</h2>
+            <p className="modal-subtitle">Это поможет нам показывать актуальную статистику</p>
 
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
-
-          <div className="games-grid">
-            {VALID_GAMES.map((game) => (
-              <label key={game} className="game-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedGames.has(game)}
-                  onChange={() => handleGameToggle(game)}
-                  disabled={isSubmitting}
-                />
-                <span className="checkbox-label">{game}</span>
-              </label>
-            ))}
-          </div>
-
-          <AnimatePresence>
-            {selectedGames.has('Другое') && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <div className="custom-game-input">
-                <input
-                  type="text"
-                  value={customGameName}
-                  onChange={(e) => setCustomGameName(e.target.value)}
-                  placeholder="Введите название игры"
-                  maxLength={50}
-                  disabled={isSubmitting}
-                  className="custom-input"
-                />
-                </div>
-              </motion.div>
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
             )}
-          </AnimatePresence>
 
-          <div className="modal-buttons">
-            <button
-              onClick={handleSave}
-              disabled={selectedGames.size === 0 || isSubmitting}
-              className="save-button"
-            >
-              {isSubmitting ? 'Сохранение...' : 'Сохранить'}
-            </button>
-            <button
-              onClick={handleSkip}
-              disabled={isSubmitting}
-              className="skip-button"
-            >
-              Пропустить
-            </button>
-          </div>
+            <div className="games-grid">
+              {VALID_GAMES.map((game) => (
+                <label key={game} className="game-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedGames.has(game)}
+                    onChange={() => handleGameToggle(game)}
+                    disabled={isSubmitting}
+                  />
+                  <span className="checkbox-label">{game}</span>
+                </label>
+              ))}
+            </div>
+
+            <AnimatePresence>
+              {selectedGames.has('Другое') && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  <div className="custom-game-input">
+                    <input
+                      type="text"
+                      value={customGameName}
+                      onChange={(e) => setCustomGameName(e.target.value)}
+                      placeholder="Введите название игры"
+                      maxLength={50}
+                      disabled={isSubmitting}
+                      className="custom-input"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="modal-buttons">
+              <button
+                onClick={handleSave}
+                disabled={selectedGames.size === 0 || isSubmitting}
+                className="save-button"
+              >
+                {isSubmitting ? 'Сохранение...' : 'Сохранить'}
+              </button>
+              <button
+                onClick={handleSkip}
+                disabled={isSubmitting}
+                className="skip-button"
+              >
+                Пропустить
+              </button>
+            </div>
           </div>
         </motion.div>
 

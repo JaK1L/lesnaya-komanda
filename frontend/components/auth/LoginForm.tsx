@@ -52,75 +52,77 @@ export function LoginForm({ onSuccess, onSwitchToRegister, apiUrl }: LoginFormPr
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h2 className={styles.title}>Вход</h2>
-      
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.inputGroup}>
-          <label htmlFor="email" className={styles.label}>
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={styles.input}
-            placeholder="your@email.com"
-            required
-            disabled={loading}
-            autoComplete="email"
-          />
-        </div>
+        <div>
+          <h2 className={styles.title}>Вход</h2>
+        
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.inputGroup}>
+              <label htmlFor="email" className={styles.label}>
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={styles.input}
+                placeholder="your@email.com"
+                required
+                disabled={loading}
+                autoComplete="email"
+              />
+            </div>
 
-        <div className={styles.inputGroup}>
-          <label htmlFor="password" className={styles.label}>
-            Пароль
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={styles.input}
-            placeholder="Введите пароль"
-            required
-            disabled={loading}
-            autoComplete="current-password"
-          />
-        </div>
+            <div className={styles.inputGroup}>
+              <label htmlFor="password" className={styles.label}>
+                Пароль
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={styles.input}
+                placeholder="Введите пароль"
+                required
+                disabled={loading}
+                autoComplete="current-password"
+              />
+            </div>
 
-        {error && (
-          <div className={styles.error}>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+            {error && (
+              <div className={styles.error}>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <div>{error}</div>
+                </motion.div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className={styles.submitButton}
+              disabled={loading}
             >
-              {error}
-            </motion.div>
+              {loading ? 'Вход...' : 'Войти'}
+            </button>
+          </form>
+
+          <div className={styles.footer}>
+            <p>
+              Нет аккаунта?{' '}
+              <button
+                onClick={onSwitchToRegister}
+                className={styles.linkButton}
+                disabled={loading}
+              >
+                Зарегистрироваться
+              </button>
+            </p>
           </div>
-        )}
-
-        <button
-          type="submit"
-          className={styles.submitButton}
-          disabled={loading}
-        >
-          {loading ? 'Вход...' : 'Войти'}
-        </button>
-      </form>
-
-      <div className={styles.footer}>
-        <p>
-          Нет аккаунта?{' '}
-          <button
-            onClick={onSwitchToRegister}
-            className={styles.linkButton}
-            disabled={loading}
-          >
-            Зарегистрироваться
-          </button>
-        </p>
-      </div>
+        </div>
       </motion.div>
     </div>
   )
