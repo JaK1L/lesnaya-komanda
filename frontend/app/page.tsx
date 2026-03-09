@@ -15,12 +15,6 @@ const GamePreferencesModal = lazyLoadModal(
 )
 
 // Types
-interface CommonSettings {
-  discord_join_url: string
-  maintenance_enabled: boolean
-  maintenance_message?: string | null
-}
-
 interface Streamer {
   discord_id: number
   discord_username: string
@@ -37,7 +31,6 @@ const TOKEN_KEY = 'lesnaya_token'
 export default function Home() {
   // State
   const [token, setToken] = useState<string | null>(null)
-  const [commonSettings, setCommonSettings] = useState<CommonSettings | null>(null)
   const [showGamePreferencesModal, setShowGamePreferencesModal] = useState(false)
   const [streamers, setStreamers] = useState<Streamer[]>([])
 
@@ -86,13 +79,8 @@ export default function Home() {
   // Загрузка данных с API (мемоизирована)
   const fetchData = useCallback(async (): Promise<void> => {
     try {
-      const [commonRes, streamersRes] = await Promise.all([
-        axios.get<CommonSettings>(`${API_URL}/api/settings/common`),
-        axios.get<Streamer[]>(`${API_URL}/api/streamers`)
-      ])
-      
-      setCommonSettings(commonRes.data)
-      setStreamers(streamersRes.data || [])
+      const response = await axios.get<Streamer[]>(`${API_URL}/api/streamers`)
+      setStreamers(response.data || [])
     } catch (err) {
       console.error('Error fetching data:', err)
     }
