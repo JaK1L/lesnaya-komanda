@@ -48,3 +48,4 @@ Dockerfile.backend
 # Документация (не коммитить .md файлы)
 *.md
 !README.md
+!docs/*.md
