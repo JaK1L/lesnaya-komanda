@@ -15,13 +15,6 @@ interface News {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-const TAGS = [
-  { text: 'Все', color: 'white' },
-  { text: 'Новости', color: 'red' },
-  { text: 'Обновления', color: 'purple' },
-  { text: 'Ивенты', color: 'violet' }
-]
-
 export function NewsSection() {
   const [news, setNews] = useState<News[]>([])
   const [loading, setLoading] = useState(true)
@@ -109,24 +102,8 @@ export function NewsSection() {
     <>
       <section className={styles.section} id="news">
         <div className={styles.sectionHeader}>
-          <h2>Последние новости</h2>
-          <p>Будьте в курсе всех событий</p>
-        </div>
-
-        <div className={styles.tags}>
-          {TAGS.map((tag, idx) => (
-            <span 
-              key={idx} 
-              className={`${styles.tag} ${
-                tag.color === 'white' ? styles.tagWhite :
-                tag.color === 'red' ? styles.tagRed :
-                tag.color === 'purple' ? styles.tagPurple :
-                styles.tagViolet
-              }`}
-            >
-              {tag.text}
-            </span>
-          ))}
+          <h2>Новости</h2>
+          <p>Отборные новости для наших последователей</p>
         </div>
 
         <div className={styles.newsWrapper}>
@@ -145,22 +122,30 @@ export function NewsSection() {
                 className={styles.newsCard}
                 onClick={() => handleNewsClick(item)}
               >
-                {item.image_url && (
-                  <img 
-                    src={item.image_url} 
-                    alt={item.title}
-                    className={styles.newsCardImg}
-                  />
-                )}
+                <div className={styles.newsCardImg}>
+                  {item.image_url ? (
+                    <img 
+                      src={item.image_url} 
+                      alt={item.title}
+                    />
+                  ) : (
+                    <div className={styles.newsCardImgPlaceholder} />
+                  )}
+                </div>
                 <div className={styles.newsCardBody}>
                   <h3>{item.title}</h3>
                   <p>{truncateText(item.content, 120)}</p>
+                  <div className={styles.newsCardTags}>
+                    <span className={styles.tagDota}>Легендарный момент</span>
+                    <span className={styles.tagTwitch}>Dota</span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className={styles.newsFade}></div>
+          <div className={styles.newsFadeLeft}></div>
+          <div className={styles.newsFadeRight}></div>
 
           <button 
             className={`${styles.newsNav} ${styles.newsNavNext}`}

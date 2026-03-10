@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
-import { AuthModal } from '../auth'
 import styles from './Navigation.module.css'
 
 interface NavigationProps {
@@ -11,24 +11,12 @@ interface NavigationProps {
   apiUrl: string
 }
 
-export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProps) {
+export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const navRef = useRef<HTMLDivElement>(null)
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen)
-  }
-
-  const handleOpenAuth = (mode: 'login' | 'register') => {
-    setAuthMode(mode)
-    setAuthModalOpen(true)
-    setMobileMenuOpen(false)
-  }
-
-  const handleAuthSuccess = () => {
-    window.location.reload()
   }
 
   useEffect(() => {
@@ -83,25 +71,17 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
               </>
             ) : (
               <>
-                <button onClick={() => handleOpenAuth('register')} className={styles.linkButton}>
+                <Link href="/register" className={styles.linkButton}>
                   Регистрация
-                </button>
-                <button onClick={() => handleOpenAuth('login')} className={styles.loginButton}>
+                </Link>
+                <Link href="/login" className={styles.loginButton}>
                   Войти
-                </button>
+                </Link>
               </>
             )}
           </div>
         </div>
       </nav>
-
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onSuccess={handleAuthSuccess}
-        apiUrl={apiUrl}
-        initialMode={authMode}
-      />
     </>
   )
 }

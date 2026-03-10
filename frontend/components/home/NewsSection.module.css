@@ -22,6 +22,7 @@
 
 .newsWrapper {
   position: relative;
+  padding: 0 60px;
 }
 
 .newsScroll {
@@ -38,14 +39,24 @@
   display: none;
 }
 
-.newsFade {
+.newsFadeLeft,
+.newsFadeRight {
   position: absolute;
   top: 0;
-  right: 0;
-  width: 100px;
+  width: 120px;
   height: 100%;
-  background: linear-gradient(to right, transparent, var(--bg));
   pointer-events: none;
+  z-index: 5;
+}
+
+.newsFadeLeft {
+  left: 0;
+  background: linear-gradient(to right, var(--bg), transparent);
+}
+
+.newsFadeRight {
+  right: 0;
+  background: linear-gradient(to left, var(--bg), transparent);
 }
 
 .newsNav {
@@ -64,6 +75,7 @@
   z-index: 10;
   transition: background 0.2s;
   color: var(--white);
+  font-size: 24px;
 }
 
 .newsNav:hover {
@@ -71,7 +83,7 @@
 }
 
 .newsNavPrev {
-  left: -60px;
+  left: 0;
 }
 
 .newsNavNext {
@@ -80,13 +92,12 @@
 
 .newsCard {
   background: var(--white03);
-  padding: 20px;
-  flex: 0 0 426px;
+  flex: 0 0 300px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
   cursor: pointer;
   transition: background 0.2s;
+  overflow: hidden;
 }
 
 .newsCard:hover {
@@ -95,59 +106,69 @@
 
 .newsCardImg {
   width: 100%;
-  height: 200px;
-  object-fit: cover;
-  display: block;
+  height: 180px;
+  overflow: hidden;
   background: #2a2a2a;
 }
 
+.newsCardImg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.newsCardImgPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: #2a2a2a;
+}
+
+.newsCardBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
 .newsCardBody h3 {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 500;
-  line-height: 1.2;
-  margin-bottom: 12px;
+  line-height: 1.3;
   color: var(--white);
+  margin: 0;
 }
 
 .newsCardBody p {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
   color: var(--white64);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: 1.5;
+  margin: 0;
+  flex: 1;
 }
 
-.tags {
+.newsCardTags {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin-top: auto;
 }
 
-.tag {
+.newsCardTags span {
   padding: 4px 12px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
 }
 
-.tagWhite {
-  background: var(--white05);
-  color: var(--white);
-}
-
-.tagRed {
+.tagDota {
   background: var(--red-dim);
   color: var(--red);
 }
 
-.tagPurple {
-  background: var(--twitch-dim);
-  color: var(--twitch-text);
-}
-
-.tagViolet {
+.tagTwitch {
   background: var(--purple-dim);
   color: var(--purple);
 }
@@ -158,8 +179,8 @@
     padding: 64px 40px;
   }
 
-  .newsNavPrev {
-    left: -50px;
+  .newsWrapper {
+    padding: 0 50px;
   }
 }
 
@@ -176,15 +197,20 @@
     font-size: 16px;
   }
 
+  .newsWrapper {
+    padding: 0;
+  }
+
   .newsCard {
-    flex: 0 0 320px;
+    flex: 0 0 280px;
   }
 
   .newsNav {
     display: none;
   }
 
-  .newsFade {
+  .newsFadeLeft,
+  .newsFadeRight {
     display: none;
   }
 }
