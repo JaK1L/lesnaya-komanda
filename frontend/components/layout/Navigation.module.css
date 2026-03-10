@@ -1,108 +1,114 @@
 .nav {
-  background: rgba(10, 15, 25, 0.9);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 132px;
+  height: 74px;
+  backdrop-filter: blur(25px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   position: sticky;
   top: 0;
   z-index: 100;
+  background: rgba(30, 30, 30, 0.6);
 }
 
 .container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 24px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .logo {
-  font-size: 1.9rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #a0b5ff, #ffffff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: -0.02em;
+  color: var(--white);
+  font-size: 16px;
+  font-weight: 600;
   text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  transition: opacity 0.2s;
+}
+
+.logo:hover {
+  opacity: 0.85;
 }
 
 .navLinks {
   display: flex;
   gap: 36px;
-  font-weight: 500;
   align-items: center;
 }
 
 .link {
+  color: var(--white64);
+  font-size: 16px;
+  font-weight: 400;
   text-decoration: none;
-  color: #b0bcdd;
+  padding: 4px;
   transition: color 0.2s;
-  font-size: 1.05rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
 }
 
 .link:hover {
-  color: white;
+  color: var(--white);
+}
+
+.headerBtns {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--white);
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  backdrop-filter: blur(15px);
+  transition: opacity 0.2s, transform 0.15s;
+  white-space: nowrap;
+  border-radius: 0;
+}
+
+.btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.btnPurple {
+  background: var(--purple);
+}
+
+.btnGhost {
+  background: var(--white10);
 }
 
 .loginButton {
-  background: #9147ff;
-  color: white;
-  padding: 10px 24px;
-  border-radius: 40px;
-  font-weight: 600;
-  transition: all 0.2s;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.loginButton:hover {
-  background: #a970ff;
-  transform: scale(1.02);
+  composes: btn btnGhost;
 }
 
 .linkButton {
-  background: transparent;
-  border: 2px solid #4d5a8b;
-  color: #e0e6ff;
-  padding: 8px 22px;
-  border-radius: 40px;
-  font-weight: 600;
-  transition: all 0.2s;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.linkButton:hover {
-  border-color: #9147ff;
-  background: rgba(145, 71, 255, 0.1);
+  composes: btn btnPurple;
 }
 
 .mobileMenuButton {
   display: none;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 8px;
+}
+
+/* Mobile */
+@media (max-width: 1200px) {
+  .nav {
+    padding: 0 40px;
+  }
 }
 
 @media (max-width: 768px) {
-  .container {
-    padding: 0 16px;
-  }
-
-  .logo {
-    font-size: 1.5rem;
+  .nav {
+    padding: 0 20px;
   }
 
   .navLinks {
@@ -110,20 +116,42 @@
   }
 
   .mobileMenuButton {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--white10);
+    border: none;
+    color: var(--white);
+    cursor: pointer;
+    padding: 8px;
+    transition: background 0.2s;
+  }
+
+  .mobileMenuButton:hover {
+    background: rgba(255, 255, 255, 0.18);
   }
 
   .navLinks.open {
     display: flex;
     flex-direction: column;
     position: absolute;
-    top: 100%;
+    top: 74px;
     left: 0;
     right: 0;
-    background: rgba(10, 15, 25, 0.98);
-    backdrop-filter: blur(10px);
+    background: rgba(30, 30, 30, 0.98);
+    backdrop-filter: blur(25px);
     padding: 20px;
-    gap: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    gap: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .headerBtns {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
   }
 }

@@ -31,87 +31,63 @@ export function Navigation({ isAuthenticated, onLogout, apiUrl }: NavigationProp
     window.location.reload()
   }
 
-  // Закрытие меню по ESC
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && mobileMenuOpen) {
         setMobileMenuOpen(false)
       }
     }
-
     document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
   }, [mobileMenuOpen])
 
-  // Закрытие меню при клике вне его
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(e.target as Node) && mobileMenuOpen) {
         setMobileMenuOpen(false)
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [mobileMenuOpen])
 
   return (
     <>
-      <nav className={styles.nav} ref={navRef} aria-label="Основная навигация">
+      <nav className={styles.nav} ref={navRef}>
         <div className={styles.container}>
-          <a href="/" className={styles.logo} aria-label="Lesnaya Komanda - Главная страница">
-            <span>LESNAYA KOMANDA</span>
+          <a href="/" className={styles.logo}>
+            L-KOMAND
           </a>
 
           <button
             className={styles.mobileMenuButton}
             onClick={toggleMobileMenu}
             aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
-            aria-expanded={mobileMenuOpen}
-            aria-controls="main-navigation"
           >
-            {mobileMenuOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
-          <div 
-            id="main-navigation"
-            className={`${styles.navLinks} ${mobileMenuOpen ? styles.open : ''}`}
-            role="navigation"
-          >
-            <a href="/streams" className={styles.link}>
-              Стримеры
-            </a>
-            <a href="/clips" className={styles.link}>
-              Клипы
-            </a>
-            <a href="/social" className={styles.link}>
-              Соцсети
-            </a>
+          <div className={`${styles.navLinks} ${mobileMenuOpen ? styles.open : ''}`}>
+            <a href="/team" className={styles.link}>Наша команда</a>
+            <a href="/streams" className={styles.link}>Стримы</a>
+            <a href="/about" className={styles.link}>О нас</a>
+            <a href="/social" className={styles.link}>Соц. сети</a>
+            <a href="/merch" className={styles.link}>Магазин</a>
+          </div>
 
+          <div className={styles.headerBtns}>
             {isAuthenticated ? (
               <>
-                <a href="/profile" className={styles.link}>
-                  Профиль
-                </a>
-                <button onClick={onLogout} className={styles.loginButton} aria-label="Выйти из аккаунта">
-                  Выйти
-                </button>
+                <a href="/profile" className={styles.loginButton}>Профиль</a>
+                <button onClick={onLogout} className={styles.loginButton}>Выйти</button>
               </>
             ) : (
               <>
-                <button 
-                  onClick={() => handleOpenAuth('login')} 
-                  className={styles.loginButton}
-                  aria-label="Войти"
-                >
-                  Войти
-                </button>
-                <button 
-                  onClick={() => handleOpenAuth('register')} 
-                  className={styles.linkButton}
-                  aria-label="Регистрация"
-                >
+                <button onClick={() => handleOpenAuth('register')} className={styles.linkButton}>
                   Регистрация
+                </button>
+                <button onClick={() => handleOpenAuth('login')} className={styles.loginButton}>
+                  Войти
                 </button>
               </>
             )}
