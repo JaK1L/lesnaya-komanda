@@ -1,104 +1,148 @@
 .hero {
-  padding: 70px 0 60px;
-  background: radial-gradient(circle at 70% 20%, #1f2a44 0%, #0a0e17 70%);
-  min-height: 60vh;
+  padding: 64px 132px;
+  min-height: 600px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 48px;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 24px;
+.heroGlow {
+  position: absolute;
+  bottom: -30px;
+  left: 408px;
+  width: 624px;
+  height: 100px;
+  background: radial-gradient(ellipse at center, rgba(145, 71, 255, 0.45) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(20px);
 }
 
-.heroContent {
-  max-width: 800px;
+.heroTagline {
+  max-width: 860px;
+  animation: fadeUp 0.7s ease both;
 }
 
-.title {
-  font-size: clamp(2.5rem, 6vw, 3.2rem);
-  font-weight: 600;
-  background: linear-gradient(145deg, #ffffff 0%, #c0d0ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  line-height: 1.2;
-  margin-bottom: 25px;
-  letter-spacing: -0.02em;
+.heroTagline h1 {
+  font-size: 60px;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 12px;
+  color: var(--white);
 }
 
-.subtitle {
-  font-size: clamp(1.1rem, 2vw, 1.3rem);
-  color: #b7c3e6;
-  margin-bottom: 30px;
-  max-width: 600px;
-  line-height: 1.6;
+.heroTagline p {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--white64);
+  max-width: 500px;
+  line-height: 1.5;
 }
 
-.buttons {
+.heroActions {
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 24px;
+  align-items: flex-start;
+  animation: fadeUp 0.7s 0.15s ease both;
 }
 
-.btnPrimary,
-.btnOutline {
-  padding: 14px 34px;
-  border-radius: 40px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s;
+.btnHero {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 12px 20px;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--white);
+  background: var(--purple);
   border: none;
-  font-size: 1rem;
   cursor: pointer;
+  text-decoration: none;
+  min-width: 240px;
+  justify-content: center;
+  transition: opacity 0.2s, transform 0.15s;
 }
 
-.btnPrimary {
-  background: #9147ff;
-  color: white;
-  box-shadow: 0 8px 20px rgba(145, 71, 255, 0.4);
+.btnHero:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
 }
 
-.btnPrimary:hover {
-  background: #a970ff;
-  transform: scale(1.02);
+.btnHero svg {
+  width: 20px;
+  height: 20px;
+  fill: white;
 }
 
-.btnOutline {
-  background: transparent;
-  border: 2px solid #4d5a8b;
-  color: #e0e6ff;
+.socialButtons {
+  display: flex;
+  gap: 16px;
 }
 
-.btnOutline:hover {
-  border-color: #9147ff;
-  background: rgba(145, 71, 255, 0.1);
+.socialBtn {
+  width: 48px;
+  height: 48px;
+  background: var(--white10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  border: none;
+  text-decoration: none;
+}
+
+.socialBtn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+}
+
+.socialBtn img {
+  width: 24px;
+  height: 24px;
+}
+
+/* Mobile */
+@media (max-width: 1200px) {
+  .hero {
+    padding: 64px 40px;
+  }
+
+  .heroTagline h1 {
+    font-size: 44px;
+  }
+
+  .heroGlow {
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
 @media (max-width: 768px) {
   .hero {
-    padding: 50px 0 40px;
-    min-height: 50vh;
+    padding: 48px 20px;
   }
 
-  .container {
-    padding: 0 16px;
+  .heroTagline h1 {
+    font-size: 32px;
   }
 
-  .heroContent {
-    text-align: center;
+  .heroTagline p {
+    font-size: 16px;
   }
 
-  .subtitle {
-    margin-left: auto;
-    margin-right: auto;
+  .btnHero {
+    font-size: 16px;
+    padding: 10px 16px;
+    width: 100%;
   }
 
-  .buttons {
-    justify-content: center;
+  .socialButtons {
+    width: 100%;
+    justify-content: space-between;
   }
 }
