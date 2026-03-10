@@ -1,91 +1,66 @@
 .section {
-  padding: 70px 0;
-  background: #0c111d;
+  padding: 64px 132px;
 }
 
 .title {
-  font-size: clamp(1.8rem, 4vw, 2.2rem);
-  font-weight: 600;
-  margin: 0 0 40px 0;
-  color: white;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-left: 6px solid #9147ff;
-  padding-left: 20px;
-  max-width: 1280px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-right: 24px;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 32px;
+  color: var(--white);
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 28px;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 24px;
+  grid-template-columns: repeat(3, 376px);
+  gap: 24px;
+  justify-content: center;
 }
 
 .card {
-  background: #141b2b;
-  border-radius: 28px;
-  padding: 24px 20px 20px;
-  transition: all 0.3s ease;
-  border: 1px solid #232e44;
-  text-align: center;
-  position: relative;
+  background: var(--white03);
+  height: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px;
+  transition: background 0.2s;
+  cursor: pointer;
 }
 
 .card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 25px 35px -12px rgba(145, 71, 255, 0.3);
-  border-color: #9147ff;
+  background: var(--white05);
 }
 
 .avatarWrapper {
-  margin-bottom: 15px;
+  position: relative;
   display: flex;
   justify-content: center;
-  position: relative;
 }
 
 .liveIndicator {
   position: absolute;
-  top: -8px;
-  right: 50%;
-  transform: translateX(calc(55px + 10px));
-  background: #ff0000;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  top: -4px;
+  right: -4px;
+  background: var(--red);
+  color: var(--white);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(255, 0, 0, 0.4);
-  animation: pulse 2s ease-in-out infinite;
 }
 
 .liveDot {
   width: 6px;
   height: 6px;
-  background: white;
+  background: var(--white);
   border-radius: 50%;
   animation: blink 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 2px 8px rgba(255, 0, 0, 0.4);
-  }
-  50% {
-    box-shadow: 0 2px 12px rgba(255, 0, 0, 0.7);
-  }
 }
 
 @keyframes blink {
@@ -98,38 +73,38 @@
 }
 
 .avatar {
-  width: 110px;
-  height: 110px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #2a3855;
 }
 
 .avatarPlaceholder {
-  width: 110px;
-  height: 110px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #3a4c7a, #1b2740);
+  background: var(--white10);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2.5rem;
-  font-weight: 700;
-  color: #95abeb;
-  border: 4px solid #2e3d60;
+  font-weight: 600;
+  color: var(--white64);
 }
 
 .name {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 5px 0;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--white);
+  margin: 0;
+  text-align: center;
 }
 
 .game {
-  color: #8fa0cf;
-  margin: 0 0 15px 0;
-  font-size: 1rem;
+  color: var(--white64);
+  margin: 0;
+  font-size: 16px;
+  text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,60 +112,69 @@
 }
 
 .viewers {
-  color: #9fa8c7;
-  font-size: 0.9rem;
+  color: var(--white64);
+  font-size: 16px;
 }
 
 .button {
   display: inline-block;
-  background: #9147ff;
-  color: white;
-  padding: 10px 24px;
-  border-radius: 40px;
-  font-weight: 600;
+  background: var(--purple);
+  color: var(--white);
+  padding: 12px 32px;
+  font-weight: 500;
+  font-size: 16px;
   text-decoration: none;
-  transition: all 0.2s;
-  font-size: 0.95rem;
+  transition: opacity 0.2s;
+  margin-top: auto;
 }
 
 .button:hover {
-  background: #a970ff;
-  transform: scale(1.05);
+  opacity: 0.8;
 }
 
 .emptyState {
   text-align: center;
   padding: 60px 20px;
-  color: #6f7da0;
+  color: var(--white64);
   font-size: 18px;
+}
+
+@media (max-width: 1200px) {
+  .section {
+    padding: 64px 40px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 800px;
+    margin: 0 auto;
+  }
 }
 
 @media (max-width: 768px) {
   .section {
-    padding: 50px 0;
+    padding: 48px 20px;
   }
 
   .title {
-    font-size: 1.8rem;
-    margin-bottom: 30px;
-    padding-left: 16px;
-    padding-right: 16px;
+    font-size: 32px;
+    margin-bottom: 24px;
   }
 
   .grid {
     grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 0 16px;
+    gap: 16px;
   }
 
   .card {
-    padding: 20px 16px 16px;
+    height: auto;
+    padding: 24px;
   }
 
   .avatar,
   .avatarPlaceholder {
-    width: 90px;
-    height: 90px;
+    width: 100px;
+    height: 100px;
   }
 
   .avatarPlaceholder {
@@ -198,10 +182,15 @@
   }
 
   .name {
-    font-size: 1.3rem;
+    font-size: 20px;
   }
 
   .game {
-    font-size: 0.9rem;
+    font-size: 14px;
+  }
+
+  .button {
+    padding: 10px 24px;
+    font-size: 14px;
   }
 }
