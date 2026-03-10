@@ -95,8 +95,14 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
         """
     )
     
-    # Собираем Twitch usernames
-    twitch_usernames = [row['twitch_username'] for row in rows if row.get('twitch_username')]
+    # Собираем Twitch usernames (парсим из URL если нужно)
+    twitch_usernames = []
+    for row in rows:
+        twitch_url = row.get('twitch_username')
+        if twitch_url:
+            username = twitch_service.extract_username_from_url(twitch_url)
+            if username:
+                twitch_usernames.append(username)
     
     # Получаем данные о стримах с Twitch
     twitch_data = {}
@@ -106,7 +112,8 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     # Формируем результат
     result = []
     for row in rows:
-        twitch_username = row.get('twitch_username')
+        twitch_url = row.get('twitch_username')
+        twitch_username = twitch_service.extract_username_from_url(twitch_url) if twitch_url else None
         stream_info = twitch_data.get(twitch_username.lower()) if twitch_username else None
         
         streamer = StreamerPublic(

@@ -6,6 +6,7 @@ import asyncio
 from typing import Optional, List, Dict
 from datetime import datetime, timedelta
 import os
+import re
 
 class TwitchService:
     """Сервис для работы с Twitch API"""
@@ -15,6 +16,40 @@ class TwitchService:
         self.client_secret = os.getenv('TWITCH_CLIENT_SECRET')
         self.access_token: Optional[str] = None
         self.token_expires_at: Optional[datetime] = None
+    
+    @staticmethod
+    def extract_username_from_url(url: str) -> Optional[str]:
+        """
+        Извлечение username из Twitch URL
+        
+        Примеры:
+        - twitch.tv/jak1lqa -> jak1lqa
+        - https://twitch.tv/jak1lqa -> jak1lqa
+        - https://www.twitch.tv/jak1lqa -> jak1lqa
+        - jak1lqa -> jak1lqa
+        """
+        if not url:
+            return None
+        
+        # Убираем пробелы
+        url = url.strip()
+        
+        # Если это просто username без URL
+        if '/' not in url and '.' not in url:
+            return url.lower()
+        
+        # Паттерн для извлечения username из URL
+        patterns = [
+            r'twitch\.tv/([a-zA-Z0-9_]+)',
+            r'www\.twitch\.tv/([a-zA-Z0-9_]+)',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1).lower()
+        
+        return None
         
     async def get_access_token(self) -> str:
         """Получение OAuth токена для Twitch API"""
@@ -124,6 +159,53 @@ class TwitchService:
         except Exception as e:
             print(f"Error fetching Twitch user info: {e}")
             return None
+    
+    async def get_full_streamer_info(self, twitch_url: str) -> Optional[dict]:
+        """
+        Получение полной информации о стримере по URL или username
+        
+        Returns:
+            {
+                'username': str,
+                'display_name': str,
+                'avatar_url': str,
+                'description': str,
+                'is_live': bool,
+                'game': str (если онлайн),
+                'viewer_count': int (если онлайн),
+                'stream_title': str (если онлайн)
+            }
+        """
+        username = self.extract_username_from_url(twitch_url)
+        if not username:
+            return None
+        
+        # Получаем инфо о пользователе
+        user_info = await self.get_user_info(username)
+        if not user_info:
+            return None
+        
+        # Получаем инфо о стриме
+        stream_info = await self.get_streams([username])
+        stream_data = stream_info.get(username.lower())
+        
+        result = {
+            'username': user_info['login'],
+            'display_name': user_info['display_name'],
+            'avatar_url': user_info['profile_image_url'],
+            'description': user_info['description'],
+            'is_live': stream_data is not None,
+        }
+        
+        if stream_data:
+            result.update({
+                'game': stream_data['game_name'],
+                'viewer_count': stream_data['viewer_count'],
+                'stream_title': stream_data['title'],
+                'thumbnail_url': stream_data['thumbnail_url']
+            })
+        
+        return result
 
 
 # Глобальный экземпляр сервиса
