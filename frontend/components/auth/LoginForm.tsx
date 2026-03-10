@@ -11,7 +11,7 @@ interface LoginFormProps {
   apiUrl: string
 }
 
-export function LoginForm({ onSuccess, onSwitchToRegister, apiUrl }: LoginFormProps) {
+export function LoginForm({ onSuccess, apiUrl }: LoginFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

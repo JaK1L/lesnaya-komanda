@@ -11,7 +11,7 @@ interface RegisterFormProps {
   apiUrl: string
 }
 
-export function RegisterForm({ onSuccess, onSwitchToLogin, apiUrl }: RegisterFormProps) {
+export function RegisterForm({ onSuccess, apiUrl }: RegisterFormProps) {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
