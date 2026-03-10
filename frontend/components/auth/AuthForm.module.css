@@ -1,52 +1,75 @@
 .formContainer {
-  background: #1b1b1b;
-  border-radius: 12px;
-  padding: 40px;
-  max-width: 450px;
+  background: #1a1a1a;
+  border-radius: 16px;
+  padding: 50px 45px;
+  max-width: 480px;
   width: 100%;
   margin: 0 auto;
+  position: relative;
 }
 
 .title {
-  font-size: 28px;
-  font-weight: bold;
+  font-size: 32px;
+  font-weight: 600;
   color: white;
-  margin: 0 0 30px 0;
-  text-align: center;
+  margin: 0 0 12px 0;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #9ca3af;
+  margin: 0 0 35px 0;
+  line-height: 1.5;
+  text-align: left;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .label {
   font-size: 14px;
-  font-weight: 600;
-  color: #b0b0b0;
+  font-weight: 500;
+  color: #d1d5db;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.required {
+  color: #ef4444;
+}
+
+.hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
 }
 
 .input {
-  background: #0f0f0f;
-  border: 2px solid #252525;
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 16px;
+  background: #2d2d2d;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 15px;
   color: white;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .input:focus {
   outline: none;
   border-color: #9147ff;
-  box-shadow: 0 0 0 3px rgba(145, 71, 255, 0.1);
+  background: #323232;
 }
 
 .input:disabled {
@@ -55,36 +78,34 @@
 }
 
 .input::placeholder {
-  color: #666;
+  color: #6b7280;
 }
 
 .error {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 12px 16px;
   color: #ef4444;
   font-size: 14px;
-  text-align: center;
 }
 
 .submitButton {
   background: #9147ff;
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 14px;
+  border-radius: 10px;
+  padding: 16px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 10px;
+  transition: all 0.2s ease;
+  margin-top: 8px;
 }
 
 .submitButton:hover:not(:disabled) {
   background: #7c3aed;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(145, 71, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 .submitButton:active:not(:disabled) {
@@ -97,9 +118,9 @@
 }
 
 .footer {
-  margin-top: 20px;
+  margin-top: 24px;
   text-align: center;
-  color: #b0b0b0;
+  color: #9ca3af;
   font-size: 14px;
 }
 
@@ -110,12 +131,12 @@
   font-weight: 600;
   cursor: pointer;
   padding: 0;
-  text-decoration: underline;
   transition: color 0.2s;
 }
 
 .linkButton:hover:not(:disabled) {
   color: #7c3aed;
+  text-decoration: underline;
 }
 
 .linkButton:disabled {
@@ -123,72 +144,33 @@
   cursor: not-allowed;
 }
 
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin: 25px 0;
-  color: #666;
-  font-size: 14px;
-}
-
-.divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #252525;
-}
-
-.discordButton {
-  background: #5865F2;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.discordButton:hover {
-  background: #4752C4;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(88, 101, 242, 0.3);
-}
-
-.discordButton:active {
-  transform: translateY(0);
-}
-
 /* Mobile */
 @media (max-width: 768px) {
   .formContainer {
-    padding: 30px 20px;
+    padding: 40px 30px;
   }
 
   .title {
-    font-size: 24px;
-    margin-bottom: 25px;
+    font-size: 26px;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    margin-bottom: 30px;
   }
 
   .form {
-    gap: 15px;
+    gap: 18px;
   }
 
   .input {
-    padding: 10px 14px;
+    padding: 12px 14px;
     font-size: 14px;
   }
 
-  .submitButton,
-  .discordButton {
-    padding: 12px;
-    font-size: 14px;
+  .submitButton {
+    padding: 14px;
+    font-size: 15px;
   }
 }

@@ -65,9 +65,9 @@
   display: flex;
   align-items: center;
   gap: 15px;
-  margin: 25px 40px;
-  color: #666;
-  font-size: 14px;
+  margin: 20px 45px;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .divider::before,
@@ -75,30 +75,29 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #252525;
+  background: #3a3a3a;
 }
 
 .discordButton {
-  background: #5865F2;
+  background: #3a3a3a;
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 14px;
-  font-size: 16px;
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin: 0 40px 40px 40px;
+  margin: 0 45px 45px 45px;
 }
 
 .discordButton:hover {
-  background: #4752C4;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(88, 101, 242, 0.3);
+  background: #4a4a4a;
+  transform: translateY(-1px);
 }
 
 .discordButton:active {

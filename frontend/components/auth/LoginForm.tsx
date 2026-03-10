@@ -53,7 +53,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister, apiUrl }: LoginFormPr
         transition={{ duration: 0.5 }}
       >
         <div>
-          <h2 className={styles.title}>Вход</h2>
+          <h2 className={styles.title}>Авторизация в аккаунт</h2>
         
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.inputGroup}>
@@ -66,7 +66,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister, apiUrl }: LoginFormPr
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={styles.input}
-                placeholder="your@email.com"
+                placeholder="Введите email"
                 required
                 disabled={loading}
                 autoComplete="email"
@@ -109,19 +109,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister, apiUrl }: LoginFormPr
               {loading ? 'Вход...' : 'Войти'}
             </button>
           </form>
-
-          <div className={styles.footer}>
-            <p>
-              Нет аккаунта?{' '}
-              <button
-                onClick={onSwitchToRegister}
-                className={styles.linkButton}
-                disabled={loading}
-              >
-                Зарегистрироваться
-              </button>
-            </p>
-          </div>
         </div>
       </motion.div>
     </div>

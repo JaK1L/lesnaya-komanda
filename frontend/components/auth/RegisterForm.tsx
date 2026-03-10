@@ -77,12 +77,15 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, apiUrl }: RegisterFor
         transition={{ duration: 0.5 }}
       >
         <div>
-          <h2 className={styles.title}>Регистрация</h2>
+          <h2 className={styles.title}>Создайте учетную запись</h2>
+          <p className={styles.subtitle}>
+            Зарегистрируйтесь на нашем сайте, чтобы получить полный доступ ко всему его возможностям и убрать ограничения!
+          </p>
         
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.inputGroup}>
               <label htmlFor="username" className={styles.label}>
-                Никнейм
+                Имя пользователя <span className={styles.required}>*</span>
               </label>
               <input
                 id="username"
@@ -90,12 +93,13 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, apiUrl }: RegisterFor
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className={styles.input}
-                placeholder="Введите никнейм"
+                placeholder="Введите имя пользователя"
                 required
                 minLength={3}
                 maxLength={50}
                 disabled={loading}
               />
+              <p className={styles.hint}>Никнейм не должен содержать прописных символов</p>
             </div>
 
             <div className={styles.inputGroup}>
@@ -108,7 +112,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, apiUrl }: RegisterFor
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={styles.input}
-                placeholder="your@email.com"
+                placeholder="Введите email"
                 required
                 disabled={loading}
               />
@@ -124,11 +128,12 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, apiUrl }: RegisterFor
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={styles.input}
-                placeholder="Минимум 6 символов"
+                placeholder="Введите пароль"
                 required
                 minLength={6}
                 disabled={loading}
               />
+              <p className={styles.hint}>Пароль должен содержать минимум 6 символов</p>
             </div>
 
             <div className={styles.inputGroup}>
@@ -141,7 +146,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, apiUrl }: RegisterFor
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className={styles.input}
-                placeholder="Повторите пароль"
+                placeholder="Подтверждение пароля"
                 required
                 minLength={6}
                 disabled={loading}
@@ -167,19 +172,6 @@ export function RegisterForm({ onSuccess, onSwitchToLogin, apiUrl }: RegisterFor
               {loading ? 'Регистрация...' : 'Зарегистрироваться'}
             </button>
           </form>
-
-          <div className={styles.footer}>
-            <p>
-              Уже есть аккаунт?{' '}
-              <button
-                onClick={onSwitchToLogin}
-                className={styles.linkButton}
-                disabled={loading}
-              >
-                Войти
-              </button>
-            </p>
-          </div>
         </div>
       </motion.div>
     </div>
