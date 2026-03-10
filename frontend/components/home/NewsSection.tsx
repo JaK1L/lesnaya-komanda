@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import { NewsModal } from './NewsModal'
 import styles from './NewsSection.module.css'
@@ -16,29 +15,12 @@ interface News {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-// Анимация контейнера
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
-
-// Анимация карточки
-const cardVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
-}
+const TAGS = [
+  { text: 'Все', color: 'white' },
+  { text: 'Новости', color: 'red' },
+  { text: 'Обновления', color: 'purple' },
+  { text: 'Ивенты', color: 'violet' }
+]
 
 export function NewsSection() {
   const [news, setNews] = useState<News[]>([])
@@ -46,6 +28,7 @@ export function NewsSection() {
   const [error, setError] = useState<string | null>(null)
   const [selectedNews, setSelectedNews] = useState<News | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchNews()
@@ -56,7 +39,7 @@ export function NewsSection() {
       setLoading(true)
       setError(null)
       const response = await axios.get<News[]>(`${API_URL}/api/news`)
-      setNews(response.data.slice(0, 3)) // Показываем 3 последние новости
+      setNews(response.data)
     } catch (err) {
       console.error('Error fetching news:', err)
       setError('Не удалось загрузить новости')
@@ -75,7 +58,18 @@ export function NewsSection() {
     setTimeout(() => setSelectedNews(null), 300)
   }
 
-  // Функция для обрезки текста
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -450, behavior: 'smooth' })
+    }
+  }
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 450, behavior: 'smooth' })
+    }
+  }
+
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + '...'
@@ -84,11 +78,14 @@ export function NewsSection() {
   if (loading) {
     return (
       <section className={styles.section}>
-        <h2 className={styles.title}>Последние новости</h2>
-        <div className={styles.grid}>
+        <div className={styles.sectionHeader}>
+          <h2>Последние новости</h2>
+          <p>Будьте в курсе всех событий</p>
+        </div>
+        <div className={styles.newsScroll}>
           {[1, 2, 3].map((i) => (
-            <div key={i} className={styles.card}>
-              <div className={styles.skeleton}></div>
+            <div key={i} className={styles.newsCard}>
+              <div style={{ width: '100%', height: '200px', background: '#2a2a2a' }}></div>
             </div>
           ))}
         </div>
@@ -99,10 +96,11 @@ export function NewsSection() {
   if (error || news.length === 0) {
     return (
       <section className={styles.section}>
-        <h2 className={styles.title}>Последние новости</h2>
-        <div className={styles.emptyState}>
-          <p>Новостей пока нет</p>
+        <div className={styles.sectionHeader}>
+          <h2>Последние новости</h2>
+          <p>Будьте в курсе всех событий</p>
         </div>
+        <p style={{ color: 'var(--white64)' }}>Новостей пока нет</p>
       </section>
     )
   }
@@ -110,54 +108,68 @@ export function NewsSection() {
   return (
     <>
       <section className={styles.section} id="news">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className={styles.title}>Последние новости</h2>
-        </motion.div>
+        <div className={styles.sectionHeader}>
+          <h2>Последние новости</h2>
+          <p>Будьте в курсе всех событий</p>
+        </div>
 
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          <div className={styles.grid}>
+        <div className={styles.tags}>
+          {TAGS.map((tag, idx) => (
+            <span 
+              key={idx} 
+              className={`${styles.tag} ${
+                tag.color === 'white' ? styles.tagWhite :
+                tag.color === 'red' ? styles.tagRed :
+                tag.color === 'purple' ? styles.tagPurple :
+                styles.tagViolet
+              }`}
+            >
+              {tag.text}
+            </span>
+          ))}
+        </div>
+
+        <div className={styles.newsWrapper}>
+          <button 
+            className={`${styles.newsNav} ${styles.newsNavPrev}`}
+            onClick={scrollLeft}
+            aria-label="Предыдущая новость"
+          >
+            ←
+          </button>
+
+          <div className={styles.newsScroll} ref={scrollRef}>
             {news.map((item) => (
-              <motion.div
+              <div 
                 key={item.id}
-                variants={cardVariants}
-                whileHover={{ 
-                  scale: 1.02,
-                  transition: { duration: 0.2 }
-                }}
+                className={styles.newsCard}
+                onClick={() => handleNewsClick(item)}
               >
-                <div 
-                  className={styles.card}
-                  onClick={() => handleNewsClick(item)}
-                >
-                  <h3 className={styles.cardTitle}>{item.title}</h3>
-                  <p className={styles.cardContent}>
-                    {truncateText(item.content, 100)}
-                  </p>
-                  <div className={styles.cardFooter}>
-                    <span className={styles.cardDate}>
-                      {new Date(item.created_at).toLocaleDateString('ru-RU', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                    </span>
-                    <span className={styles.readMore}>Читать далее →</span>
-                  </div>
+                {item.image_url && (
+                  <img 
+                    src={item.image_url} 
+                    alt={item.title}
+                    className={styles.newsCardImg}
+                  />
+                )}
+                <div className={styles.newsCardBody}>
+                  <h3>{item.title}</h3>
+                  <p>{truncateText(item.content, 120)}</p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+
+          <div className={styles.newsFade}></div>
+
+          <button 
+            className={`${styles.newsNav} ${styles.newsNavNext}`}
+            onClick={scrollRight}
+            aria-label="Следующая новость"
+          >
+            →
+          </button>
+        </div>
       </section>
 
       <NewsModal
