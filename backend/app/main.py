@@ -162,7 +162,16 @@ app.add_middleware(
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["*"],  # Разрешаем все заголовки
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "DNT",
+        "Cache-Control",
+        "X-Requested-With",
+    ],
     expose_headers=[
         "Content-Length",
         "Content-Type",
@@ -193,7 +202,7 @@ async def add_cache_control_header(request, call_next):
             response.headers["Access-Control-Allow-Origin"] = cors_origins[0] if cors_origins else "*"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, Origin, User-Agent, DNT, Cache-Control, X-Requested-With"
         response.headers["Access-Control-Max-Age"] = "3600"
         logger.info(f"✅ OPTIONS preflight handled for {origin}")
         return response
@@ -205,7 +214,7 @@ async def add_cache_control_header(request, call_next):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, Origin, User-Agent, DNT, Cache-Control, X-Requested-With"
         response.headers["Access-Control-Expose-Headers"] = "Content-Length, Content-Type, X-Total-Count"
     
     # Отключаем кэш для всех API эндпоинтов
