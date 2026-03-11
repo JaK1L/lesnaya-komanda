@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { adminApiClient } from '../../../lib/adminApi'
-import styles from './page.module.css'
+import { useRouter } from 'next/navigation'
+import { TeamModal } from '../../../components/admin/TeamModal'
+import { AdminTableSkeleton } from '../../../components/skeletons'
+import styles from '../news/page.module.css'
 
 interface TeamMember {
   discord_id: number
@@ -29,27 +31,41 @@ interface SearchUser {
 }
 
 export default function AdminTeamPage() {
+  const router = useRouter()
   const [members, setMembers] = useState<TeamMember[]>([])
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchUser[]>([])
   const [searching, setSearching] = useState(false)
 
   useEffect(() => {
+    const token = localStorage.getItem('admin_token')
+    if (!token) {
+      router.push('/admin')
+      return
+    }
     fetchTeamMembers()
-  }, [])
+  }, [router])
 
   const fetchTeamMembers = async () => {
     try {
-      setLoading(true)
-      const response = await adminApiClient.get<TeamMember[]>('/api/admin/team')
-      setMembers(response.data)
-    } catch (err) {
-      console.error('Error fetching team members:', err)
-      alert('Ошибка загрузки команды')
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/team`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) throw new Error('Failed to fetch')
+      
+      const data = await response.json()
+      setMembers(data)
+    } catch (error) {
+      console.error('Error fetching team members:', error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
@@ -58,10 +74,20 @@ export default function AdminTeamPage() {
     
     try {
       setSearching(true)
-      const response = await adminApiClient.get<SearchUser[]>(
-        `/api/admin/users/search?q=${encodeURIComponent(searchQuery)}`
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/search?q=${encodeURIComponent(searchQuery)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
       )
-      setSearchResults(response.data)
+      
+      if (response.ok) {
+        const data = await response.json()
+        setSearchResults(data)
+      }
     } catch (err) {
       console.error('Error searching users:', err)
     } finally {
@@ -69,62 +95,26 @@ export default function AdminTeamPage() {
     }
   }
 
-  const handleEdit = (member: TeamMember) => {
-    setEditingMember({ ...member })
-  }
-
-  const handleSave = async () => {
-    if (!editingMember) return
-
-    try {
-      await adminApiClient.put(
-        `/api/admin/team/${editingMember.discord_id}`,
-        {
-          discord_id: editingMember.discord_id,
-          real_name: editingMember.real_name || null,
-          bio: editingMember.bio || null,
-          team_role: editingMember.team_role || null,
-          telegram_url: editingMember.telegram_url || null,
-          tiktok_url: editingMember.tiktok_url || null,
-          youtube_url: editingMember.youtube_url || null,
-          is_team_member: true,
-          team_order: editingMember.team_order
-        }
-      )
-      
-      setEditingMember(null)
-      fetchTeamMembers()
-      alert('Сохранено!')
-    } catch (err) {
-      console.error('Error saving member:', err)
-      alert('Ошибка сохранения')
-    }
-  }
-
-  const handleRemove = async (discord_id: number) => {
-    if (!confirm('Убрать из команды?')) return
-
-    try {
-      await adminApiClient.delete(`/api/admin/team/${discord_id}`)
-      
-      fetchTeamMembers()
-      alert('Удалено из команды')
-    } catch (err) {
-      console.error('Error removing member:', err)
-      alert('Ошибка удаления')
-    }
-  }
-
   const handleAddUser = async (user: SearchUser) => {
     try {
-      await adminApiClient.put(
-        `/api/admin/team/${user.discord_id}`,
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/team/${user.discord_id}`,
         {
-          discord_id: user.discord_id,
-          is_team_member: true,
-          team_order: members.length
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            discord_id: user.discord_id,
+            is_team_member: true,
+            team_order: members.length
+          }),
         }
       )
+      
+      if (!response.ok) throw new Error('Failed to add')
       
       setSearchQuery('')
       setSearchResults([])
@@ -136,50 +126,170 @@ export default function AdminTeamPage() {
     }
   }
 
-  if (loading) {
-    return <div className={styles.container}>Загрузка...</div>
+  const handleRemove = async (discord_id: number) => {
+    if (!confirm('Убрать из команды?')) return
+
+    try {
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/team/${discord_id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to remove')
+      
+      fetchTeamMembers()
+    } catch (error) {
+      console.error('Error removing member:', error)
+      alert('Ошибка удаления')
+    }
+  }
+
+  const handleEdit = (member: TeamMember) => {
+    setEditingMember(member)
+    setShowModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setEditingMember(null)
+  }
+
+  const handleSave = () => {
+    fetchTeamMembers()
+  }
+
+  if (isLoading) {
+    return (
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <button onClick={() => router.push('/admin')} className={styles.backButton}>
+            ← Назад
+          </button>
+          <h1>👥 Управление командой</h1>
+          <div style={{ width: '120px' }} />
+        </header>
+        <AdminTableSkeleton rows={5} />
+      </div>
+    )
   }
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <h1>Управление командой</h1>
-        <p>Добавляйте и редактируйте информацию о членах команды</p>
-      </div>
+      <header className={styles.header}>
+        <button onClick={() => router.push('/admin')} className={styles.backButton}>
+          ← Назад
+        </button>
+        <h1>👥 Управление командой</h1>
+        <div style={{ color: '#888' }}>Участников: {members.length}</div>
+      </header>
+
+      <TeamModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        editingMember={editingMember}
+      />
 
       {/* Поиск пользователей */}
-      <div className={styles.searchSection}>
-        <h2>Добавить в команду</h2>
-        <div className={styles.searchBox}>
+      <div style={{ 
+        background: '#2a2a2a', 
+        padding: '1.5rem', 
+        borderRadius: '12px', 
+        marginBottom: '2rem',
+        border: '1px solid #444'
+      }}>
+        <h2 style={{ marginTop: 0, marginBottom: '1rem' }}>Добавить в команду</h2>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
           <input
             type="text"
             placeholder="Поиск пользователя..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && searchUsers()}
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              background: '#1a1a1a',
+              border: '1px solid #444',
+              borderRadius: '8px',
+              color: '#fff',
+              fontSize: '1rem',
+            }}
           />
-          <button onClick={searchUsers} disabled={searching}>
+          <button 
+            onClick={searchUsers} 
+            disabled={searching}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: searching ? 'not-allowed' : 'pointer',
+              fontWeight: 600,
+              opacity: searching ? 0.6 : 1,
+            }}
+          >
             {searching ? 'Поиск...' : 'Найти'}
           </button>
         </div>
         
         {searchResults.length > 0 && (
-          <div className={styles.searchResults}>
+          <div style={{ marginTop: '1rem' }}>
             {searchResults.map((user) => (
-              <div key={user.discord_id} className={styles.searchResult}>
-                <div className={styles.userInfo}>
+              <div 
+                key={user.discord_id} 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '1rem',
+                  background: '#1a1a1a',
+                  borderRadius: '8px',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   {user.avatar_url && (
-                    <img src={user.avatar_url} alt={user.discord_username} />
+                    <img 
+                      src={user.avatar_url} 
+                      alt={user.discord_username}
+                      style={{ 
+                        width: '48px', 
+                        height: '48px', 
+                        borderRadius: '50%',
+                        objectFit: 'cover'
+                      }}
+                    />
                   )}
                   <div>
-                    <div className={styles.userName}>{user.discord_username}</div>
-                    <div className={styles.userRank}>{user.forest_rank}</div>
+                    <div style={{ fontWeight: 600 }}>{user.discord_username}</div>
+                    <div style={{ color: '#888', fontSize: '0.9rem' }}>{user.forest_rank}</div>
                   </div>
                 </div>
                 {user.is_team_member ? (
-                  <span className={styles.badge}>Уже в команде</span>
+                  <span style={{ color: '#888' }}>Уже в команде</span>
                 ) : (
-                  <button onClick={() => handleAddUser(user)}>Добавить</button>
+                  <button 
+                    onClick={() => handleAddUser(user)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#4CAF50',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Добавить
+                  </button>
                 )}
               </div>
             ))}
@@ -187,131 +297,76 @@ export default function AdminTeamPage() {
         )}
       </div>
 
-      {/* Список команды */}
-      <div className={styles.teamList}>
-        <h2>Текущая команда ({members.length})</h2>
-        
+      <div className={styles.list}>
         {members.length === 0 ? (
-          <p className={styles.empty}>Команда пуста. Добавьте участников через поиск выше.</p>
-        ) : (
-          <div className={styles.members}>
-            {members.map((member) => (
-              <div key={member.discord_id} className={styles.memberCard}>
-                {editingMember?.discord_id === member.discord_id ? (
-                  <div className={styles.editForm}>
-                    <div className={styles.formRow}>
-                      <label>Discord: {member.discord_username}</label>
-                    </div>
-                    
-                    <div className={styles.formRow}>
-                      <label>Реальное имя</label>
-                      <input
-                        type="text"
-                        value={editingMember.real_name || ''}
-                        onChange={(e) => setEditingMember({...editingMember, real_name: e.target.value})}
-                        placeholder="Иван Иванов"
-                      />
-                    </div>
-
-                    <div className={styles.formRow}>
-                      <label>Роль в команде</label>
-                      <input
-                        type="text"
-                        value={editingMember.team_role || ''}
-                        onChange={(e) => setEditingMember({...editingMember, team_role: e.target.value})}
-                        placeholder="Стример / Модератор / и т.д."
-                      />
-                    </div>
-
-                    <div className={styles.formRow}>
-                      <label>Биография</label>
-                      <textarea
-                        value={editingMember.bio || ''}
-                        onChange={(e) => setEditingMember({...editingMember, bio: e.target.value})}
-                        placeholder="Расскажите о себе..."
-                        rows={4}
-                      />
-                    </div>
-
-                    <div className={styles.formRow}>
-                      <label>Telegram URL</label>
-                      <input
-                        type="text"
-                        value={editingMember.telegram_url || ''}
-                        onChange={(e) => setEditingMember({...editingMember, telegram_url: e.target.value})}
-                        placeholder="https://t.me/username"
-                      />
-                    </div>
-
-                    <div className={styles.formRow}>
-                      <label>TikTok URL</label>
-                      <input
-                        type="text"
-                        value={editingMember.tiktok_url || ''}
-                        onChange={(e) => setEditingMember({...editingMember, tiktok_url: e.target.value})}
-                        placeholder="https://tiktok.com/@username"
-                      />
-                    </div>
-
-                    <div className={styles.formRow}>
-                      <label>YouTube URL</label>
-                      <input
-                        type="text"
-                        value={editingMember.youtube_url || ''}
-                        onChange={(e) => setEditingMember({...editingMember, youtube_url: e.target.value})}
-                        placeholder="https://youtube.com/@username"
-                      />
-                    </div>
-
-                    <div className={styles.formRow}>
-                      <label>Порядок отображения</label>
-                      <input
-                        type="number"
-                        value={editingMember.team_order}
-                        onChange={(e) => setEditingMember({...editingMember, team_order: parseInt(e.target.value) || 0})}
-                        min="0"
-                      />
-                    </div>
-
-                    <div className={styles.formActions}>
-                      <button onClick={handleSave} className={styles.btnSave}>
-                        Сохранить
-                      </button>
-                      <button onClick={() => setEditingMember(null)} className={styles.btnCancel}>
-                        Отмена
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.memberView}>
-                    <div className={styles.memberHeader}>
-                      {member.avatar_url && (
-                        <img src={member.avatar_url} alt={member.discord_username} />
-                      )}
-                      <div>
-                        <h3>{member.real_name || member.discord_username}</h3>
-                        <p className={styles.memberRole}>{member.team_role || member.forest_rank}</p>
-                        <p className={styles.memberOrder}>Порядок: {member.team_order}</p>
-                      </div>
-                    </div>
-                    
-                    {member.bio && (
-                      <p className={styles.memberBio}>{member.bio}</p>
-                    )}
-
-                    <div className={styles.memberActions}>
-                      <button onClick={() => handleEdit(member)} className={styles.btnEdit}>
-                        Редактировать
-                      </button>
-                      <button onClick={() => handleRemove(member.discord_id)} className={styles.btnRemove}>
-                        Убрать из команды
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className={styles.empty}>
+            <p>Команда пуста</p>
+            <p style={{ color: '#888', fontSize: '0.9rem' }}>
+              Добавьте участников через поиск выше
+            </p>
           </div>
+        ) : (
+          members.map((member) => (
+            <div key={member.discord_id} className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  {member.avatar_url && (
+                    <img 
+                      src={member.avatar_url} 
+                      alt={member.discord_username}
+                      style={{ 
+                        width: '64px', 
+                        height: '64px', 
+                        borderRadius: '50%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  )}
+                  <div>
+                    <h3>{member.real_name || member.discord_username}</h3>
+                    <p style={{ color: '#888', margin: '0.25rem 0', fontSize: '0.9rem' }}>
+                      {member.team_role || member.forest_rank}
+                    </p>
+                    {member.bio && (
+                      <p style={{ color: '#aaa', margin: '0.5rem 0', fontSize: '0.85rem' }}>
+                        {member.bio}
+                      </p>
+                    )}
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      {member.telegram_url && (
+                        <span style={{ fontSize: '0.85rem', color: '#888' }}>📱 Telegram</span>
+                      )}
+                      {member.tiktok_url && (
+                        <span style={{ fontSize: '0.85rem', color: '#888' }}>🎵 TikTok</span>
+                      )}
+                      {member.youtube_url && (
+                        <span style={{ fontSize: '0.85rem', color: '#888' }}>📺 YouTube</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.cardActions}>
+                  <span style={{ color: '#888', fontSize: '0.85rem' }}>
+                    Порядок: {member.team_order}
+                  </span>
+                  <button
+                    onClick={() => handleEdit(member)}
+                    className={styles.editButton}
+                    title="Редактировать"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => handleRemove(member.discord_id)}
+                    className={styles.deleteButton}
+                    title="Убрать из команды"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
