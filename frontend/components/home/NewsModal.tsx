@@ -12,6 +12,7 @@ interface NewsModalProps {
     title: string
     content: string
     image_url: string | null
+    tags: string[]
     created_at: string
   } | null
 }
@@ -198,6 +199,16 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
               📅 {formatDate(news.created_at)}
             </div>
           </header>
+
+          {news.tags && news.tags.length > 0 && (
+            <div className={styles.tags}>
+              {news.tags.map((tag) => (
+                <span key={tag} className={styles.tag}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className={styles.body}>
             {news.content}

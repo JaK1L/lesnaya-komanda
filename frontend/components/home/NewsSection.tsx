@@ -10,6 +10,7 @@ interface News {
   title: string
   content: string
   image_url: string | null
+  tags: string[]
   created_at: string
 }
 
@@ -136,10 +137,15 @@ export function NewsSection() {
                   <p className={styles.cardText}>{truncateText(article.content, 120)}</p>
                 </div>
 
-                <div className={styles.tags}>
-                  <span className={styles.tagDefault}>Легендарный момент</span>
-                  <span className={styles.tagRed}>Dota</span>
-                </div>
+                {article.tags && article.tags.length > 0 && (
+                  <div className={styles.tags}>
+                    {article.tags.map((tag) => (
+                      <span key={tag} className={styles.tagDefault}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </article>
             )) : (
               <div style={{ 
