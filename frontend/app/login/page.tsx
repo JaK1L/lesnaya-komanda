@@ -11,7 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 export default function LoginPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   })
   const [error, setError] = useState('')
@@ -32,7 +32,7 @@ export default function LoginPage() {
 
     try {
       const response = await axios.post(`${API_URL}/api/auth/token`, {
-        username: formData.username,
+        email: formData.email,
         password: formData.password
       })
 
@@ -69,12 +69,12 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.inputGroup}>
-              <label htmlFor="username">Email или имя пользователя</label>
+              <label htmlFor="email">Email или имя пользователя</label>
               <input
                 type="text"
-                id="username"
-                name="username"
-                value={formData.username}
+                id="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
                 required
                 disabled={loading}
