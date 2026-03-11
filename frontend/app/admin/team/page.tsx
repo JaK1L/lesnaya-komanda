@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { adminApiClient } from '../../../lib/adminApi'
 import styles from './page.module.css'
 
 interface TeamMember {
@@ -28,8 +28,6 @@ interface SearchUser {
   is_team_member: boolean
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
 export default function AdminTeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,10 +43,7 @@ export default function AdminTeamPage() {
   const fetchTeamMembers = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('token')
-      const response = await axios.get<TeamMember[]>(`${API_URL}/api/admin/team`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const response = await adminApiClient.get<TeamMember[]>('/api/admin/team')
       setMembers(response.data)
     } catch (err) {
       console.error('Error fetching team members:', err)
@@ -63,10 +58,8 @@ export default function AdminTeamPage() {
     
     try {
       setSearching(true)
-      const token = localStorage.getItem('token')
-      const response = await axios.get<SearchUser[]>(
-        `${API_URL}/api/admin/users/search?q=${encodeURIComponent(searchQuery)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response = await adminApiClient.get<SearchUser[]>(
+        `/api/admin/users/search?q=${encodeURIComponent(searchQuery)}`
       )
       setSearchResults(response.data)
     } catch (err) {
@@ -84,9 +77,8 @@ export default function AdminTeamPage() {
     if (!editingMember) return
 
     try {
-      const token = localStorage.getItem('token')
-      await axios.put(
-        `${API_URL}/api/admin/team/${editingMember.discord_id}`,
+      await adminApiClient.put(
+        `/api/admin/team/${editingMember.discord_id}`,
         {
           discord_id: editingMember.discord_id,
           real_name: editingMember.real_name || null,
@@ -97,8 +89,7 @@ export default function AdminTeamPage() {
           youtube_url: editingMember.youtube_url || null,
           is_team_member: true,
           team_order: editingMember.team_order
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       )
       
       setEditingMember(null)
@@ -114,10 +105,7 @@ export default function AdminTeamPage() {
     if (!confirm('Убрать из команды?')) return
 
     try {
-      const token = localStorage.getItem('token')
-      await axios.delete(`${API_URL}/api/admin/team/${discord_id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      await adminApiClient.delete(`/api/admin/team/${discord_id}`)
       
       fetchTeamMembers()
       alert('Удалено из команды')
@@ -129,15 +117,13 @@ export default function AdminTeamPage() {
 
   const handleAddUser = async (user: SearchUser) => {
     try {
-      const token = localStorage.getItem('token')
-      await axios.put(
-        `${API_URL}/api/admin/team/${user.discord_id}`,
+      await adminApiClient.put(
+        `/api/admin/team/${user.discord_id}`,
         {
           discord_id: user.discord_id,
           is_team_member: true,
           team_order: members.length
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       )
       
       setSearchQuery('')

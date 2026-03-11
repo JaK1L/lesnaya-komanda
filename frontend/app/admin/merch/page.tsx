@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { adminApiClient } from '../../../lib/adminApi'
 import styles from './page.module.css'
 
 interface MerchItem {
@@ -16,8 +16,6 @@ interface MerchItem {
   display_order: number
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
 export default function AdminMerchPage() {
   const [items, setItems] = useState<MerchItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,10 +29,7 @@ export default function AdminMerchPage() {
   const fetchMerch = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('admin_token')
-      const response = await axios.get<MerchItem[]>(`${API_URL}/api/admin/merch`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const response = await adminApiClient.get<MerchItem[]>('/api/admin/merch')
       setItems(response.data)
     } catch (err) {
       console.error('Error fetching merch:', err)
@@ -68,22 +63,12 @@ export default function AdminMerchPage() {
     if (!editingItem) return
 
     try {
-      const token = localStorage.getItem('admin_token')
-      
       if (isCreating) {
         const { id, ...itemData } = editingItem
-        await axios.post(
-          `${API_URL}/api/admin/merch`,
-          itemData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+        await adminApiClient.post('/api/admin/merch', itemData)
       } else {
         const { id, ...itemData } = editingItem
-        await axios.put(
-          `${API_URL}/api/admin/merch/${editingItem.id}`,
-          itemData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+        await adminApiClient.put(`/api/admin/merch/${editingItem.id}`, itemData)
       }
       
       setEditingItem(null)
@@ -100,10 +85,7 @@ export default function AdminMerchPage() {
     if (!confirm('Удалить товар?')) return
 
     try {
-      const token = localStorage.getItem('admin_token')
-      await axios.delete(`${API_URL}/api/admin/merch/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      await adminApiClient.delete(`/api/admin/merch/${id}`)
       
       fetchMerch()
       alert('Удалено')
