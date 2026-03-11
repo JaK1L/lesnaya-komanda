@@ -294,7 +294,7 @@ export default function AdminStreamersPage() {
                       )}
                     </div>
                     <small style={{ color: '#888' }}>@{item.twitch_username}</small>
-                    {item.is_live && item.viewer_count > 0 && (
+                    {item.is_live && item.viewer_count && item.viewer_count > 0 && (
                       <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#666' }}>
                         👁️ {item.viewer_count.toLocaleString()} зрителей
                       </div>
