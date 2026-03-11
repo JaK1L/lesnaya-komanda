@@ -5,13 +5,14 @@ import Link from 'next/link'
 import styles from './StreamersSection.module.css'
 
 interface Streamer {
-  discord_id: number
-  discord_username: string
+  id: number
+  name: string
+  game?: string | null
   avatar_url?: string | null
-  forest_rank: string
+  platform: string
+  stream_url: string
+  is_active: boolean
   is_online?: boolean
-  game?: string
-  twitch_username?: string
   viewer_count?: number
   stream_title?: string
 }
@@ -25,12 +26,12 @@ const StreamerCard = memo(function StreamerCard({
 }: { 
   streamer: Streamer
 }) {
-  const href = streamer.is_online && streamer.twitch_username 
-    ? `https://twitch.tv/${streamer.twitch_username}` 
-    : `/profile/${streamer.discord_id}`
+  const href = streamer.is_online 
+    ? streamer.stream_url 
+    : streamer.stream_url
   
-  const target = streamer.is_online && streamer.twitch_username ? '_blank' : '_self'
-  const rel = streamer.is_online && streamer.twitch_username ? 'noopener noreferrer' : undefined
+  const target = '_blank'
+  const rel = 'noopener noreferrer'
 
   return (
     <a
@@ -43,21 +44,21 @@ const StreamerCard = memo(function StreamerCard({
         {streamer.avatar_url ? (
           <img
             src={streamer.avatar_url}
-            alt={streamer.discord_username}
+            alt={streamer.name}
             className={styles.cardImg}
           />
         ) : (
           <div className={styles.cardImgPlaceholder}>
-            {streamer.discord_username?.[0]?.toUpperCase() || '?'}
+            {streamer.name?.[0]?.toUpperCase() || '?'}
           </div>
         )}
       </div>
       <div className={styles.cardBody}>
-        <h3 className={styles.cardName}>{streamer.discord_username}</h3>
+        <h3 className={styles.cardName}>{streamer.name}</h3>
         <p className={styles.cardDescription}>
           {streamer.is_online && streamer.game 
             ? `🎮 ${streamer.game}${streamer.viewer_count ? ` • 👁 ${streamer.viewer_count}` : ''}`
-            : streamer.forest_rank || 'Играет в различные компьютерные игры'}
+            : streamer.game || 'Играет в различные компьютерные игры'}
         </p>
       </div>
     </a>
@@ -78,7 +79,7 @@ export const StreamersSection = memo(function StreamersSection({ streamers }: St
         {displayStreamers.length > 0 ? (
           displayStreamers.map((streamer) => (
             <StreamerCard 
-              key={streamer.discord_id} 
+              key={streamer.id} 
               streamer={streamer}
             />
           ))

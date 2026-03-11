@@ -63,13 +63,15 @@ from ..services.twitch_service import twitch_service
 
 
 class StreamerPublic(BaseModel):
-    discord_id: Optional[int] = None  # Может быть NULL в БД
-    discord_username: str
-    avatar_url: Optional[str]
-    forest_rank: str
-    is_online: Optional[bool] = False
+    id: int
+    name: str
     game: Optional[str] = None
-    twitch_username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    platform: str = "twitch"
+    stream_url: str
+    is_active: bool = True
+    # Twitch live data
+    is_online: Optional[bool] = False
     viewer_count: Optional[int] = 0
     stream_title: Optional[str] = None
 
@@ -78,22 +80,22 @@ class StreamerPublic(BaseModel):
 async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     """
     Публичный список стримеров для сайта.
-    Показываем пользователей которые являются стримерами + данные с Twitch API.
+    Показываем активных стримеров из таблицы streamers + данные с Twitch API.
     """
     try:
         rows = await db.fetch(
             """
             SELECT 
-                discord_id,
-                discord_username,
+                id,
+                name,
+                game,
                 avatar_url,
-                forest_rank,
-                twitch_username
-            FROM users
-            WHERE is_streamer = true 
-            AND discord_id IS NOT NULL
-            AND discord_username IS NOT NULL
-            ORDER BY rating DESC, id ASC
+                platform,
+                stream_url,
+                is_active
+            FROM streamers
+            WHERE is_active = true
+            ORDER BY display_order ASC, id DESC
             LIMIT 10
             """
         )
@@ -109,12 +111,12 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     if not rows:
         return []
     
-    # Собираем Twitch usernames (парсим из URL если нужно)
+    # Собираем Twitch usernames из stream_url
     twitch_usernames = []
     for row in rows:
-        twitch_url = row.get('twitch_username')
-        if twitch_url:
-            username = twitch_service.extract_username_from_url(twitch_url)
+        stream_url = row.get('stream_url')
+        if stream_url and 'twitch.tv' in stream_url:
+            username = twitch_service.extract_username_from_url(stream_url)
             if username:
                 twitch_usernames.append(username)
     
@@ -132,30 +134,30 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     result = []
     for row in rows:
         try:
-            # Пропускаем стримеров без обязательных полей
-            if not row.get('discord_id') or not row.get('discord_username'):
-                print(f"⚠️ Skipping streamer: missing discord_id or discord_username")
-                continue
+            stream_url = row.get('stream_url', '')
+            twitch_username = None
             
-            twitch_url = row.get('twitch_username')
-            twitch_username = twitch_service.extract_username_from_url(twitch_url) if twitch_url else None
+            if 'twitch.tv' in stream_url:
+                twitch_username = twitch_service.extract_username_from_url(stream_url)
+            
             stream_info = twitch_data.get(twitch_username.lower()) if twitch_username else None
             
             streamer = StreamerPublic(
-                discord_id=row['discord_id'],
-                discord_username=row['discord_username'],
+                id=row['id'],
+                name=row['name'],
+                game=row.get('game'),
                 avatar_url=row.get('avatar_url'),
-                forest_rank=row.get('forest_rank', '🌱 Росток'),
-                twitch_username=twitch_username,
+                platform=row.get('platform', 'twitch'),
+                stream_url=stream_url,
+                is_active=row.get('is_active', True),
                 is_online=stream_info is not None if stream_info else False,
-                game=stream_info.get('game_name') if stream_info else None,
                 viewer_count=stream_info.get('viewer_count', 0) if stream_info else 0,
                 stream_title=stream_info.get('title') if stream_info else None
             )
             result.append(streamer)
         except Exception as e:
             # Если ошибка при обработке одного стримера, пропускаем его
-            print(f"⚠️ Error processing streamer {row.get('discord_id', 'unknown')}: {e}")
+            print(f"⚠️ Error processing streamer {row.get('id', 'unknown')}: {e}")
             import traceback
             print(traceback.format_exc())
             continue
