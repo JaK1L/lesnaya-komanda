@@ -85,9 +85,14 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
           {/* Auth Buttons */}
           <div className={styles.headerBtns}>
             {isAuthenticated ? (
-              <button onClick={onLogout} className={`${styles.btn} ${styles.loginButton}`}>
-                Выйти
-              </button>
+              <>
+                <Link href="/profile" className={`${styles.btn} ${styles.linkButton}`}>
+                  Профиль
+                </Link>
+                <button onClick={onLogout} className={`${styles.btn} ${styles.loginButton}`}>
+                  Выйти
+                </button>
+              </>
             ) : (
               <>
                 <Link href="/register" className={`${styles.btn} ${styles.linkButton}`}>
