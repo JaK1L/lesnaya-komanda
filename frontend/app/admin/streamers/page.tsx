@@ -60,12 +60,17 @@ export default function AdminStreamersPage() {
         },
       })
 
-      if (!response.ok) throw new Error('Failed to fetch')
+      if (!response.ok) {
+        console.error('Failed to fetch streamers:', response.status, response.statusText)
+        throw new Error('Failed to fetch')
+      }
       
       const data = await response.json()
+      console.log('Streamers loaded:', data)
       setStreamers(data)
     } catch (error) {
       console.error('Error fetching streamers:', error)
+      alert('Ошибка загрузки стримеров. Проверьте консоль для деталей.')
     } finally {
       setIsLoading(false)
     }
