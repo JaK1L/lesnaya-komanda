@@ -34,7 +34,14 @@ export function NewsSection() {
       setLoading(true)
       setError(null)
       const response = await axios.get<News[]>(`${API_URL}/api/news`)
-      setNews(response.data)
+      
+      // Validate and sanitize the data
+      const sanitizedNews = response.data.map(item => ({
+        ...item,
+        tags: Array.isArray(item.tags) ? item.tags : []
+      }))
+      
+      setNews(sanitizedNews)
     } catch (err) {
       console.error('Error fetching news:', err)
       setError('Не удалось загрузить новости')
@@ -137,11 +144,11 @@ export function NewsSection() {
                   <p className={styles.cardText}>{truncateText(article.content, 120)}</p>
                 </div>
 
-                {article.tags && article.tags.length > 0 && (
+                {article.tags && Array.isArray(article.tags) && article.tags.length > 0 && (
                   <div className={styles.tags}>
-                    {article.tags.map((tag) => (
-                      <span key={tag} className={styles.tagDefault}>
-                        {tag}
+                    {article.tags.map((tag, index) => (
+                      <span key={`${tag}-${index}`} className={styles.tagDefault}>
+                        {typeof tag === 'string' ? tag : String(tag)}
                       </span>
                     ))}
                   </div>

@@ -200,11 +200,11 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
             </div>
           </header>
 
-          {news.tags && news.tags.length > 0 && (
+          {news.tags && Array.isArray(news.tags) && news.tags.length > 0 && (
             <div className={styles.tags}>
-              {news.tags.map((tag) => (
-                <span key={tag} className={styles.tag}>
-                  {tag}
+              {news.tags.map((tag, index) => (
+                <span key={`${tag}-${index}`} className={styles.tag}>
+                  {typeof tag === 'string' ? tag : String(tag)}
                 </span>
               ))}
             </div>
