@@ -11,7 +11,9 @@ export function HeroSection() {
     // Загружаем Telegram Widget скрипт
     const script = document.createElement('script')
     script.src = 'https://telegram.org/js/telegram-widget.js?22'
-    script.setAttribute('data-telegram-post', 'lesnayakomanda') // Без ID - показывает последний пост
+    // Укажи ID последнего поста из твоего канала (например, если URL поста https://t.me/lesnayakomanda/123, то ID = 123)
+    // Для автоматического обновления можно указать ID любого недавнего поста
+    script.setAttribute('data-telegram-post', 'lesnayakomanda/2') // Замени 2 на ID последнего поста
     script.setAttribute('data-width', '100%')
     script.setAttribute('data-userpic', 'false')
     script.setAttribute('data-dark', '1')
