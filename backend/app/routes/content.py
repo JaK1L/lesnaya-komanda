@@ -80,20 +80,25 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     Публичный список стримеров для сайта.
     Показываем пользователей которые являются стримерами + данные с Twitch API.
     """
-    rows = await db.fetch(
-        """
-        SELECT 
-            discord_id,
-            discord_username,
-            avatar_url,
-            forest_rank,
-            twitch_username
-        FROM users
-        WHERE is_streamer = true
-        ORDER BY rating DESC, id ASC
-        LIMIT 10
-        """
-    )
+    try:
+        rows = await db.fetch(
+            """
+            SELECT 
+                discord_id,
+                discord_username,
+                avatar_url,
+                forest_rank,
+                twitch_username
+            FROM users
+            WHERE is_streamer = true
+            ORDER BY rating DESC, id ASC
+            LIMIT 10
+            """
+        )
+    except Exception as e:
+        # Если колонка is_streamer не существует, возвращаем пустой список
+        print(f"Error fetching streamers: {e}")
+        return []
     
     # Собираем Twitch usernames (парсим из URL если нужно)
     twitch_usernames = []
