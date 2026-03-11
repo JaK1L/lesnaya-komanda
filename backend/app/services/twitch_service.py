@@ -168,12 +168,25 @@ class TwitchService:
                         users = data.get('data', [])
                         if users:
                             user = users[0]
+                            user_id = user['id']
+                            
+                            # Получаем количество фолловеров
+                            followers_url = 'https://api.twitch.tv/helix/channels/followers'
+                            followers_params = {'broadcaster_id': user_id}
+                            
+                            followers_count = 0
+                            async with session.get(followers_url, params=followers_params, headers=headers) as followers_response:
+                                if followers_response.status == 200:
+                                    followers_data = await followers_response.json()
+                                    followers_count = followers_data.get('total', 0)
+                            
                             return {
-                                'id': user['id'],
+                                'id': user_id,
                                 'login': user['login'],
                                 'display_name': user['display_name'],
                                 'profile_image_url': user.get('profile_image_url'),
-                                'description': user.get('description', '')
+                                'description': user.get('description', ''),
+                                'followers_count': followers_count
                             }
             return None
         except Exception as e:
@@ -190,17 +203,19 @@ class TwitchService:
                 'display_name': str,
                 'avatar_url': str,
                 'description': str,
+                'followers_count': int,
                 'is_live': bool,
                 'game': str (если онлайн),
                 'viewer_count': int (если онлайн),
-                'stream_title': str (если онлайн)
+                'stream_title': str (если онлайн),
+                'thumbnail_url': str (если онлайн)
             }
         """
         username = self.extract_username_from_url(twitch_url)
         if not username:
             return None
         
-        # Получаем инфо о пользователе
+        # Получаем инфо о пользователе (включая фолловеров)
         user_info = await self.get_user_info(username)
         if not user_info:
             return None
@@ -214,6 +229,7 @@ class TwitchService:
             'display_name': user_info['display_name'],
             'avatar_url': user_info['profile_image_url'],
             'description': user_info['description'],
+            'followers_count': user_info.get('followers_count', 0),
             'is_live': stream_data is not None,
         }
         

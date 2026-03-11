@@ -224,3 +224,263 @@
     transform: translateY(0);
   }
 }
+
+/* Loading and Error States */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(74, 255, 117, 0.1);
+  border-top-color: #4AFF75;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.retryButton {
+  padding: 0.75rem 1.5rem;
+  background: rgba(74, 255, 117, 0.1);
+  border: 1px solid rgba(74, 255, 117, 0.3);
+  color: #4AFF75;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.retryButton:hover {
+  background: rgba(74, 255, 117, 0.2);
+  border-color: #4AFF75;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  gap: 1rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+/* New Streamer Card Styles */
+.streamerCard {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.streamerCard:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(74, 255, 117, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transform: translateY(-4px);
+}
+
+.cardImage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.streamerCard:hover .thumbnail {
+  transform: scale(1.05);
+}
+
+.avatarContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(74, 255, 117, 0.1) 0%, rgba(46, 204, 113, 0.05) 100%);
+}
+
+.avatar {
+  width: 50%;
+  height: 50%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(74, 255, 117, 0.3);
+}
+
+.liveBadge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 0, 0, 0.95);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.4);
+}
+
+.cardContent {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.streamerInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.smallAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(74, 255, 117, 0.3);
+  flex-shrink: 0;
+}
+
+.streamerName {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.streamerUsername {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0.25rem 0 0 0;
+}
+
+.twitchIcon {
+  color: #9146FF;
+  flex-shrink: 0;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.streamerCard:hover .twitchIcon {
+  opacity: 1;
+}
+
+.streamTitle {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.description {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.game {
+  font-size: 0.875rem;
+  color: #4AFF75;
+  padding: 0.5rem 0.75rem;
+  background: rgba(74, 255, 117, 0.1);
+  border-radius: 6px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stat svg {
+  color: rgba(74, 255, 117, 0.8);
+  flex-shrink: 0;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .streamerName {
+    font-size: 1.375rem;
+  }
+
+  .streamTitle,
+  .description {
+    font-size: 1rem;
+  }
+}

@@ -69,6 +69,7 @@ class StreamerPublic(BaseModel):
     avatar_url: Optional[str] = None
     description: Optional[str] = None
     stream_url: str
+    followers_count: int = 0
     # Twitch live data
     is_live: bool = False
     game_name: Optional[str] = None
@@ -117,12 +118,16 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
         print(f"⚠️ Twitch API error: {e}")
         streams_data = {}
     
-    # Формируем результат
+    # Получаем полную информацию о каждом стримере (включая фолловеров)
     result = []
     for row in rows:
         try:
             username = row['twitch_username'].lower()
             stream_info = streams_data.get(username)
+            
+            # Получаем информацию о пользователе для фолловеров
+            user_info = await twitch_service.get_user_info(row['twitch_username'])
+            followers_count = user_info.get('followers_count', 0) if user_info else 0
             
             streamer = StreamerPublic(
                 id=row['id'],
@@ -131,6 +136,7 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
                 avatar_url=row['avatar_url'],
                 description=row['description'],
                 stream_url=f"https://twitch.tv/{row['twitch_username']}",
+                followers_count=followers_count,
                 is_live=stream_info is not None,
                 game_name=stream_info.get('game_name') if stream_info else None,
                 stream_title=stream_info.get('title') if stream_info else None,
