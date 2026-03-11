@@ -528,3 +528,31 @@ async def list_team_members(db: asyncpg.Connection = Depends(get_db)):
         """
     )
     return [TeamMemberPublic(**dict(row)) for row in rows]
+
+
+# Telegram Integration
+
+from ..services.telegram_service import telegram_service
+
+
+@router.get("/telegram/latest-post")
+async def get_latest_telegram_post():
+    """
+    Получить ID последнего поста из Telegram канала
+    """
+    try:
+        channel_info = await telegram_service.get_channel_info()
+        return {
+            "success": True,
+            "channel_username": channel_info['channel_username'],
+            "latest_post_id": channel_info['latest_post_id'],
+            "widget_data": f"{channel_info['channel_username']}/{channel_info['latest_post_id']}" if channel_info['latest_post_id'] else None
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "channel_username": "lesnayakomanda",
+            "latest_post_id": None,
+            "widget_data": None
+        }

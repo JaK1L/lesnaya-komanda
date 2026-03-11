@@ -1,25 +1,46 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import axios from 'axios'
 import styles from './HeroSection.module.css'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export function HeroSection() {
   const telegramWidgetRef = useRef<HTMLDivElement>(null)
+  const [telegramPost, setTelegramPost] = useState<string>('lesnayakomanda/2')
+
+  useEffect(() => {
+    // Получаем ID последнего поста с бэкенда
+    const fetchLatestPost = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/telegram/latest-post`)
+        if (response.data.success && response.data.widget_data) {
+          setTelegramPost(response.data.widget_data)
+        }
+      } catch (error) {
+        console.error('Error fetching latest Telegram post:', error)
+        // Используем дефолтное значение если API не работает
+      }
+    }
+
+    fetchLatestPost()
+  }, [])
 
   useEffect(() => {
     // Загружаем Telegram Widget скрипт
     const script = document.createElement('script')
     script.src = 'https://telegram.org/js/telegram-widget.js?22'
-    // Укажи ID последнего поста из твоего канала (например, если URL поста https://t.me/lesnayakomanda/123, то ID = 123)
-    // Для автоматического обновления можно указать ID любого недавнего поста
-    script.setAttribute('data-telegram-post', 'lesnayakomanda/2') // Замени 2 на ID последнего поста
+    script.setAttribute('data-telegram-post', telegramPost)
     script.setAttribute('data-width', '100%')
     script.setAttribute('data-userpic', 'false')
     script.setAttribute('data-dark', '1')
     script.async = true
 
     if (telegramWidgetRef.current) {
+      // Очищаем предыдущий виджет
+      telegramWidgetRef.current.innerHTML = ''
       telegramWidgetRef.current.appendChild(script)
     }
 
@@ -28,7 +49,7 @@ export function HeroSection() {
         telegramWidgetRef.current.innerHTML = ''
       }
     }
-  }, [])
+  }, [telegramPost])
 
   return (
     <section className={styles.hero} id="hero">
