@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { uploadImage } from '../../../lib/imageUpload'
-import { FormValidator, rules, useFormValidation } from '../../../lib/validation'
-import { FormField } from '../../../components/ui/FormError'
 import { AdminTableSkeleton } from '../../../components/skeletons'
+import { NewsModal } from '../../../components/admin/NewsModal'
 import styles from './page.module.css'
 
 interface News {
@@ -15,6 +13,7 @@ interface News {
   image_url: string | null
   author_id: number | null
   published: boolean
+  tags: string[]
   created_at: string
   updated_at: string | null
 }
@@ -23,24 +22,8 @@ export default function AdminNewsPage() {
   const router = useRouter()
   const [news, setNews] = useState<News[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [editingNews, setEditingNews] = useState<News | null>(null)
-  
-  const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    image_url: '',
-    published: true,
-  })
-  const [uploading, setUploading] = useState(false)
-
-  // Валидация
-  const { errors, validateForm, clearErrors } = useFormValidation()
-
-  // Валидатор для формы новостей
-  const newsValidator = new FormValidator()
-    .field('title', rules.required('Заголовок обязателен'), rules.minLength(3, 'Минимум 3 символа'), rules.maxLength(200, 'Максимум 200 символов'))
-    .field('content', rules.required('Содержание обязательно'), rules.minLength(10, 'Минимум 10 символов'), rules.maxLength(5000, 'Максимум 5000 символов'))
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -71,44 +54,6 @@ export default function AdminNewsPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Валидация формы
-    if (!validateForm(newsValidator, formData)) {
-      return
-    }
-    
-    try {
-      const token = localStorage.getItem('admin_token')
-      const url = editingNews
-        ? `${process.env.NEXT_PUBLIC_API_URL}/api/admin/news/${editingNews.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/api/admin/news`
-      
-      const method = editingNews ? 'PUT' : 'POST'
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) throw new Error('Failed to save')
-      
-      await fetchNews()
-      setShowForm(false)
-      setEditingNews(null)
-      setFormData({ title: '', content: '', image_url: '', published: true })
-      clearErrors()
-    } catch (error) {
-      console.error('Error saving news:', error)
-      alert('Ошибка при сохранении новости')
-    }
-  }
-
   const handleDelete = async (id: number) => {
     if (!confirm('Удалить эту новость?')) return
 
@@ -132,40 +77,16 @@ export default function AdminNewsPage() {
 
   const handleEdit = (item: News) => {
     setEditingNews(item)
-    setFormData({
-      title: item.title,
-      content: item.content,
-      image_url: item.image_url || '',
-      published: item.published,
-    })
-    setShowForm(true)
+    setShowModal(true)
   }
 
-  const handleCancelEdit = () => {
+  const handleCloseModal = () => {
+    setShowModal(false)
     setEditingNews(null)
-    setFormData({ title: '', content: '', image_url: '', published: true })
-    setShowForm(false)
-    clearErrors()
   }
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setUploading(true)
-    try {
-      const result = await uploadImage(file)
-      if (result.success && result.url) {
-        setFormData({ ...formData, image_url: result.url })
-      } else {
-        alert(result.error || 'Ошибка загрузки изображения')
-      }
-    } catch (error) {
-      console.error('Upload error:', error)
-      alert('Ошибка при загрузке изображения')
-    } finally {
-      setUploading(false)
-    }
+  const handleSave = () => {
+    fetchNews()
   }
 
   if (isLoading) {
@@ -176,7 +97,7 @@ export default function AdminNewsPage() {
             ← Назад
           </button>
           <h1>📰 Управление новостями</h1>
-          <div style={{ width: '120px' }} /> {/* Spacer */}
+          <div style={{ width: '120px' }} />
         </header>
         <AdminTableSkeleton rows={5} />
       </div>
@@ -190,116 +111,23 @@ export default function AdminNewsPage() {
           ← Назад
         </button>
         <h1>📰 Управление новостями</h1>
-        <button onClick={() => {
-          if (showForm && editingNews) {
-            handleCancelEdit()
-          } else {
-            setShowForm(!showForm)
-          }
-        }} className={styles.addButton}>
-          {showForm ? 'Отмена' : '+ Добавить'}
+        <button onClick={() => setShowModal(true)} className={styles.addButton}>
+          + Добавить
         </button>
       </header>
 
-      {showForm && (
-        <div className={styles.formContainer}>
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
-              {editingNews ? 'Редактировать новость' : 'Создать новость'}
-            </h2>
-            
-            <FormField label="Заголовок" error={errors.title} required htmlFor="title">
-              <input
-                id="title"
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Заголовок новости"
-                maxLength={200}
-                className={styles.input}
-              />
-            </FormField>
-
-            <FormField label="Содержание" error={errors.content} required htmlFor="content">
-              <textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="Текст новости..."
-                rows={10}
-                maxLength={5000}
-                className={styles.textarea}
-              />
-            </FormField>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="image_url">Изображение</label>
-              
-              <div className={styles.imageUploadContainer}>
-                <input
-                  type="file"
-                  id="image_file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  disabled={uploading}
-                  className={styles.fileInput}
-                />
-                <label htmlFor="image_file" className={styles.uploadButton}>
-                  {uploading ? 'Загрузка...' : '📁 Выбрать файл'}
-                </label>
-                
-                <span className={styles.orText}>или</span>
-                
-                <input
-                  id="image_url"
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="Вставить URL изображения"
-                  maxLength={500}
-                  className={styles.urlInput}
-                />
-              </div>
-
-              {formData.image_url && (
-                <div className={styles.imagePreview}>
-                  <img src={formData.image_url} alt="Превью" onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }} />
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, image_url: '' })}
-                    className={styles.removeImageButton}
-                  >
-                    ✕ Удалить
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.checkbox}>
-                <input
-                  type="checkbox"
-                  checked={formData.published}
-                  onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
-                />
-                <span>Опубликовать сразу</span>
-              </label>
-            </div>
-
-            <button type="submit" className={styles.submitButton}>
-              {editingNews ? 'Сохранить изменения' : 'Создать новость'}
-            </button>
-          </form>
-        </div>
-      )}
+      <NewsModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        editingNews={editingNews}
+      />
 
       <div className={styles.list}>
         {news.length === 0 ? (
           <div className={styles.empty}>
             <p>Новостей пока нет</p>
-            <button onClick={() => setShowForm(true)} className={styles.emptyButton}>
+            <button onClick={() => setShowModal(true)} className={styles.emptyButton}>
               Создать первую новость
             </button>
           </div>
@@ -307,7 +135,18 @@ export default function AdminNewsPage() {
           news.map((item) => (
             <div key={item.id} className={styles.card}>
               <div className={styles.cardHeader}>
-                <h3>{item.title}</h3>
+                <div className={styles.cardTitleSection}>
+                  <h3>{item.title}</h3>
+                  {item.tags && item.tags.length > 0 && (
+                    <div className={styles.tags}>
+                      {item.tags.map((tag) => (
+                        <span key={tag} className={styles.tag}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className={styles.cardActions}>
                   <span className={item.published ? styles.published : styles.draft}>
                     {item.published ? '✓ Опубликовано' : '○ Черновик'}
@@ -328,6 +167,11 @@ export default function AdminNewsPage() {
                   </button>
                 </div>
               </div>
+              {item.image_url && (
+                <div className={styles.cardImage}>
+                  <img src={item.image_url} alt={item.title} />
+                </div>
+              )}
               <p className={styles.cardContent}>{item.content}</p>
               <div className={styles.cardFooter}>
                 <span className={styles.date}>

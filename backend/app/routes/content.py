@@ -185,6 +185,7 @@ class NewsPublic(BaseModel):
     title: str
     content: str
     image_url: Optional[str] = None
+    tags: List[str] = []
     created_at: datetime
 
 
@@ -195,13 +196,22 @@ async def list_public_news(db: asyncpg.Connection = Depends(get_db)):
     """
     rows = await db.fetch(
         """
-        SELECT id, title, content, image_url, created_at
+        SELECT id, title, content, image_url, tags, created_at
         FROM news
         WHERE published = true
         ORDER BY created_at DESC, id DESC
         """
     )
-    return [NewsPublic(**dict(row)) for row in rows]
+    result = []
+    for row in rows:
+        row_dict = dict(row)
+        # Преобразуем tags из asyncpg array в list
+        if row_dict.get('tags') is None:
+            row_dict['tags'] = []
+        else:
+            row_dict['tags'] = list(row_dict['tags'])
+        result.append(NewsPublic(**row_dict))
+    return result
 
 
 class FeedPublic(BaseModel):

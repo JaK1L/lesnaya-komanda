@@ -240,11 +240,21 @@ class NewsCreate(BaseModel, ContentValidationMixin):
     content: str = Field(..., max_length=5000)
     image_url: Optional[str] = Field(None, max_length=500)
     published: bool = True
+    tags: List[str] = Field(default_factory=list)
     
     @field_validator('image_url', mode='before')
     @classmethod
     def validate_image(cls, v):
         return validate_url(v) if v else None
+    
+    @field_validator('tags', mode='before')
+    @classmethod
+    def validate_tags(cls, v):
+        if v is None:
+            return []
+        # Ограничиваем количество тегов и их длину
+        tags = [tag.strip() for tag in v if tag.strip()][:10]
+        return [tag[:30] for tag in tags]
 
 
 class NewsOut(NewsCreate):
@@ -253,6 +263,7 @@ class NewsOut(NewsCreate):
     created_at: datetime
     updated_at: Optional[datetime]
     image_url: Optional[str] = None
+    tags: List[str] = Field(default_factory=list)
 
 
 @router.get("/news", response_model=List[NewsOut])
@@ -263,12 +274,21 @@ async def list_news(
     """Список всех новостей (для админки)."""
     rows = await db.fetch(
         """
-        SELECT id, title, content, image_url, author_id, published, created_at, updated_at
+        SELECT id, title, content, image_url, author_id, published, created_at, updated_at, tags
         FROM news
         ORDER BY created_at DESC, id DESC
         """
     )
-    return [NewsOut(**dict(row)) for row in rows]
+    result = []
+    for row in rows:
+        row_dict = dict(row)
+        # Преобразуем tags из asyncpg array в list
+        if row_dict.get('tags') is None:
+            row_dict['tags'] = []
+        else:
+            row_dict['tags'] = list(row_dict['tags'])
+        result.append(NewsOut(**row_dict))
+    return result
 
 
 @router.post("/news", response_model=NewsOut)
@@ -280,19 +300,25 @@ async def create_news(
     """Создать новость."""
     row = await db.fetchrow(
         """
-        INSERT INTO news (title, content, image_url, author_id, published)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, title, content, image_url, author_id, published, created_at, updated_at
+        INSERT INTO news (title, content, image_url, author_id, published, tags)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, title, content, image_url, author_id, published, created_at, updated_at, tags
         """,
         payload.title,
         payload.content,
         payload.image_url,
         current_user.id,
         payload.published,
+        payload.tags,
     )
     if not row:
         raise HTTPException(status_code=500, detail="Не удалось создать новость")
-    return NewsOut(**dict(row))
+    row_dict = dict(row)
+    if row_dict.get('tags') is None:
+        row_dict['tags'] = []
+    else:
+        row_dict['tags'] = list(row_dict['tags'])
+    return NewsOut(**row_dict)
 
 
 @router.delete("/news/{news_id}", response_model=dict)
@@ -319,19 +345,25 @@ async def update_news(
     row = await db.fetchrow(
         """
         UPDATE news
-        SET title = $2, content = $3, image_url = $4, published = $5, updated_at = NOW()
+        SET title = $2, content = $3, image_url = $4, published = $5, tags = $6, updated_at = NOW()
         WHERE id = $1
-        RETURNING id, title, content, image_url, author_id, published, created_at, updated_at
+        RETURNING id, title, content, image_url, author_id, published, created_at, updated_at, tags
         """,
         news_id,
         payload.title,
         payload.content,
         payload.image_url,
         payload.published,
+        payload.tags,
     )
     if not row:
         raise HTTPException(status_code=404, detail="Новость не найдена")
-    return NewsOut(**dict(row))
+    row_dict = dict(row)
+    if row_dict.get('tags') is None:
+        row_dict['tags'] = []
+    else:
+        row_dict['tags'] = list(row_dict['tags'])
+    return NewsOut(**row_dict)
 
 
 class FeedCreate(BaseModel):
