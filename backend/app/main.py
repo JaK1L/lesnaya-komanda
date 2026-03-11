@@ -148,6 +148,7 @@ for origin in local_origins:
 production_origins = [
     "https://lesnaya-komanda.vercel.app",
     "https://lesnayakomanda.onrender.com",
+    "https://www.lesnaya-komanda.vercel.app",  # с www
 ]
 for origin in production_origins:
     if origin not in cors_origins:

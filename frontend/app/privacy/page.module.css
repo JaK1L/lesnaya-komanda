@@ -1,0 +1,64 @@
+.container {
+  min-height: 100vh;
+  padding: calc(var(--header-height) + 3rem) var(--page-padding-x) 3rem;
+  background: var(--color-bg);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-white);
+  margin-bottom: 1rem;
+}
+
+.content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.section {
+  margin-bottom: 3rem;
+}
+
+.section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-white);
+  margin-bottom: 1rem;
+}
+
+.section p {
+  color: var(--color-white-80);
+  line-height: 1.8;
+  margin-bottom: 1rem;
+}
+
+.section ul {
+  list-style: disc;
+  padding-left: 2rem;
+  color: var(--color-white-80);
+  line-height: 1.8;
+}
+
+.section li {
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: calc(var(--header-height) + 2rem) 1.5rem 2rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .section h2 {
+    font-size: 1.25rem;
+  }
+}
