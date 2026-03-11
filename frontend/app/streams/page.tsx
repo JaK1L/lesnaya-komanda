@@ -183,23 +183,15 @@ function StreamerCardNew({ streamer }: { streamer: Streamer }) {
       rel="noopener noreferrer"
       className={styles.streamerCard}
     >
-      {/* Превью стрима или аватар */}
+      {/* Встроенный Twitch Player */}
       <div className={styles.cardImage}>
-        {streamer.is_live && streamer.thumbnail_url ? (
-          <img 
-            src={streamer.thumbnail_url} 
-            alt={`${streamer.display_name} stream`}
-            className={styles.thumbnail}
-          />
-        ) : (
-          <div className={styles.avatarContainer}>
-            <img 
-              src={streamer.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${streamer.twitch_username}`} 
-              alt={streamer.display_name}
-              className={styles.avatar}
-            />
-          </div>
-        )}
+        <iframe
+          src={`https://player.twitch.tv/?channel=${streamer.twitch_username}&parent=${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}&muted=true`}
+          height="100%"
+          width="100%"
+          allowFullScreen
+          className={styles.twitchPlayer}
+        />
         
         {streamer.is_live && (
           <div className={styles.liveBadge}>

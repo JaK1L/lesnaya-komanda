@@ -118,6 +118,16 @@
   overflow: hidden;
 }
 
+.twitchPlayer {
+  border: none;
+  display: block;
+  pointer-events: none;
+}
+
+.card:hover .twitchPlayer {
+  pointer-events: auto;
+}
+
 .thumbnail {
   width: 100%;
   height: 100%;
