@@ -1,6 +1,7 @@
 'use client'
 
 import { memo } from 'react'
+import Link from 'next/link'
 import styles from './StreamersSection.module.css'
 
 interface Streamer {
@@ -24,52 +25,42 @@ const StreamerCard = memo(function StreamerCard({
 }: { 
   streamer: Streamer
 }) {
+  const href = streamer.is_online && streamer.twitch_username 
+    ? `https://twitch.tv/${streamer.twitch_username}` 
+    : `/profile/${streamer.discord_id}`
+  
+  const target = streamer.is_online && streamer.twitch_username ? '_blank' : '_self'
+  const rel = streamer.is_online && streamer.twitch_username ? 'noopener noreferrer' : undefined
+
   return (
-    <div className={styles.card}>
-      <div className={styles.avatarWrapper}>
-        {streamer.is_online && (
-          <div className={styles.liveIndicator}>
-            <span className={styles.liveDot}></span>
-            LIVE
-          </div>
-        )}
+    <a
+      href={href}
+      target={target}
+      rel={rel}
+      className={styles.card}
+    >
+      <div className={styles.cardImage}>
         {streamer.avatar_url ? (
           <img
             src={streamer.avatar_url}
-            alt={`${streamer.discord_username} avatar`}
-            className={styles.avatar}
+            alt={streamer.discord_username}
+            className={styles.cardImg}
           />
         ) : (
-          <div className={styles.avatarPlaceholder}>
+          <div className={styles.cardImgPlaceholder}>
             {streamer.discord_username?.[0]?.toUpperCase() || '?'}
           </div>
         )}
       </div>
-
-      <h3 className={styles.name}>{streamer.discord_username}</h3>
-      
-      {streamer.is_online && streamer.game ? (
-        <p className={styles.game}>
-          🎮 {streamer.game}
-          {streamer.viewer_count && streamer.viewer_count > 0 && (
-            <span className={styles.viewers}> • 👁 {streamer.viewer_count}</span>
-          )}
+      <div className={styles.cardBody}>
+        <h3 className={styles.cardName}>{streamer.discord_username}</h3>
+        <p className={styles.cardDescription}>
+          {streamer.is_online && streamer.game 
+            ? `🎮 ${streamer.game}${streamer.viewer_count ? ` • 👁 ${streamer.viewer_count}` : ''}`
+            : streamer.forest_rank || 'Играет в различные компьютерные игры'}
         </p>
-      ) : (
-        <p className={styles.game}>{streamer.forest_rank}</p>
-      )}
-      
-      <a 
-        href={streamer.is_online && streamer.twitch_username 
-          ? `https://twitch.tv/${streamer.twitch_username}` 
-          : `/profile/${streamer.discord_id}`}
-        target={streamer.is_online && streamer.twitch_username ? '_blank' : '_self'}
-        rel={streamer.is_online && streamer.twitch_username ? 'noopener noreferrer' : undefined}
-        className={styles.button}
-      >
-        {streamer.is_online ? 'Смотреть' : 'Профиль'}
-      </a>
-    </div>
+      </div>
+    </a>
   )
 })
 
@@ -78,21 +69,28 @@ export const StreamersSection = memo(function StreamersSection({ streamers }: St
 
   return (
     <section className={styles.section} id="streamers">
-      <h2 className={styles.title}>Стримеры</h2>
-      
+      <div className={styles.sectionHeader}>
+        <h2 className={styles.sectionTitle}>Стримеры</h2>
+        <p className={styles.sectionSubtitle}>Наблюдайте за игроками лесной команды</p>
+      </div>
+
       {displayStreamers.length > 0 ? (
-        <div className={styles.grid}>
-          {displayStreamers.map((streamer) => (
-            <StreamerCard 
-              key={streamer.discord_id} 
-              streamer={streamer}
-            />
-          ))}
-        </div>
+        <>
+          <div className={styles.grid}>
+            {displayStreamers.map((streamer) => (
+              <StreamerCard 
+                key={streamer.discord_id} 
+                streamer={streamer}
+              />
+            ))}
+          </div>
+
+          <Link href="/streams" className={styles.showAllBtn}>
+            Смотреть полностью
+          </Link>
+        </>
       ) : (
-        <div className={styles.emptyState}>
-          <p>Стримеры скоро появятся</p>
-        </div>
+        <p style={{ color: 'var(--color-white-64)' }}>Стримеры скоро появятся</p>
       )}
     </section>
   )

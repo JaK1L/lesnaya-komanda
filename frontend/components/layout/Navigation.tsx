@@ -11,6 +11,14 @@ interface NavigationProps {
   apiUrl: string
 }
 
+const NAV_ITEMS = [
+  { label: 'Наша команда', href: '#team' },
+  { label: 'Стримы', href: '#streams' },
+  { label: 'О нас', href: '#about' },
+  { label: 'Соц. сети', href: '#social' },
+  { label: 'Магазин', href: '#shop' },
+]
+
 export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
@@ -40,48 +48,54 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   }, [mobileMenuOpen])
 
   return (
-    <>
-      <nav className={styles.nav} ref={navRef}>
-        <div className={styles.container}>
-          <a href="/" className={styles.logo}>
-            L-KOMAND
-          </a>
+    <nav className={styles.nav} ref={navRef}>
+      <div className={styles.container}>
+        {/* Logo */}
+        <Link href="/" className={styles.logo}>
+          LK
+        </Link>
 
-          <button
-            className={styles.mobileMenuButton}
-            onClick={toggleMobileMenu}
-            aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-
-          <div className={`${styles.navLinks} ${mobileMenuOpen ? styles.open : ''}`}>
-            <a href="/team" className={styles.link}>Наша команда</a>
-            <a href="/streams" className={styles.link}>Стримы</a>
-            <a href="/about" className={styles.link}>О нас</a>
-            <a href="/social" className={styles.link}>Соц. сети</a>
-            <a href="/merch" className={styles.link}>Магазин</a>
-          </div>
-
-          <div className={styles.headerBtns}>
-            {isAuthenticated ? (
-              <>
-                <a href="/profile" className={styles.loginButton}>Профиль</a>
-                <button onClick={onLogout} className={styles.loginButton}>Выйти</button>
-              </>
-            ) : (
-              <>
-                <Link href="/register" className={styles.linkButton}>
-                  Регистрация
-                </Link>
-                <Link href="/login" className={styles.loginButton}>
-                  Войти
-                </Link>
-              </>
-            )}
-          </div>
+        {/* Desktop Navigation */}
+        <div className={`${styles.navLinks} ${mobileMenuOpen ? styles.open : ''}`}>
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={styles.link}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
-      </nav>
-    </>
+
+        {/* Auth Buttons */}
+        <div className={styles.headerBtns}>
+          {isAuthenticated ? (
+            <button onClick={onLogout} className={`${styles.btn} ${styles.loginButton}`}>
+              Выйти
+            </button>
+          ) : (
+            <>
+              <Link href="/register" className={`${styles.btn} ${styles.linkButton}`}>
+                Регистрация
+              </Link>
+              <Link href="/login" className={`${styles.btn} ${styles.loginButton}`}>
+                Войти
+              </Link>
+            </>
+          )}
+        </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          className={styles.mobileMenuButton}
+          onClick={toggleMobileMenu}
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+    </nav>
   )
 }

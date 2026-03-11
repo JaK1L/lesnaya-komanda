@@ -14,6 +14,7 @@ interface News {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const SCROLL_STEP = 450
 
 export function NewsSection() {
   const [news, setNews] = useState<News[]>([])
@@ -21,7 +22,7 @@ export function NewsSection() {
   const [error, setError] = useState<string | null>(null)
   const [selectedNews, setSelectedNews] = useState<News | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchNews()
@@ -51,16 +52,12 @@ export function NewsSection() {
     setTimeout(() => setSelectedNews(null), 300)
   }
 
-  const scrollLeft = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: -450, behavior: 'smooth' })
-    }
-  }
-
-  const scrollRight = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: 450, behavior: 'smooth' })
-    }
+  const scroll = (dir: 'prev' | 'next') => {
+    if (!trackRef.current) return
+    trackRef.current.scrollBy({
+      left: dir === 'next' ? SCROLL_STEP : -SCROLL_STEP,
+      behavior: 'smooth',
+    })
   }
 
   const truncateText = (text: string, maxLength: number) => {
@@ -72,13 +69,15 @@ export function NewsSection() {
     return (
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h2>Последние новости</h2>
-          <p>Будьте в курсе всех событий</p>
+          <h2 className={styles.sectionTitle}>Новости</h2>
+          <p className={styles.sectionSubtitle}>Отборные новости для наших последователей</p>
         </div>
-        <div className={styles.newsScroll}>
+        <div className={styles.scrollTrack}>
           {[1, 2, 3].map((i) => (
-            <div key={i} className={styles.newsCard}>
-              <div style={{ width: '100%', height: '200px', background: '#2a2a2a' }}></div>
+            <div key={i} className={styles.card}>
+              <div className={styles.cardImage}>
+                <div style={{ width: '100%', height: '100%', background: '#2a2a2a' }}></div>
+              </div>
             </div>
           ))}
         </div>
@@ -90,10 +89,10 @@ export function NewsSection() {
     return (
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h2>Последние новости</h2>
-          <p>Будьте в курсе всех событий</p>
+          <h2 className={styles.sectionTitle}>Новости</h2>
+          <p className={styles.sectionSubtitle}>Отборные новости для наших последователей</p>
         </div>
-        <p style={{ color: 'var(--white64)' }}>Новостей пока нет</p>
+        <p style={{ color: 'var(--color-white-64)' }}>Новостей пока нет</p>
       </section>
     )
   }
@@ -102,55 +101,57 @@ export function NewsSection() {
     <>
       <section className={styles.section} id="news">
         <div className={styles.sectionHeader}>
-          <h2>Новости</h2>
-          <p>Отборные новости для наших последователей</p>
+          <h2 className={styles.sectionTitle}>Новости</h2>
+          <p className={styles.sectionSubtitle}>Отборные новости для наших последователей</p>
         </div>
 
-        <div className={styles.newsWrapper}>
-          <button 
-            className={`${styles.newsNav} ${styles.newsNavPrev}`}
-            onClick={scrollLeft}
-            aria-label="Предыдущая новость"
+        <div className={styles.scrollWrapper}>
+          <div className={styles.scrollTrack} ref={trackRef}>
+            {news.map((article) => (
+              <article
+                key={article.id}
+                className={styles.card}
+                onClick={() => handleNewsClick(article)}
+              >
+                <div className={styles.cardImage}>
+                  {article.image_url ? (
+                    <img
+                      src={article.image_url}
+                      alt={article.title}
+                      className={styles.cardImg}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', background: '#2a2a2a' }}></div>
+                  )}
+                </div>
+
+                <div className={styles.cardBody}>
+                  <h3 className={styles.cardTitle}>{article.title}</h3>
+                  <p className={styles.cardText}>{truncateText(article.content, 120)}</p>
+                </div>
+
+                <div className={styles.tags}>
+                  <span className={styles.tagDefault}>Легендарный момент</span>
+                  <span className={styles.tagRed}>Dota</span>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className={styles.fadeRight} aria-hidden="true" />
+
+          <button
+            className={`${styles.navBtn} ${styles.navBtnPrev}`}
+            onClick={() => scroll('prev')}
+            aria-label="Предыдущие новости"
           >
             ←
           </button>
 
-          <div className={styles.newsScroll} ref={scrollRef}>
-            {news.map((item) => (
-              <div 
-                key={item.id}
-                className={styles.newsCard}
-                onClick={() => handleNewsClick(item)}
-              >
-                <div className={styles.newsCardImg}>
-                  {item.image_url ? (
-                    <img 
-                      src={item.image_url} 
-                      alt={item.title}
-                    />
-                  ) : (
-                    <div className={styles.newsCardImgPlaceholder} />
-                  )}
-                </div>
-                <div className={styles.newsCardBody}>
-                  <h3>{item.title}</h3>
-                  <p>{truncateText(item.content, 120)}</p>
-                  <div className={styles.newsCardTags}>
-                    <span className={styles.tagDota}>Легендарный момент</span>
-                    <span className={styles.tagTwitch}>Dota</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className={styles.newsFadeLeft}></div>
-          <div className={styles.newsFadeRight}></div>
-
-          <button 
-            className={`${styles.newsNav} ${styles.newsNavNext}`}
-            onClick={scrollRight}
-            aria-label="Следующая новость"
+          <button
+            className={`${styles.navBtn} ${styles.navBtnNext}`}
+            onClick={() => scroll('next')}
+            aria-label="Следующие новости"
           >
             →
           </button>

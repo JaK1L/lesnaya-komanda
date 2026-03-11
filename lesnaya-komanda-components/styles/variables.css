@@ -1,0 +1,37 @@
+/* ─── Lesnaya Komanda — Design Tokens ─── */
+:root {
+  /* Colors */
+  --color-bg:           #1e1e1e;
+  --color-white:        #ffffff;
+  --color-white-64:     rgba(255, 255, 255, 0.64);
+  --color-white-10:     rgba(255, 255, 255, 0.10);
+  --color-white-05:     rgba(255, 255, 255, 0.05);
+  --color-white-03:     rgba(255, 255, 255, 0.03);
+  --color-border:       rgba(255, 255, 255, 0.05);
+
+  --color-purple:       #9147ff;
+  --color-purple-dim:   rgba(145, 71, 255, 0.05);
+  --color-purple-soft:  #925cff;
+  --color-purple-soft-dim: rgba(146, 92, 255, 0.05);
+
+  --color-red:          #ff4347;
+  --color-red-dim:      rgba(255, 67, 71, 0.05);
+
+  /* Typography */
+  --font-family:        'Manrope', sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium:  500;
+
+  /* Spacing */
+  --page-padding-x:     132px;
+  --page-padding-y:     64px;
+
+  /* Radius */
+  --radius-sm:          8px;
+  --radius-md:          16px;
+
+  /* Blur */
+  --blur-header:        25px;
+  --blur-section:       16px;
+  --blur-button:        15px;
+}

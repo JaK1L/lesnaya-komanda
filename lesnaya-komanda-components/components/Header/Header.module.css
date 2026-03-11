@@ -1,4 +1,4 @@
-.nav {
+.header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -15,33 +15,24 @@
   background: rgba(30, 30, 30, 0.7);
 }
 
-.container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
 /* Logo */
-.logo {
+.logoWrapper {
   display: flex;
   align-items: center;
   height: 100%;
   padding: 16px 20px;
   flex-shrink: 0;
   text-decoration: none;
-  color: var(--color-white);
-  font-size: 16px;
-  font-weight: 600;
-  transition: opacity 0.2s;
 }
 
-.logo:hover {
-  opacity: 0.85;
+.logoImg {
+  display: block;
+  height: 28px;
+  width: auto;
 }
 
 /* Navigation */
-.navLinks {
+.nav {
   display: flex;
   flex: 1;
   align-items: center;
@@ -51,7 +42,7 @@
   padding: 9px 32px;
 }
 
-.link {
+.navItem {
   display: flex;
   align-items: center;
   padding: 4px;
@@ -64,12 +55,12 @@
   transition: color 0.2s ease;
 }
 
-.link:hover {
+.navItem:hover {
   color: var(--color-white);
 }
 
 /* Buttons */
-.headerBtns {
+.buttons {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -77,12 +68,15 @@
   flex-shrink: 0;
 }
 
-.btn {
+.btnRegister {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   padding: 10px 16px;
+  background: var(--color-purple);
+  backdrop-filter: blur(var(--blur-button));
+  -webkit-backdrop-filter: blur(var(--blur-button));
   font-family: var(--font-family);
   font-size: 16px;
   font-weight: var(--font-weight-medium);
@@ -91,85 +85,51 @@
   text-decoration: none;
   border: none;
   cursor: pointer;
-  backdrop-filter: blur(var(--blur-button));
-  -webkit-backdrop-filter: blur(var(--blur-button));
   transition: opacity 0.2s ease, transform 0.15s ease;
 }
 
-.btn:hover {
+.btnLogin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--color-white-10);
+  backdrop-filter: blur(var(--blur-button));
+  -webkit-backdrop-filter: blur(var(--blur-button));
+  font-family: var(--font-family);
+  font-size: 16px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-white);
+  white-space: nowrap;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.btnRegister:hover,
+.btnLogin:hover {
   opacity: 0.85;
   transform: translateY(-1px);
 }
 
-.linkButton {
-  background: var(--color-purple);
-}
-
-.loginButton {
-  background: var(--color-white-10);
-}
-
-.mobileMenuButton {
-  display: none;
-}
-
 /* Responsive */
 @media (max-width: 1100px) {
-  .nav {
+  .header {
     padding: 0 40px;
   }
-  .navLinks {
+  .nav {
     gap: 20px;
     padding: 9px 16px;
   }
 }
 
 @media (max-width: 768px) {
-  .nav {
+  .header {
     padding: 0 20px;
   }
-
-  .navLinks {
+  .nav {
     display: none;
-  }
-
-  .mobileMenuButton {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-white-10);
-    border: none;
-    color: var(--color-white);
-    cursor: pointer;
-    padding: 8px;
-    transition: background 0.2s;
-  }
-
-  .mobileMenuButton:hover {
-    background: rgba(255, 255, 255, 0.18);
-  }
-
-  .navLinks.open {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    top: 74px;
-    left: 0;
-    right: 0;
-    background: rgba(30, 30, 30, 0.98);
-    backdrop-filter: blur(var(--blur-header));
-    padding: 20px;
-    gap: 16px;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .headerBtns {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .btn {
-    width: 100%;
-    justify-content: center;
   }
 }

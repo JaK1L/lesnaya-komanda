@@ -1,24 +1,28 @@
 'use client'
 
+import Link from 'next/link'
 import styles from './HeroSection.module.css'
 
 export function HeroSection() {
   return (
     <section className={styles.hero}>
+      {/* Tagline */}
       <div className={styles.heroTagline}>
         <h1>Мы прокладываем миллион и тысячу новых путей</h1>
         <p>
-          Смотри стримы, следи за новостями и будь частью леса. Всё в одном месте — без лишних кликов.
+          Смотри стримы, следи за новостями и будь частью леса.
+          Всё в одном месте — без лишних кликов.
         </p>
       </div>
 
+      {/* CTA + Social */}
       <div className={styles.heroActions}>
-        <a href="/register" className={styles.btnHero}>
+        <Link href="/register" className={styles.btnHero}>
           Вступить в лес
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z" />
           </svg>
-        </a>
+        </Link>
 
         <div className={styles.socialButtons}>
           <a
@@ -68,7 +72,8 @@ export function HeroSection() {
         </div>
       </div>
 
-      <div className={styles.heroGlow}></div>
+      {/* Ambient glow */}
+      <div className={styles.heroGlow} aria-hidden="true" />
     </section>
   )
 }

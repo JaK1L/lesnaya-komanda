@@ -14,14 +14,14 @@
 }
 
 /* Tagline */
-.heroTagline {
+.taglineContainer {
   display: flex;
   flex-direction: column;
   gap: 12px;
   max-width: 860px;
 }
 
-.heroTagline h1 {
+.tagline {
   font-family: var(--font-family);
   font-size: 60px;
   font-weight: var(--font-weight-medium);
@@ -30,7 +30,7 @@
   margin: 0;
 }
 
-.heroTagline p {
+.subTagline {
   font-family: var(--font-family);
   font-size: 20px;
   font-weight: var(--font-weight-regular);
@@ -41,14 +41,14 @@
 }
 
 /* Buttons */
-.heroActions {
+.actionsContainer {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 24px;
 }
 
-.btnHero {
+.btnJoin {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -69,16 +69,16 @@
   transition: opacity 0.2s ease, transform 0.15s ease;
 }
 
-.btnHero:hover {
+.btnJoin:hover {
   opacity: 0.88;
   transform: translateY(-2px);
 }
 
-.btnHero svg {
+.arrowIcon {
   width: 24px;
   height: 24px;
+  display: block;
   flex-shrink: 0;
-  fill: currentColor;
 }
 
 /* Social buttons */
@@ -106,22 +106,28 @@
   transform: translateY(-2px);
 }
 
-.socialBtn svg {
+.socialIcon {
   width: 24px;
   height: 24px;
   display: block;
 }
 
 /* Glow effect */
-.heroGlow {
+.glow {
   position: absolute;
   left: 408px;
   top: 500px;
   width: 624px;
   height: 100px;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, rgba(145, 71, 255, 0.3) 0%, transparent 70%);
-  filter: blur(80px);
+  overflow: visible;
+}
+
+.glowInner {
+  position: absolute;
+  inset: -300% -48.08%;
+  width: calc(100% + 96.16%);
+  height: calc(100% + 600%);
 }
 
 /* Responsive */
@@ -129,10 +135,10 @@
   .hero {
     padding: var(--page-padding-y) 40px;
   }
-  .heroTagline h1 {
+  .tagline {
     font-size: 44px;
   }
-  .heroGlow {
+  .glow {
     left: 200px;
   }
 }
@@ -142,14 +148,14 @@
     padding: 48px 20px;
     min-height: auto;
   }
-  .heroTagline h1 {
+  .tagline {
     font-size: 32px;
   }
-  .heroTagline p {
+  .subTagline {
     font-size: 16px;
     max-width: 100%;
   }
-  .btnHero {
+  .btnJoin {
     min-width: 100%;
     font-size: 18px;
   }
