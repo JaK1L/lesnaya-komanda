@@ -55,18 +55,20 @@ export default function AdminPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: username, // API принимает поле email, но может быть username
+          email: username, // Backend принимает email, но можно передать username
           password,
         }),
       })
 
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Login failed:', errorText)
-        throw new Error('Неверный логин или пароль')
+        const errorData = await response.json().catch(() => ({ detail: 'Неверный логин или пароль' }))
+        throw new Error(errorData.detail || 'Неверный логин или пароль')
       }
 
       const data = await response.json()
+      
+      // Сохраняем токен и проверяем права
+      localStorage.setItem('admin_token', data.access_token)
       
       // Проверяем права администратора
       const meResponse = await fetch(`${apiUrl}/api/auth/me`, {
@@ -76,16 +78,17 @@ export default function AdminPage() {
       })
 
       if (!meResponse.ok) {
+        localStorage.removeItem('admin_token')
         throw new Error('Ошибка проверки прав доступа')
       }
 
       const userData = await meResponse.json()
       
       if (userData.role !== 'admin') {
+        localStorage.removeItem('admin_token')
         throw new Error('У вас нет прав администратора')
       }
       
-      localStorage.setItem('admin_token', data.access_token)
       setIsAuthenticated(true)
       fetchStats()
     } catch (err) {
