@@ -44,7 +44,6 @@ export default function ProfilePage() {
   
   // Form state
   const [siteNickname, setSiteNickname] = useState('')
-  const [age, setAge] = useState<number | null>(null)
   const [bio, setBio] = useState('')
   const [isHidden, setIsHidden] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
