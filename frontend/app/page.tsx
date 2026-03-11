@@ -82,8 +82,10 @@ export default function Home() {
   // Загрузка данных с API (мемоизирована)
   const fetchData = useCallback(async (): Promise<void> => {
     try {
-      const response = await axios.get<Streamer[]>(`${API_URL}/api/streamers`)
-      setStreamers(response.data || [])
+      // Используем apiClient с автоматическим retry
+      const { fetchStreamers } = await import('../lib/api')
+      const data = await fetchStreamers()
+      setStreamers(data || [])
     } catch (err) {
       console.error('Error fetching data:', err)
     }
