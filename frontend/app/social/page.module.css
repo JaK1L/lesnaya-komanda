@@ -1,12 +1,13 @@
 .container {
   min-height: 100vh;
-  padding: calc(var(--header-height) + 3rem) var(--page-padding-x) 3rem;
   background: var(--color-bg);
 }
 
-.header {
+.hero {
   text-align: center;
-  margin-bottom: 4rem;
+  padding: 6rem var(--page-padding-x) 4rem;
+  background: linear-gradient(135deg, rgba(74, 255, 117, 0.1) 0%, rgba(74, 255, 117, 0.05) 100%);
+  border-bottom: 1px solid rgba(74, 255, 117, 0.2);
 }
 
 .title {
@@ -17,25 +18,96 @@
 }
 
 .subtitle {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   color: var(--color-white-64);
 }
 
 .content {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 4rem var(--page-padding-x);
 }
 
-.placeholder {
+.socialsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 4rem;
+}
+
+.socialCard {
+  background: var(--color-gray);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  text-decoration: none;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  padding: 4rem 0;
+}
+
+.socialCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.socialIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.socialName {
+  font-size: 1.5rem;
+  color: var(--color-white);
+  margin-bottom: 0.75rem;
+}
+
+.socialDescription {
+  font-size: 1rem;
   color: var(--color-white-64);
+  margin-bottom: 1.5rem;
+  flex: 1;
+}
+
+.socialLink {
+  color: var(--color-accent);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.callToAction {
+  text-align: center;
+  padding: 3rem;
+  background: var(--color-gray);
+  border-radius: 12px;
+  border: 1px solid var(--color-gray-light);
+}
+
+.callToAction h2 {
+  font-size: 2rem;
+  color: var(--color-white);
+  margin-bottom: 1rem;
+}
+
+.callToAction p {
   font-size: 1.125rem;
+  color: var(--color-white-80);
+  line-height: 1.8;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 @media (max-width: 768px) {
-  .container {
-    padding: calc(var(--header-height) + 2rem) 1.5rem 2rem;
+  .hero {
+    padding: 4rem 1.5rem 3rem;
   }
 
   .title {
@@ -43,6 +115,27 @@
   }
 
   .subtitle {
+    font-size: 1rem;
+  }
+
+  .content {
+    padding: 3rem 1.5rem;
+  }
+
+  .socialsGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .callToAction {
+    padding: 2rem 1.5rem;
+  }
+
+  .callToAction h2 {
+    font-size: 1.5rem;
+  }
+
+  .callToAction p {
     font-size: 1rem;
   }
 }
