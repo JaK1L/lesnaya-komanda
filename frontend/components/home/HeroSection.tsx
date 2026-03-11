@@ -11,9 +11,9 @@ export function HeroSection() {
     // Загружаем Telegram Widget скрипт
     const script = document.createElement('script')
     script.src = 'https://telegram.org/js/telegram-widget.js?22'
-    script.setAttribute('data-telegram-post', 'lesnayakomanda/1') // Замени на свой канал
+    script.setAttribute('data-telegram-post', 'lesnayakomanda/') // Замени на свой канал
     script.setAttribute('data-width', '100%')
-    script.setAttribute('data-userpic', 'false')
+    script.setAttribute('data-userpic', 'true')
     script.setAttribute('data-dark', '1')
     script.async = true
 
