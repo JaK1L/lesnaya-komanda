@@ -20,7 +20,7 @@ export function getImageUrl(url: string | null | undefined): string | null {
 /**
  * Компонент Image с автоматической обработкой URL
  */
-interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+interface ImageWithFallbackProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src: string | null | undefined
   fallback?: React.ReactNode
 }
