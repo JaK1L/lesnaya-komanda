@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { AlertCircle } from 'lucide-react'
-import { Button } from '../Button/Button'
+import { Button } from '../Button'
 import styles from './ErrorMessage.module.css'
 
 interface ErrorMessageProps {

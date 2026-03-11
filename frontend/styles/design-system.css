@@ -89,6 +89,34 @@
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
 }
 
+/* ─── Animations ─── */
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
 /* ─── Button System ─── */
 .btn {
   display: inline-flex;
