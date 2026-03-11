@@ -17,15 +17,17 @@ const GamePreferencesModal = lazyLoadModal(
 // Types
 interface Streamer {
   id: number
-  name: string
-  game?: string | null
-  avatar_url?: string | null
-  platform: string
+  twitch_username: string
+  display_name: string
+  avatar_url: string | null
+  description: string | null
   stream_url: string
-  is_active: boolean
-  is_online?: boolean
-  viewer_count?: number
-  stream_title?: string
+  followers_count: number
+  is_live: boolean
+  game_name: string | null
+  stream_title: string | null
+  viewer_count: number
+  thumbnail_url: string | null
 }
 
 // Constants

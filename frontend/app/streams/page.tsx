@@ -58,7 +58,7 @@ export default function StreamsPage() {
           isAuthenticated={false}
           onLogout={() => {}}
         />
-        <main className="container" id="main-content" tabIndex={-1}>
+        <main id="main-content" tabIndex={-1}>
           <div className={styles.loading}>
             <div className={styles.spinner}></div>
             <p>Загрузка стримеров...</p>
@@ -78,7 +78,7 @@ export default function StreamsPage() {
           isAuthenticated={false}
           onLogout={() => {}}
         />
-        <main className="container" id="main-content" tabIndex={-1}>
+        <main id="main-content" tabIndex={-1}>
           <div className={styles.error}>
             <p>{error}</p>
             <button onClick={fetchStreamers} className={styles.retryButton}>
@@ -100,24 +100,28 @@ export default function StreamsPage() {
         onLogout={() => {}}
       />
       
-      <main className="container" id="main-content" tabIndex={-1}>
+      <main id="main-content" tabIndex={-1}>
         <div className={styles.hero}>
-          <h1 className={styles.title}>СТРИМЫ</h1>
+          <h1 className={styles.title}>Стримы</h1>
           <p className={styles.subtitle}>
-            Смотри прямые трансляции от участников команды. Учись, общайся, поддерживай!
+            Смотри прямые трансляции от участников команды
           </p>
         </div>
 
         {liveStreamers.length > 0 && (
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>
-                <span className={styles.liveDot}></span>
-                Сейчас в эфире
-              </h2>
-              <span className={styles.liveCount}>{liveStreamers.length} стрим(ов)</span>
+              <div>
+                <h2 className={styles.sectionTitle}>Сейчас в эфире</h2>
+                <p className={styles.sectionSubtitle}>
+                  <span className={styles.liveIndicator}>
+                    <span className={styles.liveDot}></span>
+                    {liveStreamers.length} {liveStreamers.length === 1 ? 'стример' : 'стримеров'}
+                  </span>
+                </p>
+              </div>
             </div>
-            <div className={styles.streamersGrid}>
+            <div className={styles.grid}>
               {liveStreamers.map((streamer) => (
                 <StreamerCardNew key={streamer.id} streamer={streamer} />
               ))}
@@ -130,18 +134,19 @@ export default function StreamsPage() {
             <div className={styles.empty}>
               <Twitch size={64} style={{ opacity: 0.3 }} />
               <p>Стримеров пока нет</p>
-              <p style={{ fontSize: '0.9rem', opacity: 0.6 }}>
-                Скоро здесь появятся трансляции от участников команды
-              </p>
             </div>
           </section>
         ) : offlineStreamers.length > 0 && (
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Все стримеры</h2>
-              <span className={styles.count}>{offlineStreamers.length} стримеров</span>
+              <div>
+                <h2 className={styles.sectionTitle}>Все стримеры</h2>
+                <p className={styles.sectionSubtitle}>
+                  {offlineStreamers.length} {offlineStreamers.length === 1 ? 'стример' : 'стримеров'}
+                </p>
+              </div>
             </div>
-            <div className={styles.streamersGrid}>
+            <div className={styles.grid}>
               {offlineStreamers.map((streamer) => (
                 <StreamerCardNew key={streamer.id} streamer={streamer} />
               ))}
@@ -150,20 +155,18 @@ export default function StreamsPage() {
         )}
 
         <section className={styles.cta}>
-          <div className={styles.ctaCard}>
-            <h2 className={styles.ctaTitle}>Хочешь стать стримером команды?</h2>
-            <p className={styles.ctaText}>
-              Если ты активный участник сообщества и хочешь стримить от имени Лесной Команды, напиши нам в Discord!
-            </p>
-            <a 
-              href="https://discord.gg/YgX4RQZ" 
-              className={styles.ctaButton}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Написать в Discord
-            </a>
-          </div>
+          <h2 className={styles.ctaTitle}>Хочешь стать стримером команды?</h2>
+          <p className={styles.ctaText}>
+            Если ты активный участник сообщества и хочешь стримить от имени Лесной Команды, напиши нам в Discord
+          </p>
+          <a 
+            href="https://discord.gg/YgX4RQZ" 
+            className={styles.ctaButton}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Написать в Discord
+          </a>
         </section>
         
         <Footer />
