@@ -4,6 +4,7 @@
 """
 import os
 import aiohttp
+import ssl
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 
@@ -14,17 +15,43 @@ class TelegramService:
         self.bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
         self.channel_username = os.getenv('TELEGRAM_CHANNEL_USERNAME', 'lesnayakomanda')
         self.base_url = f'https://api.telegram.org/bot{self.bot_token}'
+        
+        # SSL context для обхода проблем с сертификатами
+        self.ssl_context = ssl.create_default_context()
+        self.ssl_context.check_hostname = False
+        self.ssl_context.verify_mode = ssl.CERT_NONE
     
     async def get_latest_post_id(self) -> Optional[int]:
         """
         Получает ID последнего поста из канала
+        Сначала пробует RSS (быстрее и надежнее для публичных каналов),
+        потом Bot API если RSS не сработал
         """
-        if not self.bot_token:
-            print("⚠️ TELEGRAM_BOT_TOKEN не установлен в .env")
-            return None
+        print(f"🔍 Начинаю поиск последнего поста...")
+        print(f"📱 Канал: @{self.channel_username}")
         
+        # Сначала пробуем RSS (работает для всех публичных каналов)
+        print("🔄 Пробую RSS парсинг...")
+        rss_result = await self._get_latest_via_rss()
+        if rss_result:
+            print(f"✅ RSS успешно: пост #{rss_result}")
+            return rss_result
+        
+        # Если RSS не сработал и есть токен бота - пробуем Bot API
+        if self.bot_token:
+            print("🔄 RSS не сработал, пробую Bot API...")
+            return await self._get_latest_via_bot_api()
+        
+        print("❌ Не удалось получить пост ни через RSS, ни через Bot API")
+        return None
+    
+    async def _get_latest_via_bot_api(self) -> Optional[int]:
+        """
+        Получение через Telegram Bot API
+        """
         try:
-            async with aiohttp.ClientSession() as session:
+            connector = aiohttp.TCPConnector(ssl=self.ssl_context)
+            async with aiohttp.ClientSession(connector=connector) as session:
                 # Получаем информацию о канале
                 url = f'{self.base_url}/getChat'
                 params = {'chat_id': f'@{self.channel_username}'}
@@ -68,7 +95,7 @@ class TelegramService:
                     return None
                     
         except Exception as e:
-            print(f"❌ Ошибка при получении последнего поста: {e}")
+            print(f"❌ Ошибка Bot API: {e}")
             return None
     
     async def _get_latest_via_rss(self) -> Optional[int]:
@@ -78,24 +105,32 @@ class TelegramService:
         try:
             # Telegram RSS feed format: https://t.me/s/CHANNEL_NAME
             rss_url = f'https://t.me/s/{self.channel_username}'
+            print(f"🔍 Парсинг RSS: {rss_url}")
             
-            async with aiohttp.ClientSession() as session:
+            connector = aiohttp.TCPConnector(ssl=self.ssl_context)
+            async with aiohttp.ClientSession(connector=connector) as session:
                 async with session.get(rss_url) as response:
                     if response.status != 200:
+                        print(f"❌ RSS ошибка: {response.status}")
                         return None
                     
                     html = await response.text()
+                    print(f"✅ HTML получен, размер: {len(html)} байт")
                     
                     # Ищем последний пост в HTML
                     # Формат: data-post="lesnayakomanda/123"
                     import re
                     matches = re.findall(r'data-post="[^/]+/(\d+)"', html)
+                    print(f"🔍 Найдено постов: {len(matches)}")
                     
                     if matches:
                         # Берем максимальный ID (последний пост)
                         post_ids = [int(m) for m in matches]
-                        return max(post_ids)
+                        latest_id = max(post_ids)
+                        print(f"✅ Последний пост ID: {latest_id}")
+                        return latest_id
                     
+                    print("❌ Посты не найдены в HTML")
                     return None
                     
         except Exception as e:
