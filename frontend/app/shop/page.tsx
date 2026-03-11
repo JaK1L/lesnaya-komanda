@@ -18,10 +18,19 @@ interface MerchItem {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const TOKEN_KEY = 'lesnaya_token'
 
 export default function ShopPage() {
   const [items, setItems] = useState<MerchItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [token, setToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem(TOKEN_KEY)
+      setToken(storedToken)
+    }
+  }, [])
 
   useEffect(() => {
     fetchMerch()
@@ -40,9 +49,18 @@ export default function ShopPage() {
     }
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem(TOKEN_KEY)
+    setToken(null)
+  }
+
   return (
     <>
-      <Navigation />
+      <Navigation
+        isAuthenticated={!!token}
+        onLogout={handleLogout}
+        apiUrl={API_URL}
+      />
       <div className={styles.container}>
         <div className={styles.hero}>
           <h1 className={styles.title}>🛍️ Магазин мерча</h1>
