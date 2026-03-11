@@ -1,473 +1,272 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { uploadImage } from '../../../lib/imageUpload'
-import { AdminTableSkeleton } from '../../../components/skeletons'
-import styles from '../news/page.module.css'
+import axios from 'axios'
+import styles from './page.module.css'
 
-interface Merch {
+interface MerchItem {
   id: number
   name: string
-  description: string | null
+  description?: string
   price: number
-  image_url: string | null
-  category: string | null
-  sizes: string | null
+  image_url?: string
+  category?: string
+  sizes?: string
   in_stock: boolean
   display_order: number
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
 export default function AdminMerchPage() {
-  const router = useRouter()
-  const [items, setItems] = useState<Merch[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [editingItem, setEditingItem] = useState<Merch | null>(null)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string>('')
-  const [isUploading, setIsUploading] = useState(false)
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: 0,
-    image_url: '',
-    category: 'футболки',
-    sizes: 'S, M, L, XL',
-    in_stock: true,
-    display_order: 0,
-  })
+  const [items, setItems] = useState<MerchItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editingItem, setEditingItem] = useState<MerchItem | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token')
-    if (!token) {
-      router.push('/admin')
-      return
-    }
-    fetchItems()
-  }, [router])
+    fetchMerch()
+  }, [])
 
-  const fetchItems = async () => {
+  const fetchMerch = async () => {
     try {
+      setLoading(true)
       const token = localStorage.getItem('admin_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/merch`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const response = await axios.get<MerchItem[]>(`${API_URL}/api/admin/merch`, {
+        headers: { Authorization: `Bearer ${token}` }
       })
-
-      if (!response.ok) throw new Error('Failed to fetch')
-      
-      const data = await response.json()
-      setItems(data)
-    } catch (error) {
-      console.error('Error fetching merch:', error)
+      setItems(response.data)
+    } catch (err) {
+      console.error('Error fetching merch:', err)
+      alert('Ошибка загрузки товаров')
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setImageFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const handleRemoveImage = () => {
-    setImageFile(null)
-    setImagePreview('')
-    setFormData({ ...formData, image_url: '' })
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    try {
-      let imageUrl = formData.image_url
-
-      // Загружаем изображение если выбрано
-      if (imageFile) {
-        setIsUploading(true)
-        const result = await uploadImage(imageFile)
-        if (result.success && result.url) {
-          imageUrl = result.url
-        } else {
-          alert(result.error || 'Ошибка загрузки изображения')
-          setIsUploading(false)
-          return
-        }
-        setIsUploading(false)
-      }
-
-      const token = localStorage.getItem('admin_token')
-      const url = editingItem
-        ? `${process.env.NEXT_PUBLIC_API_URL}/api/admin/merch/${editingItem.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/api/admin/merch`
-      
-      const method = editingItem ? 'PUT' : 'POST'
-      
-      const payload = {
-        ...formData,
-        image_url: imageUrl || null,
-        description: formData.description || null,
-        category: formData.category || null,
-        sizes: formData.sizes || null,
-      }
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) throw new Error('Failed to save')
-      
-      await fetchItems()
-      handleCancelEdit()
-    } catch (error) {
-      console.error('Error saving merch:', error)
-      alert('Ошибка при сохранении товара')
-    }
-  }
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Удалить этот товар?')) return
-
-    try {
-      const token = localStorage.getItem('admin_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/merch/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) throw new Error('Failed to delete')
-      
-      await fetchItems()
-    } catch (error) {
-      console.error('Error deleting merch:', error)
-      alert('Ошибка при удалении')
-    }
-  }
-
-  const handleEdit = (item: Merch) => {
-    setEditingItem(item)
-    setFormData({
-      name: item.name,
-      description: item.description || '',
-      price: item.price,
-      image_url: item.image_url || '',
-      category: item.category || 'футболки',
-      sizes: item.sizes || '',
-      in_stock: item.in_stock,
-      display_order: item.display_order,
-    })
-    setImagePreview(item.image_url || '')
-    setShowForm(true)
-  }
-
-  const handleCancelEdit = () => {
-    setEditingItem(null)
-    setFormData({
+  const handleCreate = () => {
+    setIsCreating(true)
+    setEditingItem({
+      id: 0,
       name: '',
       description: '',
       price: 0,
       image_url: '',
-      category: 'футболки',
-      sizes: 'S, M, L, XL',
+      category: '',
+      sizes: '',
       in_stock: true,
-      display_order: 0,
+      display_order: items.length
     })
-    setImageFile(null)
-    setImagePreview('')
-    setShowForm(false)
   }
 
-  if (isLoading) {
-    return (
-      <div className={styles.container}>
-        <header className={styles.header}>
-          <button onClick={() => router.push('/admin')} className={styles.backButton}>
-            ← Назад
-          </button>
-          <h1>🛍️ Управление магазином</h1>
-          <div style={{ width: '120px' }} /> {/* Spacer */}
-        </header>
-        <AdminTableSkeleton rows={5} />
-      </div>
-    )
+  const handleEdit = (item: MerchItem) => {
+    setIsCreating(false)
+    setEditingItem({ ...item })
+  }
+
+  const handleSave = async () => {
+    if (!editingItem) return
+
+    try {
+      const token = localStorage.getItem('admin_token')
+      
+      if (isCreating) {
+        const { id, ...itemData } = editingItem
+        await axios.post(
+          `${API_URL}/api/admin/merch`,
+          itemData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+      } else {
+        const { id, ...itemData } = editingItem
+        await axios.put(
+          `${API_URL}/api/admin/merch/${editingItem.id}`,
+          itemData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+      }
+      
+      setEditingItem(null)
+      setIsCreating(false)
+      fetchMerch()
+      alert('Сохранено!')
+    } catch (err) {
+      console.error('Error saving item:', err)
+      alert('Ошибка сохранения')
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Удалить товар?')) return
+
+    try {
+      const token = localStorage.getItem('admin_token')
+      await axios.delete(`${API_URL}/api/admin/merch/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      
+      fetchMerch()
+      alert('Удалено')
+    } catch (err) {
+      console.error('Error deleting item:', err)
+      alert('Ошибка удаления')
+    }
+  }
+
+  if (loading) {
+    return <div className={styles.container}>Загрузка...</div>
   }
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <button onClick={() => router.push('/admin')} className={styles.backButton}>
-          ← Назад
+      <div className={styles.header}>
+        <h1>Управление магазином</h1>
+        <button onClick={handleCreate} className={styles.btnCreate}>
+          + Добавить товар
         </button>
-        <h1>🛍️ Управление магазином</h1>
-        <button onClick={() => {
-          if (showForm && editingItem) {
-            handleCancelEdit()
-          } else {
-            setShowForm(!showForm)
-          }
-        }} className={styles.addButton}>
-          {showForm ? 'Отмена' : '+ Добавить'}
-        </button>
-      </header>
+      </div>
 
-      {showForm && (
-        <div className={styles.formContainer}>
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
-              {editingItem ? 'Редактировать товар' : 'Добавить товар'}
-            </h2>
+      {editingItem && (
+        <div className={styles.editForm}>
+          <h2>{isCreating ? 'Новый товар' : 'Редактирование товара'}</h2>
+          
+          <div className={styles.formRow}>
+            <label>Название *</label>
+            <input
+              type="text"
+              value={editingItem.name}
+              onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
+              placeholder="Футболка Лесная Команда"
+            />
+          </div>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="name">Название товара</label>
+          <div className={styles.formRow}>
+            <label>Описание</label>
+            <textarea
+              value={editingItem.description || ''}
+              onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
+              placeholder="Описание товара..."
+              rows={4}
+            />
+          </div>
+
+          <div className={styles.formRow}>
+            <label>Цена (₽) *</label>
+            <input
+              type="number"
+              value={editingItem.price}
+              onChange={(e) => setEditingItem({...editingItem, price: parseFloat(e.target.value) || 0})}
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div className={styles.formRow}>
+            <label>URL изображения</label>
+            <input
+              type="text"
+              value={editingItem.image_url || ''}
+              onChange={(e) => setEditingItem({...editingItem, image_url: e.target.value})}
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+
+          <div className={styles.formRow}>
+            <label>Категория</label>
+            <input
+              type="text"
+              value={editingItem.category || ''}
+              onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
+              placeholder="Одежда, Аксессуары и т.д."
+            />
+          </div>
+
+          <div className={styles.formRow}>
+            <label>Размеры</label>
+            <input
+              type="text"
+              value={editingItem.sizes || ''}
+              onChange={(e) => setEditingItem({...editingItem, sizes: e.target.value})}
+              placeholder="S, M, L, XL"
+            />
+          </div>
+
+          <div className={styles.formRow}>
+            <label>Порядок отображения</label>
+            <input
+              type="number"
+              value={editingItem.display_order}
+              onChange={(e) => setEditingItem({...editingItem, display_order: parseInt(e.target.value) || 0})}
+              min="0"
+            />
+          </div>
+
+          <div className={styles.formRow}>
+            <label className={styles.checkbox}>
               <input
-                id="name"
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder='Футболка "Лесная"'
-                required
-                maxLength={200}
+                type="checkbox"
+                checked={editingItem.in_stock}
+                onChange={(e) => setEditingItem({...editingItem, in_stock: e.target.checked})}
               />
-            </div>
+              <span>В наличии</span>
+            </label>
+          </div>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="description">Описание</label>
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Описание товара..."
-                rows={4}
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="price">Цена (₽)</label>
-              <input
-                id="price"
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                placeholder="1500"
-                required
-                min={0}
-                step={0.01}
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Изображение товара</label>
-              <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  style={{ display: 'none' }}
-                  id="image-upload"
-                />
-                <label htmlFor="image-upload" style={{ 
-                  padding: '0.75rem 1rem',
-                  background: '#7cb342',
-                  color: 'white',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  display: 'inline-block',
-                  width: 'fit-content'
-                }}>
-                  📁 Выбрать файл
-                </label>
-                
-                <input
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) => {
-                    setFormData({ ...formData, image_url: e.target.value })
-                    setImagePreview(e.target.value)
-                  }}
-                  placeholder="Или вставьте ссылку на изображение"
-                  maxLength={500}
-                />
-
-                {imagePreview && (
-                  <div style={{ position: 'relative', width: 'fit-content' }}>
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      style={{ 
-                        maxWidth: '300px', 
-                        maxHeight: '300px',
-                        borderRadius: '8px',
-                        objectFit: 'cover'
-                      }} 
-                    />
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(0,0,0,0.7)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '32px',
-                        height: '32px',
-                        cursor: 'pointer',
-                        fontSize: '18px'
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="category">Категория</label>
-              <select
-                id="category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              >
-                <option value="футболки">Футболки</option>
-                <option value="худи">Худи</option>
-                <option value="аксессуары">Аксессуары</option>
-                <option value="другое">Другое</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="sizes">Размеры</label>
-              <input
-                id="sizes"
-                type="text"
-                value={formData.sizes}
-                onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
-                placeholder="S, M, L, XL, XXL"
-                maxLength={200}
-              />
-              <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-                Укажите доступные размеры через запятую
-              </small>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="display_order">Порядок отображения</label>
-              <input
-                id="display_order"
-                type="number"
-                value={formData.display_order}
-                onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
-                min={0}
-              />
-              <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-                Меньше число = выше в списке
-              </small>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={formData.in_stock}
-                  onChange={(e) => setFormData({ ...formData, in_stock: e.target.checked })}
-                />
-                В наличии
-              </label>
-            </div>
-
-            <button type="submit" className={styles.submitButton} disabled={isUploading}>
-              {isUploading ? 'Загрузка изображения...' : editingItem ? 'Сохранить изменения' : 'Добавить товар'}
+          <div className={styles.formActions}>
+            <button onClick={handleSave} className={styles.btnSave}>
+              Сохранить
             </button>
-          </form>
+            <button onClick={() => { setEditingItem(null); setIsCreating(false); }} className={styles.btnCancel}>
+              Отмена
+            </button>
+          </div>
         </div>
       )}
 
-      <div className={styles.list}>
+      <div className={styles.itemsList}>
+        <h2>Товары ({items.length})</h2>
+        
         {items.length === 0 ? (
-          <div className={styles.empty}>
-            <p>Товаров пока нет</p>
-            <button onClick={() => setShowForm(true)} className={styles.emptyButton}>
-              Добавить первый товар
-            </button>
-          </div>
+          <p className={styles.empty}>Товаров пока нет. Добавьте первый товар.</p>
         ) : (
-          items.map((item) => (
-            <div key={item.id} className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  {item.image_url && (
-                    <img 
-                      src={item.image_url} 
-                      alt={item.name}
-                      style={{ 
-                        width: '80px', 
-                        height: '80px', 
-                        borderRadius: '8px',
-                        objectFit: 'cover'
-                      }}
-                    />
+          <div className={styles.items}>
+            {items.map((item) => (
+              <div key={item.id} className={styles.itemCard}>
+                <div className={styles.itemImage}>
+                  {item.image_url ? (
+                    <img src={item.image_url} alt={item.name} />
+                  ) : (
+                    <div className={styles.imagePlaceholder}>🛍️</div>
                   )}
-                  <div>
-                    <h3>{item.name}</h3>
-                    <small style={{ color: '#7cb342', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                      {item.price.toFixed(2)} ₽
-                    </small>
+                </div>
+                
+                <div className={styles.itemInfo}>
+                  <h3>{item.name}</h3>
+                  <p className={styles.itemPrice}>{item.price} ₽</p>
+                  {item.description && (
+                    <p className={styles.itemDescription}>{item.description}</p>
+                  )}
+                  <div className={styles.itemMeta}>
+                    {item.category && <span className={styles.badge}>{item.category}</span>}
+                    {item.sizes && <span className={styles.badge}>Размеры: {item.sizes}</span>}
+                    <span className={item.in_stock ? styles.badgeSuccess : styles.badgeError}>
+                      {item.in_stock ? 'В наличии' : 'Нет в наличии'}
+                    </span>
+                    <span className={styles.badge}>Порядок: {item.display_order}</span>
                   </div>
                 </div>
-                <div className={styles.cardActions}>
-                  <span className={item.in_stock ? styles.published : styles.draft}>
-                    {item.in_stock ? 'В наличии' : 'Нет в наличии'}
-                  </span>
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className={styles.editButton}
-                    title="Редактировать"
-                  >
-                    ✏️
+
+                <div className={styles.itemActions}>
+                  <button onClick={() => handleEdit(item)} className={styles.btnEdit}>
+                    Редактировать
                   </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className={styles.deleteButton}
-                    title="Удалить"
-                  >
-                    🗑️
+                  <button onClick={() => handleDelete(item.id)} className={styles.btnDelete}>
+                    Удалить
                   </button>
                 </div>
               </div>
-              <p className={styles.cardContent}>{item.description || 'Описание отсутствует'}</p>
-              <div className={styles.cardFooter}>
-                <span className={styles.date}>
-                  📦 {item.category}
-                </span>
-                {item.sizes && (
-                  <span className={styles.draft}>
-                    📏 {item.sizes}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>

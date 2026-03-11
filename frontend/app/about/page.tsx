@@ -2,12 +2,12 @@
 
 import styles from './page.module.css'
 
-export default function SocialPage() {
+export default function AboutPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Социальные сети</h1>
-        <p className={styles.subtitle}>Следите за нами в соцсетях</p>
+        <h1 className={styles.title}>О нас</h1>
+        <p className={styles.subtitle}>Узнайте больше о Лесной Команде</p>
       </div>
 
       <div className={styles.content}>

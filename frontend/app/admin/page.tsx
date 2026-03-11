@@ -177,8 +177,11 @@ export default function AdminPage() {
           <button onClick={() => router.push('/admin/feed')} className={styles.navButton}>
             📝 Лента
           </button>
+          <button onClick={() => router.push('/admin/team')} className={styles.navButton}>
+            👥 Наша команда
+          </button>
           <button onClick={() => router.push('/admin/users')} className={styles.navButton}>
-            👥 Пользователи
+            👤 Пользователи
           </button>
           <button onClick={() => router.push('/admin/achievements')} className={styles.navButton}>
             🏆 Достижения

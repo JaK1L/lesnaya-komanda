@@ -14,11 +14,11 @@ interface NavigationProps {
 }
 
 const NAV_ITEMS = [
-  { label: 'Наша команда', href: '#team' },
+  { label: 'Наша команда', href: '/team' },
   { label: 'Стримы', href: '#streams' },
-  { label: 'О нас', href: '#about' },
-  { label: 'Соц. сети', href: '#social' },
-  { label: 'Магазин', href: '#shop' },
+  { label: 'О нас', href: '/about' },
+  { label: 'Соц. сети', href: '/social' },
+  { label: 'Магазин', href: '/shop' },
 ]
 
 export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {

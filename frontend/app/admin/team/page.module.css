@@ -1,0 +1,325 @@
+.container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 3rem;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: var(--color-white);
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: var(--color-white-64);
+}
+
+.searchSection {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+}
+
+.searchSection h2 {
+  font-size: 1.25rem;
+  color: var(--color-white);
+  margin-bottom: 1rem;
+}
+
+.searchBox {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.searchBox input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--color-white);
+  font-size: 1rem;
+}
+
+.searchBox button {
+  padding: 0.75rem 2rem;
+  background: var(--color-purple);
+  color: var(--color-white);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.searchBox button:hover:not(:disabled) {
+  background: var(--color-purple-hover);
+}
+
+.searchBox button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.searchResults {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.searchResult {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.userInfo img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.userName {
+  color: var(--color-white);
+  font-weight: 500;
+}
+
+.userRank {
+  color: var(--color-white-64);
+  font-size: 0.875rem;
+}
+
+.badge {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-white-64);
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.searchResult button {
+  padding: 0.5rem 1.5rem;
+  background: var(--color-purple);
+  color: var(--color-white);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.searchResult button:hover {
+  background: var(--color-purple-hover);
+}
+
+.teamList h2 {
+  font-size: 1.5rem;
+  color: var(--color-white);
+  margin-bottom: 1.5rem;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-white-64);
+}
+
+.members {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.memberCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.memberView {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.memberHeader {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.memberHeader img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+}
+
+.memberHeader h3 {
+  font-size: 1.25rem;
+  color: var(--color-white);
+  margin: 0 0 0.25rem 0;
+}
+
+.memberRole {
+  color: var(--color-purple);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.memberOrder {
+  color: var(--color-white-64);
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0 0;
+}
+
+.memberBio {
+  color: var(--color-white-80);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.memberActions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btnEdit,
+.btnRemove {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btnEdit {
+  background: var(--color-purple);
+  color: var(--color-white);
+}
+
+.btnEdit:hover {
+  background: var(--color-purple-hover);
+}
+
+.btnRemove {
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
+}
+
+.btnRemove:hover {
+  background: rgba(255, 59, 48, 0.2);
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formRow label {
+  color: var(--color-white);
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.formRow input,
+.formRow textarea {
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--color-white);
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.formRow textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+.btnSave,
+.btnCancel {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btnSave {
+  background: var(--color-purple);
+  color: var(--color-white);
+}
+
+.btnSave:hover {
+  background: var(--color-purple-hover);
+}
+
+.btnCancel {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-white);
+}
+
+.btnCancel:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .searchBox {
+    flex-direction: column;
+  }
+
+  .memberHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .memberActions,
+  .formActions {
+    flex-direction: column;
+  }
+
+  .btnEdit,
+  .btnRemove,
+  .btnSave,
+  .btnCancel {
+    width: 100%;
+  }
+}

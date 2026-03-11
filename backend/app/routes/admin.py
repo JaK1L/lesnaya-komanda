@@ -802,3 +802,327 @@ async def update_user(
     await db.execute(query, *values)
     
     return {"message": "Пользователь обновлен"}
+
+
+# Team Members Management
+
+class TeamMemberUpdate(BaseModel):
+    discord_id: int
+    real_name: Optional[str] = Field(None, max_length=100)
+    bio: Optional[str] = Field(None, max_length=1000)
+    team_role: Optional[str] = Field(None, max_length=100)
+    telegram_url: Optional[str] = Field(None, max_length=200)
+    tiktok_url: Optional[str] = Field(None, max_length=200)
+    youtube_url: Optional[str] = Field(None, max_length=200)
+    is_team_member: bool = True
+    team_order: int = Field(default=0, ge=0)
+
+
+class TeamMemberResponse(BaseModel):
+    discord_id: int
+    discord_username: str
+    real_name: Optional[str]
+    avatar_url: Optional[str]
+    bio: Optional[str]
+    forest_rank: str
+    team_role: Optional[str]
+    twitch_username: Optional[str]
+    telegram_url: Optional[str]
+    tiktok_url: Optional[str]
+    youtube_url: Optional[str]
+    is_team_member: bool
+    team_order: int
+
+
+@router.get("/team", response_model=List[TeamMemberResponse])
+async def get_team_members(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Получить список всех членов команды (для админки)"""
+    rows = await db.fetch(
+        """
+        SELECT 
+            discord_id,
+            discord_username,
+            real_name,
+            avatar_url,
+            bio,
+            forest_rank,
+            team_role,
+            twitch_username,
+            telegram_url,
+            tiktok_url,
+            youtube_url,
+            COALESCE(is_team_member, false) as is_team_member,
+            COALESCE(team_order, 0) as team_order
+        FROM users
+        WHERE is_team_member = true
+        ORDER BY team_order ASC, discord_username ASC
+        """
+    )
+    return [TeamMemberResponse(**dict(row)) for row in rows]
+
+
+@router.put("/team/{discord_id}")
+async def update_team_member(
+    discord_id: int,
+    data: TeamMemberUpdate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Обновить информацию о члене команды"""
+    
+    # Проверяем существует ли пользователь
+    user_exists = await db.fetchval(
+        "SELECT EXISTS(SELECT 1 FROM users WHERE discord_id = $1)",
+        discord_id
+    )
+    
+    if not user_exists:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Обновляем данные
+    await db.execute(
+        """
+        UPDATE users SET
+            real_name = $1,
+            bio = $2,
+            team_role = $3,
+            telegram_url = $4,
+            tiktok_url = $5,
+            youtube_url = $6,
+            is_team_member = $7,
+            team_order = $8
+        WHERE discord_id = $9
+        """,
+        data.real_name,
+        data.bio,
+        data.team_role,
+        data.telegram_url,
+        data.tiktok_url,
+        data.youtube_url,
+        data.is_team_member,
+        data.team_order,
+        discord_id
+    )
+    
+    return {"status": "success", "message": "Team member updated"}
+
+
+@router.delete("/team/{discord_id}")
+async def remove_team_member(
+    discord_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Убрать пользователя из команды"""
+    
+    await db.execute(
+        """
+        UPDATE users SET
+            is_team_member = false,
+            team_order = 0
+        WHERE discord_id = $1
+        """,
+        discord_id
+    )
+    
+    return {"status": "success", "message": "User removed from team"}
+
+
+@router.get("/users/search")
+async def search_users(
+    q: str = Query(..., min_length=2),
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Поиск пользователей для добавления в команду"""
+    rows = await db.fetch(
+        """
+        SELECT 
+            discord_id,
+            discord_username,
+            avatar_url,
+            forest_rank,
+            COALESCE(is_team_member, false) as is_team_member
+        FROM users
+        WHERE discord_username ILIKE $1
+        ORDER BY discord_username ASC
+        LIMIT 20
+        """,
+        f"%{q}%"
+    )
+    
+    return [dict(row) for row in rows]
+
+
+# Merch Management
+
+class MerchItemCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    price: float = Field(..., gt=0)
+    image_url: Optional[str] = Field(None, max_length=500)
+    category: Optional[str] = Field(None, max_length=100)
+    sizes: Optional[str] = Field(None, max_length=100)
+    in_stock: bool = True
+    display_order: int = Field(default=0, ge=0)
+
+
+class MerchItemUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+    price: Optional[float] = Field(None, gt=0)
+    image_url: Optional[str] = Field(None, max_length=500)
+    category: Optional[str] = Field(None, max_length=100)
+    sizes: Optional[str] = Field(None, max_length=100)
+    in_stock: Optional[bool] = None
+    display_order: Optional[int] = Field(None, ge=0)
+
+
+class MerchItemResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    price: float
+    image_url: Optional[str]
+    category: Optional[str]
+    sizes: Optional[str]
+    in_stock: bool
+    display_order: int
+
+
+@router.get("/merch", response_model=List[MerchItemResponse])
+async def get_merch_items(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Получить все товары (для админки)"""
+    rows = await db.fetch(
+        """
+        SELECT id, name, description, price, image_url, category, sizes, in_stock, display_order
+        FROM merch
+        ORDER BY display_order ASC, id ASC
+        """
+    )
+    return [MerchItemResponse(**dict(row)) for row in rows]
+
+
+@router.post("/merch")
+async def create_merch_item(
+    data: MerchItemCreate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Создать новый товар"""
+    item_id = await db.fetchval(
+        """
+        INSERT INTO merch (name, description, price, image_url, category, sizes, in_stock, display_order)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id
+        """,
+        data.name,
+        data.description,
+        data.price,
+        data.image_url,
+        data.category,
+        data.sizes,
+        data.in_stock,
+        data.display_order
+    )
+    
+    return {"status": "success", "id": item_id, "message": "Merch item created"}
+
+
+@router.put("/merch/{item_id}")
+async def update_merch_item(
+    item_id: int,
+    data: MerchItemUpdate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Обновить товар"""
+    
+    # Проверяем существует ли товар
+    item_exists = await db.fetchval(
+        "SELECT EXISTS(SELECT 1 FROM merch WHERE id = $1)",
+        item_id
+    )
+    
+    if not item_exists:
+        raise HTTPException(status_code=404, detail="Merch item not found")
+    
+    # Формируем запрос обновления только для переданных полей
+    update_fields = []
+    values = []
+    param_count = 1
+    
+    if data.name is not None:
+        update_fields.append(f"name = ${param_count}")
+        values.append(data.name)
+        param_count += 1
+    
+    if data.description is not None:
+        update_fields.append(f"description = ${param_count}")
+        values.append(data.description)
+        param_count += 1
+    
+    if data.price is not None:
+        update_fields.append(f"price = ${param_count}")
+        values.append(data.price)
+        param_count += 1
+    
+    if data.image_url is not None:
+        update_fields.append(f"image_url = ${param_count}")
+        values.append(data.image_url)
+        param_count += 1
+    
+    if data.category is not None:
+        update_fields.append(f"category = ${param_count}")
+        values.append(data.category)
+        param_count += 1
+    
+    if data.sizes is not None:
+        update_fields.append(f"sizes = ${param_count}")
+        values.append(data.sizes)
+        param_count += 1
+    
+    if data.in_stock is not None:
+        update_fields.append(f"in_stock = ${param_count}")
+        values.append(data.in_stock)
+        param_count += 1
+    
+    if data.display_order is not None:
+        update_fields.append(f"display_order = ${param_count}")
+        values.append(data.display_order)
+        param_count += 1
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    values.append(item_id)
+    query = f"UPDATE merch SET {', '.join(update_fields)} WHERE id = ${param_count}"
+    
+    await db.execute(query, *values)
+    
+    return {"status": "success", "message": "Merch item updated"}
+
+
+@router.delete("/merch/{item_id}")
+async def delete_merch_item(
+    item_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Удалить товар"""
+    
+    result = await db.execute(
+        "DELETE FROM merch WHERE id = $1",
+        item_id
+    )
+    
+    if result == "DELETE 0":
+        raise HTTPException(status_code=404, detail="Merch item not found")
+    
+    return {"status": "success", "message": "Merch item deleted"}

@@ -454,3 +454,46 @@ async def add_news_comment(
         "comment_id": comment_id,
         "message": "Comment added successfully"
     }
+
+
+# Team Members
+
+class TeamMemberPublic(BaseModel):
+    discord_id: int
+    discord_username: str
+    real_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    forest_rank: str
+    team_role: Optional[str] = None
+    twitch_username: Optional[str] = None
+    telegram_url: Optional[str] = None
+    tiktok_url: Optional[str] = None
+    youtube_url: Optional[str] = None
+
+
+@router.get("/team", response_model=List[TeamMemberPublic])
+async def list_team_members(db: asyncpg.Connection = Depends(get_db)):
+    """
+    Публичный список членов команды для страницы /team
+    """
+    rows = await db.fetch(
+        """
+        SELECT 
+            discord_id,
+            discord_username,
+            real_name,
+            avatar_url,
+            bio,
+            forest_rank,
+            team_role,
+            twitch_username,
+            telegram_url,
+            tiktok_url,
+            youtube_url
+        FROM users
+        WHERE is_team_member = true
+        ORDER BY team_order ASC, discord_username ASC
+        """
+    )
+    return [TeamMemberPublic(**dict(row)) for row in rows]
