@@ -808,13 +808,13 @@ class UserUpdate(BaseModel):
 
 class UserOut(BaseModel):
     id: int
-    discord_id: int
-    discord_username: str
+    discord_id: Optional[int] = None
+    discord_username: Optional[str] = None
     forest_rank: str
     rating: float
-    avatar_url: Optional[str]
-    site_nickname: Optional[str]
-    joined_at: Optional[datetime]
+    avatar_url: Optional[str] = None
+    site_nickname: Optional[str] = None
+    joined_at: Optional[datetime] = None
     last_seen: datetime
 
 
@@ -892,7 +892,7 @@ async def update_user(
 # Team Members Management
 
 class TeamMemberUpdate(BaseModel):
-    discord_id: int
+    discord_id: Optional[int] = None
     real_name: Optional[str] = Field(None, max_length=100)
     bio: Optional[str] = Field(None, max_length=1000)
     team_role: Optional[str] = Field(None, max_length=100)
@@ -904,17 +904,17 @@ class TeamMemberUpdate(BaseModel):
 
 
 class TeamMemberResponse(BaseModel):
-    discord_id: int
-    discord_username: str
-    real_name: Optional[str]
-    avatar_url: Optional[str]
-    bio: Optional[str]
+    discord_id: Optional[int] = None
+    discord_username: Optional[str] = None
+    real_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
     forest_rank: str
-    team_role: Optional[str]
-    twitch_username: Optional[str]
-    telegram_url: Optional[str]
-    tiktok_url: Optional[str]
-    youtube_url: Optional[str]
+    team_role: Optional[str] = None
+    twitch_username: Optional[str] = None
+    telegram_url: Optional[str] = None
+    tiktok_url: Optional[str] = None
+    youtube_url: Optional[str] = None
     is_team_member: bool
     team_order: int
 

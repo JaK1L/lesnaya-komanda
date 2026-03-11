@@ -474,8 +474,8 @@ async def add_news_comment(
 # Team Members
 
 class TeamMemberPublic(BaseModel):
-    discord_id: int
-    discord_username: str
+    discord_id: Optional[int] = None
+    discord_username: Optional[str] = None
     real_name: Optional[str] = None
     avatar_url: Optional[str] = None
     bio: Optional[str] = None

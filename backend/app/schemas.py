@@ -8,11 +8,11 @@ from datetime import datetime
 
 # Модели пользователей
 class UserProfile(BaseModel):
-    discord_id: int
-    discord_username: str
+    discord_id: Optional[int] = None
+    discord_username: Optional[str] = None
     forest_rank: str
     rating: float
-    joined_at: Optional[datetime]
+    joined_at: Optional[datetime] = None
     last_seen: datetime
     message_count: int
     voice_hours: float
@@ -167,7 +167,7 @@ class ProfileResponse(BaseModel):
     """Response model for user profile data"""
     discord_id: Optional[int] = None
     site_nickname: Optional[str] = None
-    discord_username: str
+    discord_username: Optional[str] = None
     user_tag: Optional[str] = None
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
@@ -187,7 +187,7 @@ class XPTransaction(BaseModel):
     """Model for XP/Points transaction"""
     id: int
     user_id: int
-    discord_id: int
+    discord_id: Optional[int] = None
     type: str  # 'xp' or 'points'
     amount: int
     reason: str
@@ -198,7 +198,7 @@ class XPTransaction(BaseModel):
 
 class XPTransactionCreate(BaseModel):
     """Request model for creating XP/Points transaction"""
-    discord_id: int
+    discord_id: Optional[int] = None
     type: str = Field(..., pattern='^(xp|points)$')
     amount: int
     reason: str = Field(..., min_length=1, max_length=200)
@@ -209,7 +209,7 @@ class PointsPurchase(BaseModel):
     """Model for points purchase"""
     id: int
     user_id: int
-    discord_id: int
+    discord_id: Optional[int] = None
     item_name: str
     cost: int
     expires_at: Optional[datetime] = None
@@ -218,7 +218,7 @@ class PointsPurchase(BaseModel):
 
 class UserXPUpdate(BaseModel):
     """Request model for admin to update user XP/Level"""
-    discord_id: int
+    discord_id: Optional[int] = None
     level: Optional[int] = Field(None, ge=1, le=100)
     current_xp: Optional[int] = Field(None, ge=0)
     total_xp: Optional[int] = Field(None, ge=0)
