@@ -4,12 +4,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { Navigation, Footer, SkipToContent } from '../../components/layout'
-import { ProfileHeader, ProfileEditForm, GamePreferencesSection, ProfileSkeleton, AchievementsSection, GameAccountsSection } from '../../components/profile'
-import { ErrorMessage } from '../../components/ui'
+import { GamePreferencesSection, AchievementsSection, GameAccountsSection } from '../../components/profile'
 import { PageErrorBoundary } from '../../components/PageErrorBoundary'
 import { SectionErrorBoundary } from '../../components/SectionErrorBoundary'
 import { GamePreference } from '../../types/gamePreferences'
-import './mobile-profile.css'
+import styles from './page.module.css'
 
 // Types
 interface ProfileData {
@@ -275,9 +274,13 @@ export default function ProfilePage() {
           onLogout={handleLogout}
           apiUrl={API_URL}
         />
-        <main id="main-content" className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }} tabIndex={-1}>
-          <ProfileSkeleton />
+        <main id="main-content" className={styles.container} tabIndex={-1}>
+          <div className={styles.loading}>
+            <div className={styles.spinner}></div>
+            <p>Загрузка профиля...</p>
+          </div>
         </main>
+        <Footer />
       </>
     )
   }
@@ -292,13 +295,19 @@ export default function ProfilePage() {
           onLogout={handleLogout}
           apiUrl={API_URL}
         />
-        <main id="main-content" className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }} tabIndex={-1}>
-          <ErrorMessage
-            title="Ошибка загрузки профиля"
-            message={error || 'Не удалось загрузить данные профиля'}
-            onRetry={handleRetry}
-          />
+        <main id="main-content" className={styles.container} tabIndex={-1}>
+          <div className={styles.section}>
+            <div className={styles.sectionEmpty}>
+              <div className={styles.sectionEmptyIcon}>⚠️</div>
+              <h3>Ошибка загрузки профиля</h3>
+              <p>{error || 'Не удалось загрузить данные профиля'}</p>
+              <button onClick={handleRetry} className={styles.editButton} style={{ marginTop: '1rem' }}>
+                Попробовать снова
+              </button>
+            </div>
+          </div>
         </main>
+        <Footer />
       </>
     )
   }
@@ -313,150 +322,176 @@ export default function ProfilePage() {
         apiUrl={API_URL}
       />
 
-      <main id="main-content" className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }} tabIndex={-1}>
-        {/* Error message */}
+      <main id="main-content" className={styles.container} tabIndex={-1}>
+        {/* Messages */}
         {error && (
-          <div style={{ 
-            background: '#ff4444', 
-            color: 'white', 
-            padding: '1rem', 
-            marginBottom: '2rem',
-            border: '2px solid #ff6b6b',
-            borderRadius: '8px'
-          }}>
+          <div className={`${styles.message} ${styles.messageError}`}>
             {error}
           </div>
         )}
 
-        {/* Success message */}
         {success && (
-          <div style={{ 
-            background: 'var(--accent-dark)', 
-            color: 'var(--accent)', 
-            padding: '1rem', 
-            marginBottom: '2rem',
-            border: '2px solid var(--accent)',
-            borderRadius: '8px'
-          }}>
+          <div className={`${styles.message} ${styles.messageSuccess}`}>
             {success}
           </div>
         )}
 
-        {/* Profile Header */}
-        <SectionErrorBoundary sectionName="Заголовок профиля">
-          <ProfileHeader
-            nickname={profile.site_nickname}
-            username={profile.discord_username}
-            userTag={profile.user_tag}
-            avatarUrl={avatarPreview || profile.avatar_url}
-            bio={profile.bio}
-            age={age}
-            isEditMode={isEditMode}
-            onToggleEdit={() => setIsEditMode(!isEditMode)}
-          />
+        {/* Profile Card */}
+        <SectionErrorBoundary sectionName="Профиль">
+          <div className={styles.profileCard}>
+            <div className={styles.profileHeader}>
+              <div className={styles.avatarSection}>
+                <div className={styles.avatar}>
+                  {avatarPreview || profile.avatar_url ? (
+                    <img src={avatarPreview || profile.avatar_url || ''} alt={profile.discord_username} />
+                  ) : (
+                    <div className={styles.avatarPlaceholder}>
+                      {profile.discord_username[0]?.toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.profileInfo}>
+                <h1 className={styles.profileName}>
+                  {profile.site_nickname || profile.discord_username}
+                </h1>
+                {profile.site_nickname && (
+                  <p className={styles.profileUsername}>@{profile.discord_username}</p>
+                )}
+                {profile.user_tag && (
+                  <span className={styles.profileTag}>{profile.user_tag}</span>
+                )}
+                {profile.bio && !isEditMode && (
+                  <p className={styles.profileBio}>{profile.bio}</p>
+                )}
+              </div>
+
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={styles.editButton}
+              >
+                {isEditMode ? 'Отменить' : 'Редактировать'}
+              </button>
+            </div>
+
+            {/* Edit Form */}
+            {isEditMode && (
+              <div className={styles.form}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Никнейм на сайте</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={siteNickname}
+                    onChange={(e) => setSiteNickname(e.target.value)}
+                    placeholder={profile.discord_username}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>О себе</label>
+                  <textarea
+                    className={styles.formTextarea}
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Расскажите о себе..."
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Аватар</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleAvatarFileChange(e.target.files?.[0] || null)}
+                    className={styles.formInput}
+                  />
+                </div>
+
+                <div className={styles.formCheckbox}>
+                  <input
+                    type="checkbox"
+                    id="isHidden"
+                    checked={isHidden}
+                    onChange={(e) => setIsHidden(e.target.checked)}
+                  />
+                  <label htmlFor="isHidden">Скрыть профиль от других пользователей</label>
+                </div>
+
+                <div className={styles.formActions}>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className={styles.saveButton}
+                  >
+                    {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </SectionErrorBoundary>
 
-        {/* Edit Form */}
+        {/* Game Preferences */}
         {isEditMode && (
-          <SectionErrorBoundary sectionName="Форма редактирования">
-            <div>
-              <ProfileEditForm
-                siteNickname={siteNickname}
-                age={age}
-                bio={bio}
-                isHidden={isHidden}
-                saving={saving}
-                onSiteNicknameChange={setSiteNickname}
-                onAgeChange={setAge}
-                onBioChange={setBio}
-                onIsHiddenChange={setIsHidden}
-                onAvatarFileChange={handleAvatarFileChange}
-                onSave={handleSave}
-                placeholderUsername={profile.discord_username}
+          <SectionErrorBoundary sectionName="Игровые предпочтения">
+            <div className={styles.section}>
+              <h2 className={styles.sectionTitle}>Игровые предпочтения</h2>
+              <GamePreferencesSection
+                selectedGames={selectedGames}
+                customGameName={customGameName}
+                onGameToggle={handleGameToggle}
+                onCustomGameNameChange={(name) => {
+                  setCustomGameName(name)
+                  setGamePreferencesChanged(true)
+                }}
               />
-
-              {/* Game Preferences inside edit form */}
-              <div style={{
-                background: 'var(--gray)',
-                border: '2px solid var(--accent)',
-                borderRadius: '8px',
-                padding: '2rem',
-                marginBottom: '2rem',
-                marginTop: '-1rem'
-              }}>
-                <GamePreferencesSection
-                  selectedGames={selectedGames}
-                  customGameName={customGameName}
-                  onGameToggle={handleGameToggle}
-                  onCustomGameNameChange={(name) => {
-                    setCustomGameName(name)
-                    setGamePreferencesChanged(true)
-                  }}
-                />
-              </div>
             </div>
           </SectionErrorBoundary>
         )}
 
-        {/* Achievements Section */}
+        {/* Achievements */}
         <SectionErrorBoundary sectionName="Достижения">
-          {profile.discord_id ? (
-            <AchievementsSection discordId={profile.discord_id} />
-          ) : (
-            <div style={{
-              background: 'var(--gray)',
-              border: '2px solid var(--gray-light)',
-              borderRadius: '8px',
-              padding: '2rem',
-              textAlign: 'center',
-              color: 'var(--text-secondary)'
-            }}>
-              <p>Достижения доступны только для пользователей Discord</p>
-            </div>
-          )}
-        </SectionErrorBoundary>
-
-        {/* Game Accounts Section */}
-        <SectionErrorBoundary sectionName="Привязанные аккаунты">
-          <GameAccountsSection
-            isOwnProfile={true}
-            apiUrl={API_URL}
-            token={token}
-          />
-        </SectionErrorBoundary>
-
-        {/* Activity Section */}
-        <SectionErrorBoundary sectionName="Активность">
-          <div style={{
-            background: 'var(--gray)',
-            border: '2px solid var(--gray-light)',
-            borderRadius: '8px',
-            padding: '2rem',
-            marginBottom: '2rem',
-            minHeight: '300px'
-          }}>
-            <h3 style={{ fontFamily: 'Unbounded', marginBottom: '1.5rem' }}>
-              АКТИВНОСТЬ НА САЙТЕ
-            </h3>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              minHeight: '200px',
-              color: '#666',
-              flexDirection: 'column',
-              gap: '1rem'
-            }}>
-              <div style={{ fontSize: '3rem' }}>📊</div>
-              <div>Лайкнутые новости, посты и активность</div>
-              <div style={{ fontSize: '0.875rem' }}>(В разработке)</div>
-            </div>
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>Достижения</h2>
+            {profile.discord_id ? (
+              <AchievementsSection discordId={profile.discord_id} />
+            ) : (
+              <div className={styles.sectionEmpty}>
+                <div className={styles.sectionEmptyIcon}>🏆</div>
+                <p>Достижения доступны только для пользователей Discord</p>
+              </div>
+            )}
           </div>
         </SectionErrorBoundary>
 
-        {/* Games Section */}
-        <Footer />
+        {/* Game Accounts */}
+        <SectionErrorBoundary sectionName="Игровые аккаунты">
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>Привязанные аккаунты</h2>
+            <GameAccountsSection
+              isOwnProfile={true}
+              apiUrl={API_URL}
+              token={token}
+            />
+          </div>
+        </SectionErrorBoundary>
+
+        {/* Activity */}
+        <SectionErrorBoundary sectionName="Активность">
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>Активность на сайте</h2>
+            <div className={styles.sectionEmpty}>
+              <div className={styles.sectionEmptyIcon}>📊</div>
+              <p>Лайкнутые новости, посты и активность</p>
+              <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>(В разработке)</p>
+            </div>
+          </div>
+        </SectionErrorBoundary>
       </main>
+
+      <Footer />
     </PageErrorBoundary>
   )
 }
