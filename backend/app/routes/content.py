@@ -63,7 +63,7 @@ from ..services.twitch_service import twitch_service
 
 
 class StreamerPublic(BaseModel):
-    discord_id: int
+    discord_id: Optional[int] = None  # Может быть NULL в БД
     discord_username: str
     avatar_url: Optional[str]
     forest_rank: str
@@ -90,7 +90,9 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
                 forest_rank,
                 twitch_username
             FROM users
-            WHERE is_streamer = true
+            WHERE is_streamer = true 
+            AND discord_id IS NOT NULL
+            AND discord_username IS NOT NULL
             ORDER BY rating DESC, id ASC
             LIMIT 10
             """
@@ -130,6 +132,11 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     result = []
     for row in rows:
         try:
+            # Пропускаем стримеров без обязательных полей
+            if not row.get('discord_id') or not row.get('discord_username'):
+                print(f"⚠️ Skipping streamer: missing discord_id or discord_username")
+                continue
+            
             twitch_url = row.get('twitch_username')
             twitch_username = twitch_service.extract_username_from_url(twitch_url) if twitch_url else None
             stream_info = twitch_data.get(twitch_username.lower()) if twitch_username else None
@@ -137,8 +144,8 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
             streamer = StreamerPublic(
                 discord_id=row['discord_id'],
                 discord_username=row['discord_username'],
-                avatar_url=row['avatar_url'],
-                forest_rank=row['forest_rank'],
+                avatar_url=row.get('avatar_url'),
+                forest_rank=row.get('forest_rank', '🌱 Росток'),
                 twitch_username=twitch_username,
                 is_online=stream_info is not None if stream_info else False,
                 game=stream_info.get('game_name') if stream_info else None,
@@ -148,7 +155,9 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
             result.append(streamer)
         except Exception as e:
             # Если ошибка при обработке одного стримера, пропускаем его
-            print(f"⚠️ Error processing streamer {row.get('discord_id')}: {e}")
+            print(f"⚠️ Error processing streamer {row.get('discord_id', 'unknown')}: {e}")
+            import traceback
+            print(traceback.format_exc())
             continue
     
     return result
