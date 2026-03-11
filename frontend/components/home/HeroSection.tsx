@@ -34,7 +34,7 @@ export function HeroSection() {
     script.src = 'https://telegram.org/js/telegram-widget.js?22'
     script.setAttribute('data-telegram-post', telegramPost)
     script.setAttribute('data-width', '100%')
-    script.setAttribute('data-userpic', 'false')
+    script.setAttribute('data-userpic', 'true') // Показываем аватарку
     script.setAttribute('data-dark', '1')
     script.async = true
 

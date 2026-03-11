@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FormValidator, rules, useFormValidation } from '../../../lib/validation'
-import { FormField } from '../../../components/ui/FormError'
+import { StreamerModal } from '../../../components/admin/StreamerModal'
 import { AdminTableSkeleton } from '../../../components/skeletons'
 import styles from '../news/page.module.css'
 
@@ -26,21 +25,8 @@ export default function AdminStreamersPage() {
   const router = useRouter()
   const [streamers, setStreamers] = useState<Streamer[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [editingStreamer, setEditingStreamer] = useState<Streamer | null>(null)
-  
-  const [formData, setFormData] = useState({
-    twitch_url: '',
-    is_active: true,
-    display_order: 0,
-  })
-
-  // Валидация
-  const { errors, validateForm, clearErrors } = useFormValidation()
-
-  // Валидатор для формы стримеров
-  const streamerValidator = new FormValidator()
-    .field('twitch_url', rules.required('Ссылка на Twitch обязательна'), rules.url('Неверный формат URL'))
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -76,44 +62,6 @@ export default function AdminStreamersPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Валидация формы
-    if (!validateForm(streamerValidator, formData)) {
-      return
-    }
-    
-    try {
-      const token = localStorage.getItem('admin_token')
-      const url = editingStreamer
-        ? `${process.env.NEXT_PUBLIC_API_URL}/api/admin/streamers/${editingStreamer.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/api/admin/streamers`
-      
-      const method = editingStreamer ? 'PUT' : 'POST'
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.detail || 'Failed to save')
-      }
-      
-      await fetchStreamers()
-      handleCancelEdit()
-    } catch (error: any) {
-      console.error('Error saving streamer:', error)
-      alert(error.message || 'Ошибка при сохранении стримера')
-    }
-  }
-
   const handleDelete = async (id: number) => {
     if (!confirm('Удалить этого стримера?')) return
 
@@ -137,23 +85,16 @@ export default function AdminStreamersPage() {
 
   const handleEdit = (item: Streamer) => {
     setEditingStreamer(item)
-    setFormData({
-      twitch_url: `https://twitch.tv/${item.twitch_username}`,
-      is_active: item.is_active,
-      display_order: item.display_order,
-    })
-    setShowForm(true)
+    setShowModal(true)
   }
 
-  const handleCancelEdit = () => {
+  const handleCloseModal = () => {
+    setShowModal(false)
     setEditingStreamer(null)
-    setFormData({
-      twitch_url: '',
-      is_active: true,
-      display_order: 0,
-    })
-    setShowForm(false)
-    clearErrors()
+  }
+
+  const handleSave = () => {
+    fetchStreamers()
   }
 
   if (isLoading) {
@@ -178,89 +119,23 @@ export default function AdminStreamersPage() {
           ← Назад
         </button>
         <h1>🎮 Управление стримерами</h1>
-        <button onClick={() => {
-          if (showForm && editingStreamer) {
-            handleCancelEdit()
-          } else {
-            setShowForm(!showForm)
-          }
-        }} className={styles.addButton}>
-          {showForm ? 'Отмена' : '+ Добавить'}
+        <button onClick={() => setShowModal(true)} className={styles.addButton}>
+          + Добавить
         </button>
       </header>
 
-      {showForm && (
-        <div className={styles.formContainer}>
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
-              {editingStreamer ? 'Обновить данные стримера' : 'Добавить стримера'}
-            </h2>
-
-            <div style={{ 
-              background: '#e3f2fd', 
-              padding: '1rem', 
-              borderRadius: '8px', 
-              marginBottom: '1.5rem',
-              border: '1px solid #90caf9'
-            }}>
-              <p style={{ margin: 0, fontSize: '0.9rem', color: '#1976d2' }}>
-                💡 Просто вставьте ссылку на Twitch канал, и система автоматически получит всю информацию: 
-                имя, аватар, описание и статус стрима!
-              </p>
-            </div>
-
-            <FormField label="Ссылка на Twitch канал" error={errors.twitch_url} required htmlFor="twitch_url">
-              <input
-                id="twitch_url"
-                type="url"
-                value={formData.twitch_url}
-                onChange={(e) => setFormData({ ...formData, twitch_url: e.target.value })}
-                placeholder="https://twitch.tv/username или просто username"
-                maxLength={500}
-                className={styles.input}
-              />
-              <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block' }}>
-                Примеры: https://twitch.tv/jak1lqa или просто jak1lqa
-              </small>
-            </FormField>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="display_order">Порядок отображения</label>
-              <input
-                id="display_order"
-                type="number"
-                value={formData.display_order}
-                onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
-                min={0}
-              />
-              <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-                Меньше число = выше в списке
-              </small>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                />
-                Показывать на сайте
-              </label>
-            </div>
-
-            <button type="submit" className={styles.submitButton}>
-              {editingStreamer ? 'Обновить данные' : 'Добавить стримера'}
-            </button>
-          </form>
-        </div>
-      )}
+      <StreamerModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        editingStreamer={editingStreamer}
+      />
 
       <div className={styles.list}>
         {streamers.length === 0 ? (
           <div className={styles.empty}>
             <p>Стримеров пока нет</p>
-            <button onClick={() => setShowForm(true)} className={styles.emptyButton}>
+            <button onClick={() => setShowModal(true)} className={styles.emptyButton}>
               Добавить первого стримера
             </button>
           </div>
