@@ -17,15 +17,6 @@ interface User {
   avatar_url: string | null
 }
 
-const RANKS = [
-  '🌱 Росток',
-  '🌿 Трава',
-  '🪵 Бревно',
-  '🌲 Дерево',
-  '🐺 Старый Волк',
-  '🔥 Лесной Дух',
-]
-
 export default function AdminUsersPage() {
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])

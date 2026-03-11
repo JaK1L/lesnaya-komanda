@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { FeedModal } from '../../../components/admin/FeedModal'
+import { AdminTableSkeleton } from '../../../components/skeletons'
 import styles from '../news/page.module.css'
 
 interface FeedItem {
@@ -16,14 +18,8 @@ export default function AdminFeedPage() {
   const router = useRouter()
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [editingFeed, setEditingFeed] = useState<FeedItem | null>(null)
-  
-  const [formData, setFormData] = useState({
-    kind: 'post' as 'post' | 'achievement',
-    title: '',
-    content: '',
-  })
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -54,41 +50,6 @@ export default function AdminFeedPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    try {
-      const token = localStorage.getItem('admin_token')
-      const url = editingFeed
-        ? `${process.env.NEXT_PUBLIC_API_URL}/api/admin/feed/${editingFeed.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/api/admin/feed`
-      
-      const method = editingFeed ? 'PUT' : 'POST'
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          content: formData.content || null,
-        }),
-      })
-
-      if (!response.ok) throw new Error('Failed to save')
-      
-      await fetchFeed()
-      setShowForm(false)
-      setEditingFeed(null)
-      setFormData({ kind: 'post', title: '', content: '' })
-    } catch (error) {
-      console.error('Error saving feed item:', error)
-      alert('Ошибка при сохранении записи')
-    }
-  }
-
   const handleDelete = async (id: number) => {
     if (!confirm('Удалить эту запись?')) return
 
@@ -112,22 +73,31 @@ export default function AdminFeedPage() {
 
   const handleEdit = (item: FeedItem) => {
     setEditingFeed(item)
-    setFormData({
-      kind: item.kind,
-      title: item.title,
-      content: item.content || '',
-    })
-    setShowForm(true)
+    setShowModal(true)
   }
 
-  const handleCancelEdit = () => {
+  const handleCloseModal = () => {
+    setShowModal(false)
     setEditingFeed(null)
-    setFormData({ kind: 'post', title: '', content: '' })
-    setShowForm(false)
+  }
+
+  const handleSave = () => {
+    fetchFeed()
   }
 
   if (isLoading) {
-    return <div className={styles.loading}>Загрузка...</div>
+    return (
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <button onClick={() => router.push('/admin')} className={styles.backButton}>
+            ← Назад
+          </button>
+          <h1>📝 Управление лентой</h1>
+          <div style={{ width: '120px' }} />
+        </header>
+        <AdminTableSkeleton rows={5} />
+      </div>
+    )
   }
 
   return (
@@ -137,76 +107,23 @@ export default function AdminFeedPage() {
           ← Назад
         </button>
         <h1>📝 Управление лентой</h1>
-        <button onClick={() => {
-          if (showForm && editingFeed) {
-            handleCancelEdit()
-          } else {
-            setShowForm(!showForm)
-          }
-        }} className={styles.addButton}>
-          {showForm ? 'Отмена' : '+ Добавить'}
+        <button onClick={() => setShowModal(true)} className={styles.addButton}>
+          + Добавить
         </button>
       </header>
 
-      {showForm && (
-        <div className={styles.formContainer}>
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
-              {editingFeed ? 'Редактировать запись' : 'Создать запись'}
-            </h2>
-            <div className={styles.formGroup}>
-              <label htmlFor="kind">Тип записи</label>
-              <select
-                id="kind"
-                value={formData.kind}
-                onChange={(e) => setFormData({ ...formData, kind: e.target.value as 'post' | 'achievement' })}
-              >
-                <option value="post">📝 Пост</option>
-                <option value="achievement">🏆 Достижение</option>
-              </select>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="title">Заголовок</label>
-              <input
-                id="title"
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder={
-                  formData.kind === 'post'
-                    ? 'Новый рекорд сервера!'
-                    : 'JaK1L получил достижение "Мастер CS2"'
-                }
-                required
-                maxLength={200}
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="content">Описание (необязательно)</label>
-              <textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="Дополнительная информация..."
-                rows={4}
-                maxLength={2000}
-              />
-            </div>
-
-            <button type="submit" className={styles.submitButton}>
-              {editingFeed ? 'Сохранить изменения' : 'Создать запись'}
-            </button>
-          </form>
-        </div>
-      )}
+      <FeedModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        editingFeed={editingFeed}
+      />
 
       <div className={styles.list}>
         {feed.length === 0 ? (
           <div className={styles.empty}>
             <p>Записей пока нет</p>
-            <button onClick={() => setShowForm(true)} className={styles.emptyButton}>
+            <button onClick={() => setShowModal(true)} className={styles.emptyButton}>
               Создать первую запись
             </button>
           </div>
