@@ -448,20 +448,26 @@ class CommonSettings(BaseModel):
 # ============================================
 
 class StreamerCreate(BaseModel):
-    name: str = Field(..., max_length=100)
-    game: Optional[str] = Field(None, max_length=200)
-    avatar_url: Optional[str] = Field(None, max_length=500)
-    platform: str = Field(default="twitch", max_length=20)
-    stream_url: str = Field(..., max_length=500)
-    schedule: Optional[str] = Field(None, max_length=200)
+    twitch_url: str = Field(..., max_length=500, description="Ссылка на Twitch канал (например: https://twitch.tv/username)")
     is_active: bool = True
     display_order: int = 0
 
 
-class StreamerOut(StreamerCreate):
+class StreamerOut(BaseModel):
     id: int
+    twitch_username: str
+    display_name: str
+    avatar_url: Optional[str]
+    description: Optional[str]
+    is_active: bool
+    display_order: int
     created_at: datetime
     updated_at: datetime
+    # Live данные (если онлайн)
+    is_live: bool = False
+    game_name: Optional[str] = None
+    stream_title: Optional[str] = None
+    viewer_count: int = 0
 
 
 @router.get("/streamers", response_model=List[StreamerOut])
@@ -469,15 +475,48 @@ async def list_streamers(
     db: asyncpg.Connection = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
-    """Список всех стримеров (для админки)."""
+    """Список всех стримеров (для админки) с актуальными данными из Twitch API."""
+    from ..services.twitch_service import twitch_service
+    
     rows = await db.fetch(
         """
-        SELECT id, name, game, avatar_url, platform, stream_url, schedule, is_active, display_order, created_at, updated_at
+        SELECT id, twitch_username, display_name, avatar_url, description, 
+               is_active, display_order, created_at, updated_at
         FROM streamers
         ORDER BY display_order ASC, id DESC
         """
     )
-    return [StreamerOut(**dict(row)) for row in rows]
+    
+    if not rows:
+        return []
+    
+    # Получаем актуальные данные о стримах
+    usernames = [row['twitch_username'] for row in rows]
+    streams_data = await twitch_service.get_streams(usernames)
+    
+    result = []
+    for row in rows:
+        username = row['twitch_username'].lower()
+        stream_info = streams_data.get(username)
+        
+        streamer = StreamerOut(
+            id=row['id'],
+            twitch_username=row['twitch_username'],
+            display_name=row['display_name'],
+            avatar_url=row['avatar_url'],
+            description=row['description'],
+            is_active=row['is_active'],
+            display_order=row['display_order'],
+            created_at=row['created_at'],
+            updated_at=row['updated_at'],
+            is_live=stream_info is not None if stream_info else False,
+            game_name=stream_info.get('game_name') if stream_info else None,
+            stream_title=stream_info.get('title') if stream_info else None,
+            viewer_count=stream_info.get('viewer_count', 0) if stream_info else 0
+        )
+        result.append(streamer)
+    
+    return result
 
 
 @router.post("/streamers", response_model=StreamerOut)
@@ -486,25 +525,52 @@ async def create_streamer(
     db: asyncpg.Connection = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
-    """Создать стримера."""
+    """Создать стримера - автоматически получает данные из Twitch API."""
+    from ..services.twitch_service import twitch_service
+    
+    # Извлекаем username из URL
+    username = twitch_service.extract_username_from_url(payload.twitch_url)
+    if not username:
+        raise HTTPException(status_code=400, detail="Неверная ссылка на Twitch канал")
+    
+    # Получаем полную информацию о стримере из Twitch API
+    streamer_info = await twitch_service.get_full_streamer_info(payload.twitch_url)
+    if not streamer_info:
+        raise HTTPException(status_code=404, detail="Стример не найден на Twitch")
+    
+    # Проверяем, не добавлен ли уже этот стример
+    existing = await db.fetchval(
+        "SELECT id FROM streamers WHERE LOWER(twitch_username) = LOWER($1)",
+        streamer_info['username']
+    )
+    if existing:
+        raise HTTPException(status_code=400, detail="Этот стример уже добавлен")
+    
+    # Сохраняем в базу
     row = await db.fetchrow(
         """
-        INSERT INTO streamers (name, game, avatar_url, platform, stream_url, schedule, is_active, display_order)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id, name, game, avatar_url, platform, stream_url, schedule, is_active, display_order, created_at, updated_at
+        INSERT INTO streamers (twitch_username, display_name, avatar_url, description, is_active, display_order)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, twitch_username, display_name, avatar_url, description, is_active, display_order, created_at, updated_at
         """,
-        payload.name,
-        payload.game,
-        payload.avatar_url,
-        payload.platform,
-        payload.stream_url,
-        payload.schedule,
+        streamer_info['username'],
+        streamer_info['display_name'],
+        streamer_info['avatar_url'],
+        streamer_info['description'],
         payload.is_active,
         payload.display_order,
     )
+    
     if not row:
         raise HTTPException(status_code=500, detail="Не удалось создать стримера")
-    return StreamerOut(**dict(row))
+    
+    return StreamerOut(
+        **dict(row),
+        is_live=streamer_info.get('is_live', False),
+        game_name=streamer_info.get('game'),
+        stream_title=streamer_info.get('stream_title'),
+        viewer_count=streamer_info.get('viewer_count', 0)
+    )
 
 
 @router.put("/streamers/{streamer_id}", response_model=StreamerOut)
@@ -514,28 +580,47 @@ async def update_streamer(
     db: asyncpg.Connection = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
-    """Обновить стримера."""
+    """Обновить стримера - обновляет данные из Twitch API."""
+    from ..services.twitch_service import twitch_service
+    
+    # Извлекаем username из URL
+    username = twitch_service.extract_username_from_url(payload.twitch_url)
+    if not username:
+        raise HTTPException(status_code=400, detail="Неверная ссылка на Twitch канал")
+    
+    # Получаем полную информацию о стримере из Twitch API
+    streamer_info = await twitch_service.get_full_streamer_info(payload.twitch_url)
+    if not streamer_info:
+        raise HTTPException(status_code=404, detail="Стример не найден на Twitch")
+    
+    # Обновляем в базе
     row = await db.fetchrow(
         """
         UPDATE streamers
-        SET name = $2, game = $3, avatar_url = $4, platform = $5, stream_url = $6, 
-            schedule = $7, is_active = $8, display_order = $9, updated_at = NOW()
+        SET twitch_username = $2, display_name = $3, avatar_url = $4, description = $5,
+            is_active = $6, display_order = $7, updated_at = NOW()
         WHERE id = $1
-        RETURNING id, name, game, avatar_url, platform, stream_url, schedule, is_active, display_order, created_at, updated_at
+        RETURNING id, twitch_username, display_name, avatar_url, description, is_active, display_order, created_at, updated_at
         """,
         streamer_id,
-        payload.name,
-        payload.game,
-        payload.avatar_url,
-        payload.platform,
-        payload.stream_url,
-        payload.schedule,
+        streamer_info['username'],
+        streamer_info['display_name'],
+        streamer_info['avatar_url'],
+        streamer_info['description'],
         payload.is_active,
         payload.display_order,
     )
+    
     if not row:
         raise HTTPException(status_code=404, detail="Стример не найден")
-    return StreamerOut(**dict(row))
+    
+    return StreamerOut(
+        **dict(row),
+        is_live=streamer_info.get('is_live', False),
+        game_name=streamer_info.get('game'),
+        stream_title=streamer_info.get('stream_title'),
+        viewer_count=streamer_info.get('viewer_count', 0)
+    )
 
 
 @router.delete("/streamers/{streamer_id}", response_model=dict)

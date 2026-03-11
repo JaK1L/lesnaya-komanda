@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { uploadImage } from '../../../lib/imageUpload'
 import { FormValidator, rules, useFormValidation } from '../../../lib/validation'
 import { FormField } from '../../../components/ui/FormError'
 import { AdminTableSkeleton } from '../../../components/skeletons'
@@ -10,14 +9,17 @@ import styles from '../news/page.module.css'
 
 interface Streamer {
   id: number
-  name: string
-  game: string | null
+  twitch_username: string
+  display_name: string
   avatar_url: string | null
-  platform: string
-  stream_url: string
-  schedule: string | null
+  description: string | null
   is_active: boolean
   display_order: number
+  // Live данные
+  is_live?: boolean
+  game_name?: string | null
+  stream_title?: string | null
+  viewer_count?: number
 }
 
 export default function AdminStreamersPage() {
@@ -26,17 +28,9 @@ export default function AdminStreamersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingStreamer, setEditingStreamer] = useState<Streamer | null>(null)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string>('')
-  const [isUploading, setIsUploading] = useState(false)
   
   const [formData, setFormData] = useState({
-    name: '',
-    game: '',
-    avatar_url: '',
-    platform: 'twitch',
-    stream_url: '',
-    schedule: '',
+    twitch_url: '',
     is_active: true,
     display_order: 0,
   })
@@ -46,8 +40,7 @@ export default function AdminStreamersPage() {
 
   // Валидатор для формы стримеров
   const streamerValidator = new FormValidator()
-    .field('name', rules.required('Имя стримера обязательно'), rules.minLength(2, 'Минимум 2 символа'), rules.maxLength(100, 'Максимум 100 символов'))
-    .field('stream_url', rules.required('Ссылка на канал обязательна'), rules.url('Неверный формат URL'))
+    .field('twitch_url', rules.required('Ссылка на Twitch обязательна'), rules.url('Неверный формат URL'))
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -78,24 +71,6 @@ export default function AdminStreamersPage() {
     }
   }
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setImageFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const handleRemoveImage = () => {
-    setImageFile(null)
-    setImagePreview('')
-    setFormData({ ...formData, avatar_url: '' })
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -105,22 +80,6 @@ export default function AdminStreamersPage() {
     }
     
     try {
-      let avatarUrl = formData.avatar_url
-
-      // Загружаем изображение если выбрано
-      if (imageFile) {
-        setIsUploading(true)
-        const result = await uploadImage(imageFile)
-        if (result.success && result.url) {
-          avatarUrl = result.url
-        } else {
-          alert(result.error || 'Ошибка загрузки изображения')
-          setIsUploading(false)
-          return
-        }
-        setIsUploading(false)
-      }
-
       const token = localStorage.getItem('admin_token')
       const url = editingStreamer
         ? `${process.env.NEXT_PUBLIC_API_URL}/api/admin/streamers/${editingStreamer.id}`
@@ -128,29 +87,25 @@ export default function AdminStreamersPage() {
       
       const method = editingStreamer ? 'PUT' : 'POST'
       
-      const payload = {
-        ...formData,
-        avatar_url: avatarUrl || null,
-        game: formData.game || null,
-        schedule: formData.schedule || null,
-      }
-      
       const response = await fetch(url, {
         method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData),
       })
 
-      if (!response.ok) throw new Error('Failed to save')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to save')
+      }
       
       await fetchStreamers()
       handleCancelEdit()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving streamer:', error)
-      alert('Ошибка при сохранении стримера')
+      alert(error.message || 'Ошибка при сохранении стримера')
     }
   }
 
@@ -178,33 +133,20 @@ export default function AdminStreamersPage() {
   const handleEdit = (item: Streamer) => {
     setEditingStreamer(item)
     setFormData({
-      name: item.name,
-      game: item.game || '',
-      avatar_url: item.avatar_url || '',
-      platform: item.platform,
-      stream_url: item.stream_url,
-      schedule: item.schedule || '',
+      twitch_url: `https://twitch.tv/${item.twitch_username}`,
       is_active: item.is_active,
       display_order: item.display_order,
     })
-    setImagePreview(item.avatar_url || '')
     setShowForm(true)
   }
 
   const handleCancelEdit = () => {
     setEditingStreamer(null)
     setFormData({
-      name: '',
-      game: '',
-      avatar_url: '',
-      platform: 'twitch',
-      stream_url: '',
-      schedule: '',
+      twitch_url: '',
       is_active: true,
       display_order: 0,
     })
-    setImageFile(null)
-    setImagePreview('')
     setShowForm(false)
     clearErrors()
   }
@@ -246,144 +188,68 @@ export default function AdminStreamersPage() {
         <div className={styles.formContainer}>
           <form onSubmit={handleSubmit} className={styles.form}>
             <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>
-              {editingStreamer ? 'Редактировать стримера' : 'Добавить стримера'}
+              {editingStreamer ? 'Обновить данные стримера' : 'Добавить стримера'}
             </h2>
 
-            <FormField label="Имя стримера" error={errors.name} required htmlFor="name">
-              <input
-                id="name"
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="JaK1L"
-                maxLength={100}
-                className={styles.input}
-              />
-            </FormField>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="game">Игры</label>
-              <input
-                id="game"
-                type="text"
-                value={formData.game}
-                onChange={(e) => setFormData({ ...formData, game: e.target.value })}
-                placeholder="CS2, Dota 2, Valorant"
-                maxLength={200}
-              />
+            <div style={{ 
+              background: '#e3f2fd', 
+              padding: '1rem', 
+              borderRadius: '8px', 
+              marginBottom: '1.5rem',
+              border: '1px solid #90caf9'
+            }}>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: '#1976d2' }}>
+                💡 Просто вставьте ссылку на Twitch канал, и система автоматически получит всю информацию: 
+                имя, аватар, описание и статус стрима!
+              </p>
             </div>
 
-            <div className={styles.formGroup}>
-              <label>Аватар</label>
-              <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  style={{ display: 'none' }}
-                  id="avatar-upload"
-                />
-                <label htmlFor="avatar-upload" style={{ 
-                  padding: '0.75rem 1rem',
-                  background: '#7cb342',
-                  color: 'white',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  display: 'inline-block',
-                  width: 'fit-content'
-                }}>
-                  📁 Выбрать файл
-                </label>
-                
-                <input
-                  type="url"
-                  value={formData.avatar_url}
-                  onChange={(e) => {
-                    setFormData({ ...formData, avatar_url: e.target.value })
-                    setImagePreview(e.target.value)
-                  }}
-                  placeholder="Или вставьте ссылку на изображение"
-                  maxLength={500}
-                />
-
-                {imagePreview && (
-                  <div style={{ position: 'relative', width: 'fit-content' }}>
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      style={{ 
-                        maxWidth: '200px', 
-                        maxHeight: '200px',
-                        borderRadius: '8px',
-                        objectFit: 'cover'
-                      }} 
-                    />
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(0,0,0,0.7)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '32px',
-                        height: '32px',
-                        cursor: 'pointer',
-                        fontSize: '18px'
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="platform">Платформа</label>
-              <select
-                id="platform"
-                value={formData.platform}
-                onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
-              >
-                <option value="twitch">Twitch</option>
-                <option value="youtube">YouTube</option>
-                <option value="other">Другая</option>
-              </select>
-            </div>
-
-            <FormField label="Ссылка на канал" error={errors.stream_url} required htmlFor="stream_url">
+            <FormField label="Ссылка на Twitch канал" error={errors.twitch_url} required htmlFor="twitch_url">
               <input
-                id="stream_url"
+                id="twitch_url"
                 type="url"
-                value={formData.stream_url}
-                onChange={(e) => setFormData({ ...formData, stream_url: e.target.value })}
-                placeholder="https://twitch.tv/username"
+                value={formData.twitch_url}
+                onChange={(e) => setFormData({ ...formData, twitch_url: e.target.value })}
+                placeholder="https://twitch.tv/username или просто username"
                 maxLength={500}
                 className={styles.input}
               />
+              <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '0.5rem', display: 'block' }}>
+                Примеры: https://twitch.tv/jak1lqa или просто jak1lqa
+              </small>
             </FormField>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="schedule">Расписание (необязательно)</label>
-              <input
-                id="schedule"
-                type="text"
-                value={formData.schedule}
-                onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
-                placeholder="Пн, Ср, Пт в 19:00"
-                maxLength={200}
-              />
-            </div>
 
             <div className={styles.formGroup}>
               <label htmlFor="display_order">Порядок отображения</label>
               <input
                 id="display_order"
+                type="number"
+                value={formData.display_order}
+                onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
+                min={0}
+              />
+              <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                Меньше число = выше в списке
+              </small>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={formData.is_active}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                />
+                Показывать на сайте
+              </label>
+            </div>
+
+            <button type="submit" className={styles.submitButton}>
+              {editingStreamer ? 'Обновить данные' : 'Добавить стримера'}
+            </button>
+          </form>
+        </div>
+      )}
                 type="number"
                 value={formData.display_order}
                 onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
@@ -428,18 +294,38 @@ export default function AdminStreamersPage() {
                   {item.avatar_url && (
                     <img 
                       src={item.avatar_url} 
-                      alt={item.name}
+                      alt={item.display_name}
                       style={{ 
-                        width: '48px', 
-                        height: '48px', 
+                        width: '64px', 
+                        height: '64px', 
                         borderRadius: '50%',
-                        objectFit: 'cover'
+                        objectFit: 'cover',
+                        border: item.is_live ? '3px solid #9146ff' : '3px solid transparent'
                       }}
                     />
                   )}
-                  <div>
-                    <h3>{item.name}</h3>
-                    <small style={{ color: '#888' }}>{item.platform}</small>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <h3 style={{ margin: 0 }}>{item.display_name}</h3>
+                      {item.is_live && (
+                        <span style={{ 
+                          background: '#eb0400', 
+                          color: 'white', 
+                          padding: '2px 8px', 
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold'
+                        }}>
+                          🔴 LIVE
+                        </span>
+                      )}
+                    </div>
+                    <small style={{ color: '#888' }}>@{item.twitch_username}</small>
+                    {item.is_live && item.viewer_count > 0 && (
+                      <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#666' }}>
+                        👁️ {item.viewer_count.toLocaleString()} зрителей
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className={styles.cardActions}>
@@ -462,16 +348,38 @@ export default function AdminStreamersPage() {
                   </button>
                 </div>
               </div>
-              <p className={styles.cardContent}>{item.game || 'Игры не указаны'}</p>
-              <div className={styles.cardFooter}>
+              
+              {item.description && (
+                <p className={styles.cardContent} style={{ 
+                  marginTop: '0.75rem',
+                  color: '#666',
+                  fontSize: '0.9rem'
+                }}>
+                  {item.description}
+                </p>
+              )}
+              
+              {item.is_live && item.game_name && (
+                <div style={{ 
+                  marginTop: '0.75rem',
+                  padding: '0.5rem',
+                  background: '#f5f5f5',
+                  borderRadius: '4px',
+                  fontSize: '0.9rem'
+                }}>
+                  <strong>🎮 {item.game_name}</strong>
+                  {item.stream_title && (
+                    <div style={{ marginTop: '0.25rem', color: '#666' }}>
+                      {item.stream_title}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div className={styles.cardFooter} style={{ marginTop: '0.75rem' }}>
                 <span className={styles.date}>
-                  🔗 {item.stream_url}
+                  🔗 twitch.tv/{item.twitch_username}
                 </span>
-                {item.schedule && (
-                  <span className={styles.draft}>
-                    📅 {item.schedule}
-                  </span>
-                )}
               </div>
             </div>
           ))

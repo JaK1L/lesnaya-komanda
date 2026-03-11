@@ -11,11 +11,26 @@ import re
 class TwitchService:
     """Сервис для работы с Twitch API"""
     
+    _instance = None
+    
     def __init__(self):
-        self.client_id = os.getenv('TWITCH_CLIENT_ID')
-        self.client_secret = os.getenv('TWITCH_CLIENT_SECRET')
+        # Ленивая инициализация - получаем credentials при первом использовании
+        self._client_id = None
+        self._client_secret = None
         self.access_token: Optional[str] = None
         self.token_expires_at: Optional[datetime] = None
+    
+    @property
+    def client_id(self):
+        if self._client_id is None:
+            self._client_id = os.getenv('TWITCH_CLIENT_ID')
+        return self._client_id
+    
+    @property
+    def client_secret(self):
+        if self._client_secret is None:
+            self._client_secret = os.getenv('TWITCH_CLIENT_SECRET')
+        return self._client_secret
     
     @staticmethod
     def extract_username_from_url(url: str) -> Optional[str]:
@@ -53,6 +68,10 @@ class TwitchService:
         
     async def get_access_token(self) -> str:
         """Получение OAuth токена для Twitch API"""
+        # Проверяем наличие credentials
+        if not self.client_id or not self.client_secret:
+            raise Exception("TWITCH_CLIENT_ID or TWITCH_CLIENT_SECRET not configured")
+        
         # Если токен еще валиден, возвращаем его
         if self.access_token and self.token_expires_at and datetime.now() < self.token_expires_at:
             return self.access_token
@@ -75,7 +94,8 @@ class TwitchService:
                     self.token_expires_at = datetime.now() + timedelta(seconds=expires_in - 3600)
                     return self.access_token
                 else:
-                    raise Exception(f"Failed to get Twitch token: {response.status}")
+                    error_text = await response.text()
+                    raise Exception(f"Failed to get Twitch token: {response.status} - {error_text}")
     
     async def get_streams(self, usernames: List[str]) -> Dict[str, dict]:
         """

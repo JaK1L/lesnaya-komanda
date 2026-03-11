@@ -64,99 +64,81 @@ from ..services.twitch_service import twitch_service
 
 class StreamerPublic(BaseModel):
     id: int
-    name: str
-    game: Optional[str] = None
+    twitch_username: str
+    display_name: str
     avatar_url: Optional[str] = None
-    platform: str = "twitch"
+    description: Optional[str] = None
     stream_url: str
-    is_active: bool = True
     # Twitch live data
-    is_online: Optional[bool] = False
-    viewer_count: Optional[int] = 0
+    is_live: bool = False
+    game_name: Optional[str] = None
     stream_title: Optional[str] = None
+    viewer_count: int = 0
+    thumbnail_url: Optional[str] = None
 
 
 @router.get("/streamers", response_model=List[StreamerPublic])
 async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     """
     Публичный список стримеров для сайта.
-    Показываем активных стримеров из таблицы streamers + данные с Twitch API.
+    Показываем активных стримеров + актуальные данные с Twitch API.
     """
     try:
         rows = await db.fetch(
             """
             SELECT 
                 id,
-                name,
-                game,
+                twitch_username,
+                display_name,
                 avatar_url,
-                platform,
-                stream_url,
-                is_active
+                description
             FROM streamers
             WHERE is_active = true
             ORDER BY display_order ASC, id DESC
-            LIMIT 10
+            LIMIT 20
             """
         )
     except Exception as e:
-        # Логируем ошибку для отладки
         import traceback
         print(f"❌ Error fetching streamers from DB: {e}")
         print(traceback.format_exc())
-        # Возвращаем пустой список вместо 500 ошибки
         return []
     
-    # Если нет стримеров, возвращаем пустой список
     if not rows:
         return []
     
-    # Собираем Twitch usernames из stream_url
-    twitch_usernames = []
-    for row in rows:
-        stream_url = row.get('stream_url')
-        if stream_url and 'twitch.tv' in stream_url:
-            username = twitch_service.extract_username_from_url(stream_url)
-            if username:
-                twitch_usernames.append(username)
+    # Получаем актуальные данные о стримах с Twitch API
+    usernames = [row['twitch_username'] for row in rows]
+    streams_data = {}
     
-    # Получаем данные о стримах с Twitch
-    twitch_data = {}
-    if twitch_usernames:
-        try:
-            twitch_data = await twitch_service.get_streams(twitch_usernames)
-        except Exception as e:
-            # Если Twitch API не работает, просто логируем и продолжаем без данных о стримах
-            print(f"⚠️ Twitch API error: {e}")
-            twitch_data = {}
+    try:
+        streams_data = await twitch_service.get_streams(usernames)
+    except Exception as e:
+        print(f"⚠️ Twitch API error: {e}")
+        streams_data = {}
     
     # Формируем результат
     result = []
     for row in rows:
         try:
-            stream_url = row.get('stream_url', '')
-            twitch_username = None
-            
-            if 'twitch.tv' in stream_url:
-                twitch_username = twitch_service.extract_username_from_url(stream_url)
-            
-            stream_info = twitch_data.get(twitch_username.lower()) if twitch_username else None
+            username = row['twitch_username'].lower()
+            stream_info = streams_data.get(username)
             
             streamer = StreamerPublic(
                 id=row['id'],
-                name=row['name'],
-                game=row.get('game'),
-                avatar_url=row.get('avatar_url'),
-                platform=row.get('platform', 'twitch'),
-                stream_url=stream_url,
-                is_active=row.get('is_active', True),
-                is_online=stream_info is not None if stream_info else False,
+                twitch_username=row['twitch_username'],
+                display_name=row['display_name'],
+                avatar_url=row['avatar_url'],
+                description=row['description'],
+                stream_url=f"https://twitch.tv/{row['twitch_username']}",
+                is_live=stream_info is not None,
+                game_name=stream_info.get('game_name') if stream_info else None,
+                stream_title=stream_info.get('title') if stream_info else None,
                 viewer_count=stream_info.get('viewer_count', 0) if stream_info else 0,
-                stream_title=stream_info.get('title') if stream_info else None
+                thumbnail_url=stream_info.get('thumbnail_url') if stream_info else None
             )
             result.append(streamer)
         except Exception as e:
-            # Если ошибка при обработке одного стримера, пропускаем его
             print(f"⚠️ Error processing streamer {row.get('id', 'unknown')}: {e}")
             import traceback
             print(traceback.format_exc())
