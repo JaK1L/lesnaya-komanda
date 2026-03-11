@@ -250,33 +250,6 @@ export default function AdminStreamersPage() {
           </form>
         </div>
       )}
-                type="number"
-                value={formData.display_order}
-                onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
-                min={0}
-              />
-              <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-                Меньше число = выше в списке
-              </small>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                />
-                Показывать на сайте
-              </label>
-            </div>
-
-            <button type="submit" className={styles.submitButton} disabled={isUploading}>
-              {isUploading ? 'Загрузка изображения...' : editingStreamer ? 'Сохранить изменения' : 'Добавить стримера'}
-            </button>
-          </form>
-        </div>
-      )}
 
       <div className={styles.list}>
         {streamers.length === 0 ? (
