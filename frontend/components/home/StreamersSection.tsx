@@ -68,29 +68,36 @@ export const StreamersSection = memo(function StreamersSection({ streamers }: St
   const displayStreamers = streamers.slice(0, 6)
 
   return (
-    <section className={styles.section} id="streamers">
+    <section className={styles.section} id="streams">
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>Стримеры</h2>
         <p className={styles.sectionSubtitle}>Наблюдайте за игроками лесной команды</p>
       </div>
 
-      {displayStreamers.length > 0 ? (
-        <>
-          <div className={styles.grid}>
-            {displayStreamers.map((streamer) => (
-              <StreamerCard 
-                key={streamer.discord_id} 
-                streamer={streamer}
-              />
-            ))}
+      <div className={styles.grid}>
+        {displayStreamers.length > 0 ? (
+          displayStreamers.map((streamer) => (
+            <StreamerCard 
+              key={streamer.discord_id} 
+              streamer={streamer}
+            />
+          ))
+        ) : (
+          <div style={{ 
+            gridColumn: '1 / -1', 
+            textAlign: 'center', 
+            padding: '3rem 0',
+            color: 'var(--color-white-64)' 
+          }}>
+            Стримеры скоро появятся
           </div>
+        )}
+      </div>
 
-          <Link href="/streams" className={styles.showAllBtn}>
-            Смотреть полностью
-          </Link>
-        </>
-      ) : (
-        <p style={{ color: 'var(--color-white-64)' }}>Стримеры скоро появятся</p>
+      {displayStreamers.length > 0 && (
+        <Link href="/streams" className={styles.showAllBtn}>
+          Смотреть полностью
+        </Link>
       )}
     </section>
   )

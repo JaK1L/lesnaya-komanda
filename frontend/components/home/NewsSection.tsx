@@ -85,14 +85,20 @@ export function NewsSection() {
     )
   }
 
-  if (error || news.length === 0) {
+  if (error) {
     return (
-      <section className={styles.section}>
+      <section className={styles.section} id="news">
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Новости</h2>
           <p className={styles.sectionSubtitle}>Отборные новости для наших последователей</p>
         </div>
-        <p style={{ color: 'var(--color-white-64)' }}>Новостей пока нет</p>
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '3rem 0',
+          color: 'var(--color-white-64)' 
+        }}>
+          {error}
+        </div>
       </section>
     )
   }
@@ -107,7 +113,7 @@ export function NewsSection() {
 
         <div className={styles.scrollWrapper}>
           <div className={styles.scrollTrack} ref={trackRef}>
-            {news.map((article) => (
+            {news.length > 0 ? news.map((article) => (
               <article
                 key={article.id}
                 className={styles.card}
@@ -135,7 +141,16 @@ export function NewsSection() {
                   <span className={styles.tagRed}>Dota</span>
                 </div>
               </article>
-            ))}
+            )) : (
+              <div style={{ 
+                width: '100%',
+                textAlign: 'center', 
+                padding: '3rem 0',
+                color: 'var(--color-white-64)' 
+              }}>
+                Новостей пока нет
+              </div>
+            )}
           </div>
 
           <div className={styles.fadeRight} aria-hidden="true" />

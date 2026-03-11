@@ -5,7 +5,7 @@ import styles from './HeroSection.module.css'
 
 export function HeroSection() {
   return (
-    <section className={styles.hero}>
+    <section className={styles.hero} id="hero">
       {/* Tagline */}
       <div className={styles.heroTagline}>
         <h1>Мы прокладываем миллион и тысячу новых путей</h1>

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
 import { LoginModal } from '../auth/LoginModal'
+import Logo from '../Logo/Logo'
 import styles from './Navigation.module.css'
 
 interface NavigationProps {
@@ -64,7 +65,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
         <div className={styles.container}>
           {/* Logo */}
           <Link href="/" className={styles.logo}>
-            LK
+            <Logo />
           </Link>
 
           {/* Desktop Navigation */}
