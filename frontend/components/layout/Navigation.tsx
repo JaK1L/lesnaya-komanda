@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
+import { LoginModal } from '../auth/LoginModal'
 import styles from './Navigation.module.css'
 
 interface NavigationProps {
@@ -21,21 +22,31 @@ const NAV_ITEMS = [
 
 export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [loginModalOpen, setLoginModalOpen] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen)
   }
 
+  const handleLoginSuccess = () => {
+    setLoginModalOpen(false)
+    window.location.reload()
+  }
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && mobileMenuOpen) {
-        setMobileMenuOpen(false)
+      if (e.key === 'Escape') {
+        if (loginModalOpen) {
+          setLoginModalOpen(false)
+        } else if (mobileMenuOpen) {
+          setMobileMenuOpen(false)
+        }
       }
     }
     document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
-  }, [mobileMenuOpen])
+  }, [mobileMenuOpen, loginModalOpen])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -48,54 +59,65 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   }, [mobileMenuOpen])
 
   return (
-    <nav className={styles.nav} ref={navRef}>
-      <div className={styles.container}>
-        {/* Logo */}
-        <Link href="/" className={styles.logo}>
-          LK
-        </Link>
+    <>
+      <nav className={styles.nav} ref={navRef}>
+        <div className={styles.container}>
+          {/* Logo */}
+          <Link href="/" className={styles.logo}>
+            LK
+          </Link>
 
-        {/* Desktop Navigation */}
-        <div className={`${styles.navLinks} ${mobileMenuOpen ? styles.open : ''}`}>
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={styles.link}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Auth Buttons */}
-        <div className={styles.headerBtns}>
-          {isAuthenticated ? (
-            <button onClick={onLogout} className={`${styles.btn} ${styles.loginButton}`}>
-              Выйти
-            </button>
-          ) : (
-            <>
-              <Link href="/register" className={`${styles.btn} ${styles.linkButton}`}>
-                Регистрация
+          {/* Desktop Navigation */}
+          <div className={`${styles.navLinks} ${mobileMenuOpen ? styles.open : ''}`}>
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={styles.link}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
               </Link>
-              <Link href="/login" className={`${styles.btn} ${styles.loginButton}`}>
-                Войти
-              </Link>
-            </>
-          )}
-        </div>
+            ))}
+          </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          className={styles.mobileMenuButton}
-          onClick={toggleMobileMenu}
-          aria-label="Toggle menu"
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-    </nav>
+          {/* Auth Buttons */}
+          <div className={styles.headerBtns}>
+            {isAuthenticated ? (
+              <button onClick={onLogout} className={`${styles.btn} ${styles.loginButton}`}>
+                Выйти
+              </button>
+            ) : (
+              <>
+                <Link href="/register" className={`${styles.btn} ${styles.linkButton}`}>
+                  Регистрация
+                </Link>
+                <button 
+                  onClick={() => setLoginModalOpen(true)} 
+                  className={`${styles.btn} ${styles.loginButton}`}
+                >
+                  Войти
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className={styles.mobileMenuButton}
+            onClick={toggleMobileMenu}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      </nav>
+
+      <LoginModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        onSuccess={handleLoginSuccess}
+      />
+    </>
   )
 }
