@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
+import { getImageUrl } from '../../lib/imageUtils'
 import styles from './NewsModal.module.css'
 
 interface User {
@@ -96,7 +97,7 @@ export function UserModal({ isOpen, onClose, onSave, editingUser }: UserModalPro
           }}>
             {editingUser.avatar_url && (
               <img 
-                src={editingUser.avatar_url} 
+                src={getImageUrl(editingUser.avatar_url) || ''} 
                 alt={editingUser.discord_username}
                 style={{ 
                   width: '64px', 

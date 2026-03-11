@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { FormValidator, rules, useFormValidation } from '../../lib/validation'
 import { FormField } from '../ui/FormError'
+import { getImageUrl } from '../../lib/imageUtils'
 import styles from './NewsModal.module.css'
 
 interface TeamMember {
@@ -128,7 +129,7 @@ export function TeamModal({ isOpen, onClose, onSave, editingMember }: TeamModalP
           }}>
             {editingMember.avatar_url && (
               <img 
-                src={editingMember.avatar_url} 
+                src={getImageUrl(editingMember.avatar_url) || ''} 
                 alt={editingMember.discord_username}
                 style={{ 
                   width: '64px', 

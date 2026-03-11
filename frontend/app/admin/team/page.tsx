@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { TeamModal } from '../../../components/admin/TeamModal'
 import { AdminTableSkeleton } from '../../../components/skeletons'
+import { getImageUrl } from '../../../lib/imageUtils'
 import styles from '../news/page.module.css'
 
 interface TeamMember {
@@ -96,8 +97,16 @@ export default function AdminTeamPage() {
   }
 
   const handleAddUser = async (user: SearchUser) => {
+    if (!user || !user.discord_id) {
+      console.error('Invalid user data:', user)
+      alert('Ошибка: неверные данные пользователя')
+      return
+    }
+
     try {
       const token = localStorage.getItem('admin_token')
+      console.log('Adding user to team:', user.discord_id)
+      
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/admin/team/${user.discord_id}`,
         {
@@ -114,7 +123,11 @@ export default function AdminTeamPage() {
         }
       )
       
-      if (!response.ok) throw new Error('Failed to add')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Server error:', errorData)
+        throw new Error(errorData.detail || 'Failed to add')
+      }
       
       setSearchQuery('')
       setSearchResults([])
@@ -122,7 +135,7 @@ export default function AdminTeamPage() {
       alert('Добавлен в команду!')
     } catch (err) {
       console.error('Error adding user:', err)
-      alert('Ошибка добавления')
+      alert('Ошибка добавления: ' + (err instanceof Error ? err.message : 'Unknown error'))
     }
   }
 
@@ -258,7 +271,7 @@ export default function AdminTeamPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   {user.avatar_url && (
                     <img 
-                      src={user.avatar_url} 
+                      src={getImageUrl(user.avatar_url) || ''} 
                       alt={user.discord_username}
                       style={{ 
                         width: '48px', 
@@ -312,7 +325,7 @@ export default function AdminTeamPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   {member.avatar_url && (
                     <img 
-                      src={member.avatar_url} 
+                      src={getImageUrl(member.avatar_url) || ''} 
                       alt={member.discord_username}
                       style={{ 
                         width: '64px', 

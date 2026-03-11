@@ -1,13 +1,35 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Navigation } from '../../components/layout/Navigation'
 import { Footer } from '../../components/layout/Footer'
 import styles from './page.module.css'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const TOKEN_KEY = 'lesnaya_token'
+
 export default function AboutPage() {
+  const [token, setToken] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem(TOKEN_KEY)
+      setToken(storedToken)
+    }
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem(TOKEN_KEY)
+    setToken(null)
+  }
+
   return (
     <>
-      <Navigation />
+      <Navigation
+        isAuthenticated={!!token}
+        onLogout={handleLogout}
+        apiUrl={API_URL}
+      />
       <div className={styles.container}>
         <div className={styles.hero}>
           <h1 className={styles.title}>🌲 О Лесной Команде</h1>

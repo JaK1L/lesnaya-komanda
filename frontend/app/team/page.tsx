@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { getImageUrl } from '../../lib/imageUtils'
 import styles from './page.module.css'
 
 interface TeamMember {
@@ -77,7 +78,7 @@ export default function TeamPage() {
             <div className={styles.cardHeader}>
               <div className={styles.avatar}>
                 {member.avatar_url ? (
-                  <img src={member.avatar_url} alt={member.discord_username} />
+                  <img src={getImageUrl(member.avatar_url) || ''} alt={member.discord_username} />
                 ) : (
                   <div className={styles.avatarPlaceholder}>
                     {member.discord_username[0]?.toUpperCase()}
