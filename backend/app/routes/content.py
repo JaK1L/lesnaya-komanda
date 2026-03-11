@@ -96,8 +96,15 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
             """
         )
     except Exception as e:
-        # Если колонка is_streamer не существует, возвращаем пустой список
-        print(f"Error fetching streamers: {e}")
+        # Логируем ошибку для отладки
+        import traceback
+        print(f"❌ Error fetching streamers from DB: {e}")
+        print(traceback.format_exc())
+        # Возвращаем пустой список вместо 500 ошибки
+        return []
+    
+    # Если нет стримеров, возвращаем пустой список
+    if not rows:
         return []
     
     # Собираем Twitch usernames (парсим из URL если нужно)
@@ -112,27 +119,37 @@ async def list_public_streamers(db: asyncpg.Connection = Depends(get_db)):
     # Получаем данные о стримах с Twitch
     twitch_data = {}
     if twitch_usernames:
-        twitch_data = await twitch_service.get_streams(twitch_usernames)
+        try:
+            twitch_data = await twitch_service.get_streams(twitch_usernames)
+        except Exception as e:
+            # Если Twitch API не работает, просто логируем и продолжаем без данных о стримах
+            print(f"⚠️ Twitch API error: {e}")
+            twitch_data = {}
     
     # Формируем результат
     result = []
     for row in rows:
-        twitch_url = row.get('twitch_username')
-        twitch_username = twitch_service.extract_username_from_url(twitch_url) if twitch_url else None
-        stream_info = twitch_data.get(twitch_username.lower()) if twitch_username else None
-        
-        streamer = StreamerPublic(
-            discord_id=row['discord_id'],
-            discord_username=row['discord_username'],
-            avatar_url=row['avatar_url'],
-            forest_rank=row['forest_rank'],
-            twitch_username=twitch_username,
-            is_online=stream_info is not None if stream_info else False,
-            game=stream_info.get('game_name') if stream_info else None,
-            viewer_count=stream_info.get('viewer_count', 0) if stream_info else 0,
-            stream_title=stream_info.get('title') if stream_info else None
-        )
-        result.append(streamer)
+        try:
+            twitch_url = row.get('twitch_username')
+            twitch_username = twitch_service.extract_username_from_url(twitch_url) if twitch_url else None
+            stream_info = twitch_data.get(twitch_username.lower()) if twitch_username else None
+            
+            streamer = StreamerPublic(
+                discord_id=row['discord_id'],
+                discord_username=row['discord_username'],
+                avatar_url=row['avatar_url'],
+                forest_rank=row['forest_rank'],
+                twitch_username=twitch_username,
+                is_online=stream_info is not None if stream_info else False,
+                game=stream_info.get('game_name') if stream_info else None,
+                viewer_count=stream_info.get('viewer_count', 0) if stream_info else 0,
+                stream_title=stream_info.get('title') if stream_info else None
+            )
+            result.append(streamer)
+        except Exception as e:
+            # Если ошибка при обработке одного стримера, пропускаем его
+            print(f"⚠️ Error processing streamer {row.get('discord_id')}: {e}")
+            continue
     
     return result
 
