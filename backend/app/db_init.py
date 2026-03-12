@@ -15,6 +15,7 @@ async def init_db():
     try:
         async with database.get_connection() as conn:
             await _create_core_tables(conn)
+            await _create_streamers_table(conn)
             await _seed_initial_data(conn)
             await _ensure_admin(conn)
             await _migrate_achievements(conn)
@@ -172,6 +173,29 @@ async def _create_core_tables(conn):
     ''')
 
     logger.info("Core tables created or already exist")
+
+
+async def _create_streamers_table(conn):
+    await conn.execute('''
+        CREATE TABLE IF NOT EXISTS streamers (
+            id SERIAL PRIMARY KEY,
+            twitch_username VARCHAR(100) NOT NULL UNIQUE,
+            display_name VARCHAR(100) NOT NULL,
+            avatar_url TEXT,
+            description TEXT,
+            is_active BOOLEAN DEFAULT true,
+            display_order INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+    ''')
+    await conn.execute(
+        'CREATE INDEX IF NOT EXISTS idx_streamers_active ON streamers(is_active, display_order)'
+    )
+    await conn.execute(
+        'CREATE INDEX IF NOT EXISTS idx_streamers_username ON streamers(LOWER(twitch_username))'
+    )
+    logger.info("Streamers table created or already exists")
 
 
 async def _seed_initial_data(conn):
