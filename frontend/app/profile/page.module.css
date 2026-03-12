@@ -1,34 +1,13 @@
 .container {
   min-height: 100vh;
-  padding: calc(var(--header-height, 74px) + 3rem) var(--page-padding-x) 3rem;
+  padding: calc(var(--header-height, 74px) + 2rem) var(--page-padding-x) 3rem;
   background: var(--color-bg);
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 4rem;
-  padding: 3rem 0;
-  background: linear-gradient(135deg, rgba(145, 71, 255, 0.1) 0%, rgba(145, 71, 255, 0.05) 100%);
-  border-radius: 16px;
-  border: 1px solid rgba(145, 71, 255, 0.2);
-}
-
-.title {
-  font-size: 3rem;
-  font-weight: 700;
-  color: var(--color-white);
-  margin-bottom: 0.5rem;
-}
-
-.subtitle {
-  font-size: 1.125rem;
-  color: var(--color-white-64);
 }
 
 /* Messages */
 .message {
   padding: 1rem 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   border-radius: 12px;
   border: 2px solid;
   animation: fadeIn 0.3s ease;
@@ -46,39 +25,38 @@
   color: var(--color-purple);
 }
 
-/* Profile Card */
+/* ─── TOP PROFILE CARD ─── */
 .profileCard {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
-  padding: 3rem;
-  margin-bottom: 2rem;
-  transition: all 0.3s ease;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
 }
 
-.profileCard:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-.profileHeader {
+/* Row 1: avatar block + achievements bar + edit button */
+.topRow {
   display: flex;
   align-items: center;
-  gap: 2rem;
-  margin-bottom: 2rem;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.avatarSection {
-  position: relative;
+.avatarBlock {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
 }
 
 .avatar {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid rgba(145, 71, 255, 0.3);
+  border: 3px solid rgba(145, 71, 255, 0.35);
   background: rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
 }
 
 .avatar img {
@@ -93,128 +71,367 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: var(--color-white-64);
   background: linear-gradient(135deg, rgba(145, 71, 255, 0.2), rgba(138, 43, 226, 0.2));
 }
 
-.profileInfo {
-  flex: 1;
+.nickBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
-.profileName {
-  font-size: 2rem;
+.nickName {
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--color-white);
-  margin-bottom: 0.5rem;
+  line-height: 1.2;
 }
 
-.profileUsername {
-  font-size: 1rem;
-  color: var(--color-white-64);
-  margin-bottom: 0.5rem;
-}
-
-.profileTag {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  background: rgba(145, 71, 255, 0.1);
-  border: 1px solid rgba(145, 71, 255, 0.3);
-  border-radius: 6px;
-  font-size: 0.875rem;
+.userTag {
   color: var(--color-purple);
-  font-weight: 500;
-}
-
-.profileBio {
-  color: var(--color-white-80);
-  line-height: 1.6;
-  margin-top: 1rem;
+  font-weight: 400;
   font-size: 1rem;
 }
 
+.realName {
+  font-size: 0.875rem;
+  color: var(--color-white-64);
+}
+
+/* Achievements bar (icons row) */
+.achievementsBar {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.achievementsBarLabel {
+  font-size: 0.8rem;
+  color: var(--color-white-64);
+  white-space: nowrap;
+}
+
+/* Edit button */
 .editButton {
-  padding: 0.75rem 1.5rem;
-  background: var(--color-purple);
+  padding: 0.65rem 1.25rem;
+  background: transparent;
   color: var(--color-white);
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .editButton:hover {
-  background: var(--color-purple-soft);
-  transform: translateY(-2px);
+  background: rgba(145, 71, 255, 0.12);
+  border-color: var(--color-purple);
+  color: var(--color-purple);
 }
 
-.editButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
+/* Row 2: bio box + achievements details */
+.infoRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
 }
 
-/* Section */
+.bioBox {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bioLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.bioText {
+  color: var(--color-white-80, rgba(255,255,255,0.8));
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.achievementsDetails {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.achievementsDetailsTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.achievementsDetailsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.achievementStat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.achievementStatLabel {
+  font-size: 0.8rem;
+  color: var(--color-white-64);
+}
+
+.achievementStatValue {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-white);
+}
+
+.achievementsDetailsEmpty {
+  font-size: 0.875rem;
+  color: var(--color-white-64);
+  line-height: 1.5;
+}
+
+/* ─── BOTTOM SECTION ─── */
+.bottomRow {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Left: activity column */
+.activityColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.activityBlock {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 1.5rem;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.activityLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.activityContent {
+  flex: 1;
+}
+
+/* Game tags display */
+.gameTagsDisplay {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.gameTag {
+  padding: 0.3rem 0.75rem;
+  background: rgba(145, 71, 255, 0.1);
+  border: 1px solid rgba(145, 71, 255, 0.25);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--color-purple);
+}
+
+/* Right: linked accounts sidebar */
+.accountsSidebar {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sidebarTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sidebarAccount {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sidebarAccountIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.iconDiscord {
+  background: rgba(88, 101, 242, 0.15);
+  color: #5865F2;
+}
+
+.iconTwitch {
+  background: rgba(145, 71, 255, 0.15);
+  color: #9147FF;
+}
+
+.iconDota {
+  background: rgba(255, 80, 80, 0.15);
+  color: #ff5050;
+}
+
+.sidebarAccountInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.sidebarAccountName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-white);
+}
+
+.sidebarAccountConnected {
+  font-size: 0.78rem;
+  color: #4ade80;
+}
+
+.sidebarAccountSoon {
+  font-size: 0.78rem;
+  color: var(--color-white-64);
+}
+
+.sidebarConnectBtn {
+  padding: 0.2rem 0.6rem;
+  background: var(--color-purple);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.sidebarConnectBtn:hover {
+  opacity: 0.85;
+}
+
+.sidebarAccountsMore {
+  font-size: 0.8rem;
+  color: var(--color-white-64);
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* ─── SHARED ─── */
 .section {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .sectionTitle {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--color-white);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .sectionEmpty {
   text-align: center;
-  padding: 3rem;
+  padding: 2rem;
   color: var(--color-white-64);
 }
 
 .sectionEmptyIcon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
 }
 
-/* Form */
+/* Form (edit mode inside bioBox) */
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .formLabel {
-  font-size: 0.875rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: var(--color-white-80);
+  color: var(--color-white-64);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .formInput,
 .formTextarea {
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 1rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: var(--color-white);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-family: inherit;
   transition: all 0.2s ease;
 }
@@ -227,45 +444,47 @@
 }
 
 .formTextarea {
-  min-height: 120px;
+  min-height: 100px;
   resize: vertical;
 }
 
 .formCheckbox {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  color: var(--color-white-64);
   cursor: pointer;
 }
 
 .formCheckbox input {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
 }
 
 .formActions {
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 .saveButton {
   flex: 1;
-  padding: 1rem;
+  padding: 0.75rem;
   background: var(--color-purple);
   color: var(--color-white);
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .saveButton:hover:not(:disabled) {
-  background: var(--color-purple-soft);
-  transform: translateY(-2px);
+  opacity: 0.88;
+  transform: translateY(-1px);
 }
 
 .saveButton:disabled {
@@ -273,34 +492,17 @@
   cursor: not-allowed;
 }
 
-.cancelButton {
-  padding: 1rem 2rem;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-white);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancelButton:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
 /* Loading */
 .loading {
   text-align: center;
   padding: 4rem 0;
   color: var(--color-white-64);
-  font-size: 1.125rem;
+  font-size: 1.1rem;
 }
 
 .spinner {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border: 4px solid rgba(255, 255, 255, 0.1);
   border-top-color: var(--color-purple);
   border-radius: 50%;
@@ -309,182 +511,42 @@
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .bottomRow {
+    grid-template-columns: 1fr;
+  }
+
+  .accountsSidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .container {
-    padding: calc(var(--header-height, 74px) + 2rem) 1.5rem 2rem;
+    padding: calc(var(--header-height, 74px) + 1.5rem) 1.25rem 2rem;
   }
 
-  .header {
-    padding: 2rem 1rem;
-    margin-bottom: 2rem;
+  .topRow {
+    flex-wrap: wrap;
   }
 
-  .title {
-    font-size: 2rem;
+  .infoRow {
+    grid-template-columns: 1fr;
   }
 
-  .subtitle {
-    font-size: 1rem;
-  }
-
-  .profileCard {
-    padding: 2rem 1.5rem;
-  }
-
-  .profileHeader {
-    flex-direction: column;
-    text-align: center;
-    gap: 1.5rem;
-  }
-
-  .avatar {
-    width: 100px;
-    height: 100px;
-  }
-
-  .profileName {
-    font-size: 1.5rem;
-  }
-
-  .section {
-    padding: 1.5rem;
-  }
-
-  .sectionTitle {
-    font-size: 1.25rem;
-  }
-
-  .formActions {
-    flex-direction: column;
-  }
-
-  .cancelButton {
+  .achievementsBar {
+    order: 3;
     width: 100%;
   }
 }
-
-/* Connected Accounts */
-.accountsGrid {
-  display: grid;
-  gap: 1rem;
-}
-
-.accountCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.accountCard:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-.accountInfo {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.accountIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-}
-
-.accountIconDiscord {
-  background: rgba(88, 101, 242, 0.1);
-  color: #5865F2;
-}
-
-.accountIconTwitch {
-  background: rgba(145, 71, 255, 0.1);
-  color: #9147FF;
-}
-
-.accountDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.accountName {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-white);
-}
-
-.accountUsername {
-  font-size: 0.875rem;
-  color: var(--color-white-64);
-}
-
-.accountStatus {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-}
-
-.accountStatusConnected {
-  color: #4ade80;
-}
-
-.accountStatusDisconnected {
-  color: var(--color-white-64);
-}
-
-.accountActions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.connectButton {
-  padding: 0.5rem 1rem;
-  background: var(--color-purple);
-  color: var(--color-white);
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.connectButton:hover {
-  background: var(--color-purple-soft);
-  transform: translateY(-1px);
-}
-
-.disconnectButton {
-  padding: 0.5rem 1rem;
-  background: rgba(255, 67, 71, 0.1);
-  color: var(--color-red);
-  border: 1px solid rgba(255, 67, 71, 0.3);
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.disconnectButton:hover {
-  background: rgba(255, 67, 71, 0.2);
-  border-color: var(--color-red);
-}
-
