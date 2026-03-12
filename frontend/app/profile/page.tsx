@@ -28,6 +28,28 @@ interface ProfileData {
   points?: number
 }
 
+interface ActivityData {
+  message_count: number
+  voice_hours: number
+  achievements: Array<{
+    id: number
+    name: string
+    icon: string
+    category: string
+    points: number
+    earned_at: string | null
+  }>
+}
+
+interface LinkedAccount {
+  id: number
+  game: string
+  account_id: string
+  account_tag: string | null
+  region: string | null
+  linked_at: string
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const TOKEN_KEY = 'lesnaya_token'
 const XP_PER_LEVEL = 1000
@@ -64,6 +86,12 @@ export default function ProfilePage() {
 
   const [isEditMode, setIsEditMode] = useState(false)
   const [activeTab,  setActiveTab]  = useState<Tab>('stats')
+
+  const [activityData,    setActivityData]    = useState<ActivityData | null>(null)
+  const [activityLoading, setActivityLoading] = useState(false)
+  const [linkedAccounts,  setLinkedAccounts]  = useState<LinkedAccount[]>([])
+  const [accountsLoading, setAccountsLoading] = useState(false)
+  const [accountsLoaded,  setAccountsLoaded]  = useState(false)
 
   // ── Auth ──
   useEffect(() => {
@@ -179,6 +207,50 @@ export default function ProfilePage() {
   }
 
   const handleLogout = () => { localStorage.removeItem(TOKEN_KEY); router.push('/') }
+
+  // ── Активность ──
+  const loadActivityData = async (discordId: number) => {
+    try {
+      setActivityLoading(true)
+      const [playerRes, achievementsRes] = await Promise.allSettled([
+        axios.get(`${API_URL}/api/players/${discordId}`),
+        axios.get(`${API_URL}/api/achievements/user/${discordId}`),
+      ])
+      const player = playerRes.status === 'fulfilled' ? playerRes.value.data : null
+      const achievements = achievementsRes.status === 'fulfilled'
+        ? achievementsRes.value.data.filter((a: any) => a.is_completed)
+        : []
+      setActivityData({
+        message_count: player?.message_count ?? 0,
+        voice_hours: player?.voice_hours ?? 0,
+        achievements,
+      })
+    } catch { /* silent */ }
+    finally { setActivityLoading(false) }
+  }
+
+  // ── Привязанные аккаунты ──
+  const loadLinkedAccounts = async (authToken: string) => {
+    try {
+      setAccountsLoading(true)
+      const res = await axios.get(`${API_URL}/api/game-stats/my-accounts`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      })
+      setLinkedAccounts(res.data || [])
+    } catch { /* silent */ }
+    finally { setAccountsLoading(false); setAccountsLoaded(true) }
+  }
+
+  // ── Ленивая загрузка по табам ──
+  useEffect(() => {
+    if (!profile) return
+    if (activeTab === 'activity' && !activityData && !activityLoading && profile.discord_id) {
+      loadActivityData(profile.discord_id)
+    }
+    if (activeTab === 'accounts' && !accountsLoaded && !accountsLoading && token) {
+      loadLinkedAccounts(token)
+    }
+  }, [activeTab, profile])
 
   // ── Loading ──
   if (loading) return (
@@ -480,11 +552,65 @@ export default function ProfilePage() {
 
           {/* АКТИВНОСТЬ */}
           {activeTab === 'activity' && (
-            <div className={styles.emptyState}>
-              <span className={styles.emptyStateIcon}>📊</span>
-              <p className={styles.emptyStateTitle}>Активность</p>
-              <p className={styles.emptyStateText}>В разработке — скоро здесь появится история ваших действий</p>
-            </div>
+            activityLoading ? (
+              <div className={styles.emptyState}>
+                <div className={styles.spinner} style={{ marginBottom: '1rem' }} />
+                <p className={styles.emptyStateTitle}>Загрузка активности...</p>
+              </div>
+            ) : activityData ? (
+              <>
+                {/* Discord-статистика */}
+                <div className={styles.statsGrid} style={{ marginBottom: '1rem' }}>
+                  <div className={styles.statCard}>
+                    <span className={styles.statCardIcon}>💬</span>
+                    <span className={styles.statCardValue}>{activityData.message_count}</span>
+                    <span className={styles.statCardLabel}>Сообщений в Discord</span>
+                  </div>
+                  <div className={styles.statCard}>
+                    <span className={styles.statCardIcon}>🎤</span>
+                    <span className={styles.statCardValue}>{Math.round(activityData.voice_hours * 10) / 10}</span>
+                    <span className={styles.statCardLabel}>Часов в голосовых</span>
+                  </div>
+                </div>
+
+                {/* Последние достижения */}
+                <div className={styles.sectionBlock}>
+                  <div className={styles.sectionBlockTitle}>
+                    Последние достижения ({activityData.achievements.length})
+                  </div>
+                  {activityData.achievements.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--color-white-64)', fontSize: '0.85rem' }}>
+                      Пока нет достижений — участвуйте в жизни сообщества!
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {activityData.achievements.slice(0, 10).map(a => (
+                        <div key={a.id} className={styles.activityItem}>
+                          <span className={styles.activityItemIcon}>{a.icon}</span>
+                          <div className={styles.activityItemInfo}>
+                            <div className={styles.activityItemName}>{a.name}</div>
+                            {a.earned_at && (
+                              <div className={styles.activityItemDate}>
+                                {new Date(a.earned_at).toLocaleDateString('ru-RU', {
+                                  day: 'numeric', month: 'long', year: 'numeric',
+                                })}
+                              </div>
+                            )}
+                          </div>
+                          <span className={styles.activityItemPoints}>+{a.points} очков</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className={styles.emptyState}>
+                <span className={styles.emptyStateIcon}>📊</span>
+                <p className={styles.emptyStateTitle}>Данные недоступны</p>
+                <p className={styles.emptyStateText}>Привяжите Discord для отображения активности</p>
+              </div>
+            )
           )}
 
           {/* АККАУНТЫ */}
@@ -521,6 +647,100 @@ export default function ProfilePage() {
                   )}
                 </div>
 
+                {/* Steam */}
+                {(() => {
+                  const steamAcc = linkedAccounts.find(a => a.game === 'steam')
+                  return (
+                    <div className={styles.accountRow}>
+                      <div className={`${styles.accountIcon} ${styles.iconSteam}`}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.187.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.606 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.455 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.252 0-2.265-1.014-2.265-2.265z"/>
+                        </svg>
+                      </div>
+                      <div className={styles.accountInfo}>
+                        <div className={styles.accountName}>Steam</div>
+                        {steamAcc ? (
+                          <div className={styles.accountUsername}>{steamAcc.account_id}</div>
+                        ) : (
+                          <div className={styles.accountSoon}>Не привязан</div>
+                        )}
+                      </div>
+                      {steamAcc ? (
+                        <div className={styles.accountStatus}>
+                          <div className={`${styles.accountStatusDot} ${styles.connected}`} />
+                          <span style={{ color: '#4ade80', fontSize: '0.75rem', fontWeight: 600 }}>Подключён</span>
+                        </div>
+                      ) : (
+                        <button className={styles.connectBtn} onClick={() => setActiveTab('games')}>
+                          Привязать
+                        </button>
+                      )}
+                    </div>
+                  )
+                })()}
+
+                {/* Dota 2 */}
+                {(() => {
+                  const dota2Acc = linkedAccounts.find(a => a.game === 'dota2')
+                  return (
+                    <div className={styles.accountRow}>
+                      <div className={`${styles.accountIcon} ${styles.iconDota}`}>
+                        <span>D2</span>
+                      </div>
+                      <div className={styles.accountInfo}>
+                        <div className={styles.accountName}>Dota 2</div>
+                        {dota2Acc ? (
+                          <div className={styles.accountUsername}>{dota2Acc.account_id}</div>
+                        ) : (
+                          <div className={styles.accountSoon}>Не привязан</div>
+                        )}
+                      </div>
+                      {dota2Acc ? (
+                        <div className={styles.accountStatus}>
+                          <div className={`${styles.accountStatusDot} ${styles.connected}`} />
+                          <span style={{ color: '#4ade80', fontSize: '0.75rem', fontWeight: 600 }}>Подключён</span>
+                        </div>
+                      ) : (
+                        <button className={styles.connectBtn} onClick={() => setActiveTab('games')}>
+                          Привязать
+                        </button>
+                      )}
+                    </div>
+                  )
+                })()}
+
+                {/* Valorant */}
+                {(() => {
+                  const valAcc = linkedAccounts.find(a => a.game === 'valorant')
+                  return (
+                    <div className={styles.accountRow}>
+                      <div className={`${styles.accountIcon} ${styles.iconValorant}`}>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '-0.02em' }}>VAL</span>
+                      </div>
+                      <div className={styles.accountInfo}>
+                        <div className={styles.accountName}>Valorant</div>
+                        {valAcc ? (
+                          <div className={styles.accountUsername}>
+                            {valAcc.account_id}{valAcc.account_tag ? `#${valAcc.account_tag}` : ''}
+                          </div>
+                        ) : (
+                          <div className={styles.accountSoon}>Не привязан</div>
+                        )}
+                      </div>
+                      {valAcc ? (
+                        <div className={styles.accountStatus}>
+                          <div className={`${styles.accountStatusDot} ${styles.connected}`} />
+                          <span style={{ color: '#4ade80', fontSize: '0.75rem', fontWeight: 600 }}>Подключён</span>
+                        </div>
+                      ) : (
+                        <button className={styles.connectBtn} onClick={() => setActiveTab('games')}>
+                          Привязать
+                        </button>
+                      )}
+                    </div>
+                  )
+                })()}
+
                 {/* Twitch */}
                 <div className={styles.accountRow}>
                   <div className={`${styles.accountIcon} ${styles.iconTwitch}`}>
@@ -538,20 +758,11 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {/* Dota 2 */}
-                <div className={styles.accountRow}>
-                  <div className={`${styles.accountIcon} ${styles.iconDota}`}>
-                    <span>D2</span>
+                {accountsLoading && (
+                  <div style={{ textAlign: 'center', padding: '0.75rem', color: 'var(--color-white-64)', fontSize: '0.8rem' }}>
+                    Загрузка игровых аккаунтов...
                   </div>
-                  <div className={styles.accountInfo}>
-                    <div className={styles.accountName}>Dota 2</div>
-                    <div className={styles.accountSoon}>Скоро</div>
-                  </div>
-                  <div className={styles.accountStatus}>
-                    <div className={`${styles.accountStatusDot} ${styles.pending}`} />
-                    <span style={{ color: 'var(--color-white-64)', fontSize: '0.75rem' }}>Скоро</span>
-                  </div>
-                </div>
+                )}
               </div>
             </SectionErrorBoundary>
           )}

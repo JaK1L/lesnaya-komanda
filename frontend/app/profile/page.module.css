@@ -672,9 +672,11 @@
   font-weight: 700;
 }
 
-.iconDiscord { background: rgba(88, 101, 242, 0.12); color: #5865F2; }
-.iconTwitch  { background: rgba(145, 71, 255, 0.12); color: #9147FF; }
-.iconDota    { background: rgba(255, 80, 80, 0.12);  color: #ff5050; }
+.iconDiscord  { background: rgba(88, 101, 242, 0.12);  color: #5865F2; }
+.iconTwitch   { background: rgba(145, 71, 255, 0.12); color: #9147FF; }
+.iconDota     { background: rgba(255, 80, 80, 0.12);  color: #ff5050; }
+.iconSteam    { background: rgba(103, 193, 245, 0.12); color: #67c1f5; }
+.iconValorant { background: rgba(255, 70, 84, 0.12);  color: #ff4654; }
 
 .accountInfo {
   flex: 1;
@@ -732,6 +734,58 @@
 .connectBtn:hover {
   background: #a855f7;
   transform: translateY(-1px);
+}
+
+/* ════════════════════════════════════════════
+   ТАБ — АКТИВНОСТЬ — ЭЛЕМЕНТЫ
+   ════════════════════════════════════════════ */
+.activityItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.activityItem:hover {
+  background: rgba(145, 71, 255, 0.04);
+  border-color: rgba(145, 71, 255, 0.18);
+}
+
+.activityItemIcon {
+  font-size: 1.4rem;
+  line-height: 1;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.activityItemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.activityItemName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-white);
+  margin-bottom: 0.1rem;
+}
+
+.activityItemDate {
+  font-size: 0.74rem;
+  color: var(--color-white-64);
+}
+
+.activityItemPoints {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-purple);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ════════════════════════════════════════════
