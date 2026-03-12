@@ -1,62 +1,94 @@
+/* ════════════════════════════════════════════
+   PROFILE PAGE — полный редизайн
+   ════════════════════════════════════════════ */
+
 .container {
   min-height: 100vh;
-  padding: calc(var(--header-height, 74px) + 2rem) var(--page-padding-x) 3rem;
+  padding: calc(var(--header-height, 74px) + 2.5rem) var(--page-padding-x) 4rem;
   background: var(--color-bg);
+  max-width: 1080px;
+  margin: 0 auto;
 }
 
-/* Messages */
+/* ─── Уведомления ─── */
 .message {
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1.25rem;
   margin-bottom: 1.5rem;
-  border-radius: 12px;
-  border: 2px solid;
-  animation: fadeIn 0.3s ease;
+  border-radius: 10px;
+  border: 1px solid;
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: slideDown 0.25s ease;
 }
 
 .messageError {
-  background: rgba(255, 67, 71, 0.1);
-  border-color: var(--color-red);
-  color: var(--color-red);
+  background: rgba(255, 67, 71, 0.08);
+  border-color: rgba(255, 67, 71, 0.3);
+  color: #ff7578;
 }
 
 .messageSuccess {
-  background: rgba(145, 71, 255, 0.1);
-  border-color: var(--color-purple);
-  color: var(--color-purple);
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #4ade80;
 }
 
-/* ─── TOP PROFILE CARD ─── */
-.profileCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+/* ════════════════════════════════════════════
+   HERO CARD
+   ════════════════════════════════════════════ */
+.heroCard {
+  position: relative;
+  background: var(--color-white-03);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
   padding: 2rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
 }
 
-/* Row 1: avatar block + achievements bar + edit button */
-.topRow {
+/* Фоновый глоу */
+.heroCard::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(145, 71, 255, 0.12) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.heroCard::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(145, 71, 255, 0.25), transparent);
+}
+
+/* Верхняя строка: аватар + инфо + кнопка */
+.heroTop {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1.5rem;
-  margin-bottom: 1.5rem;
 }
 
-.avatarBlock {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+/* ─── Аватар ─── */
+.avatarWrap {
+  position: relative;
   flex-shrink: 0;
 }
 
 .avatar {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
+  width: 88px;
+  height: 88px;
+  border-radius: 16px;
   overflow: hidden;
-  border: 3px solid rgba(145, 71, 255, 0.35);
-  background: rgba(255, 255, 255, 0.05);
-  flex-shrink: 0;
+  border: 2px solid rgba(145, 71, 255, 0.4);
+  background: rgba(145, 71, 255, 0.1);
+  box-shadow: 0 0 0 4px rgba(145, 71, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .avatar img {
@@ -71,343 +103,215 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--color-white-64);
-  background: linear-gradient(135deg, rgba(145, 71, 255, 0.2), rgba(138, 43, 226, 0.2));
+  color: var(--color-purple);
+  background: linear-gradient(135deg, rgba(145, 71, 255, 0.15), rgba(145, 71, 255, 0.05));
 }
 
-.nickBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+.onlineDot {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4ade80;
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
 }
 
-.nickName {
-  font-size: 1.25rem;
+/* ─── Инфо ─── */
+.heroInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.heroName {
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--color-white);
   line-height: 1.2;
-}
-
-.userTag {
-  color: var(--color-purple);
-  font-weight: 400;
-  font-size: 1rem;
-}
-
-.realName {
-  font-size: 0.875rem;
-  color: var(--color-white-64);
-}
-
-/* Achievements bar (icons row) */
-.achievementsBar {
-  flex: 1;
-  min-height: 44px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 0.5rem 1rem;
+  margin-bottom: 0.25rem;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.02);
-  overflow: hidden;
-}
-
-.achievementsBarLabel {
-  font-size: 0.8rem;
-  color: var(--color-white-64);
-  white-space: nowrap;
-}
-
-/* Edit button */
-.editButton {
-  padding: 0.65rem 1.25rem;
-  background: transparent;
-  color: var(--color-white);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.editButton:hover {
-  background: rgba(145, 71, 255, 0.12);
-  border-color: var(--color-purple);
-  color: var(--color-purple);
-}
-
-/* Row 2: bio box + achievements details */
-.infoRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-.bioBox {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 1.25rem;
-  background: rgba(255, 255, 255, 0.02);
-  min-height: 140px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.bioLabel {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-white-64);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.bioText {
-  color: var(--color-white-80, rgba(255,255,255,0.8));
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.achievementsDetails {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 1.25rem;
-  background: rgba(255, 255, 255, 0.02);
-  min-height: 140px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.achievementsDetailsTitle {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-white-64);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.achievementsDetailsContent {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  overflow: hidden;
-}
-
-.achievementStat {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.achievementStatLabel {
-  font-size: 0.8rem;
-  color: var(--color-white-64);
-}
-
-.achievementStatValue {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-white);
-}
-
-.achievementsDetailsEmpty {
-  font-size: 0.875rem;
-  color: var(--color-white-64);
-  line-height: 1.5;
-}
-
-/* ─── BOTTOM SECTION ─── */
-.bottomRow {
-  display: grid;
-  grid-template-columns: 1fr 260px;
-  gap: 1.5rem;
-  align-items: start;
-}
-
-/* Left: activity column */
-.activityColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.activityBlock {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  padding: 1.5rem;
-  min-height: 140px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.activityLabel {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-white-64);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.activityContent {
-  flex: 1;
-}
-
-/* Game tags display */
-.gameTagsDisplay {
-  display: flex;
   flex-wrap: wrap;
+}
+
+.heroTag {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--color-white-64);
+}
+
+.heroDiscord {
+  font-size: 0.82rem;
+  color: var(--color-white-64);
+  margin-bottom: 0.6rem;
+}
+
+.heroBadges {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0;
-}
-
-.gameTag {
-  padding: 0.3rem 0.75rem;
-  background: rgba(145, 71, 255, 0.1);
-  border: 1px solid rgba(145, 71, 255, 0.25);
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: var(--color-purple);
-}
-
-/* Right: linked accounts sidebar */
-.accountsSidebar {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.sidebarTitle {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-white-64);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.sidebarAccount {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.sidebarAccountIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.iconDiscord {
-  background: rgba(88, 101, 242, 0.15);
-  color: #5865F2;
-}
-
-.iconTwitch {
-  background: rgba(145, 71, 255, 0.15);
-  color: #9147FF;
-}
-
-.iconDota {
-  background: rgba(255, 80, 80, 0.15);
-  color: #ff5050;
-}
-
-.sidebarAccountInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.sidebarAccountName {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-white);
-}
-
-.sidebarAccountConnected {
-  font-size: 0.78rem;
-  color: #4ade80;
-}
-
-.sidebarAccountSoon {
-  font-size: 0.78rem;
-  color: var(--color-white-64);
-}
-
-.sidebarConnectBtn {
-  padding: 0.2rem 0.6rem;
-  background: var(--color-purple);
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.sidebarConnectBtn:hover {
-  opacity: 0.85;
-}
-
-.sidebarAccountsMore {
-  font-size: 0.8rem;
-  color: var(--color-white-64);
-  padding-top: 0.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-/* ─── SHARED ─── */
-.section {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 1.5rem;
-}
-
-.sectionTitle {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-white);
-  margin-bottom: 1.25rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.sectionEmpty {
-  text-align: center;
-  padding: 2rem;
-  color: var(--color-white-64);
-}
-
-.sectionEmptyIcon {
-  font-size: 2.5rem;
+  flex-wrap: wrap;
   margin-bottom: 0.75rem;
 }
 
-/* Form (edit mode inside bioBox) */
-.form {
+.rankBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.75rem;
+  background: rgba(145, 71, 255, 0.12);
+  border: 1px solid rgba(145, 71, 255, 0.3);
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-purple);
+  letter-spacing: 0.01em;
+}
+
+.heroBio {
+  font-size: 0.9rem;
+  color: var(--color-white-64);
+  line-height: 1.6;
+  max-width: 480px;
+}
+
+/* ─── Кнопка редактирования ─── */
+.editBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-white-64);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.editBtn:hover {
+  background: rgba(145, 71, 255, 0.1);
+  border-color: rgba(145, 71, 255, 0.35);
+  color: var(--color-purple);
+}
+
+/* ─── XP-бар ─── */
+.xpSection {
+  margin-top: 1.5rem;
+}
+
+.xpMeta {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.xpLevelLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-purple);
+  letter-spacing: 0.04em;
+}
+
+.xpCountLabel {
+  font-size: 0.75rem;
+  color: var(--color-white-64);
+}
+
+.xpTrack {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.xpFill {
+  height: 100%;
+  background: linear-gradient(90deg, #9147ff, #c379ff);
+  border-radius: 100px;
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 8px rgba(145, 71, 255, 0.5);
+}
+
+/* ════════════════════════════════════════════
+   QUICK STATS BAR
+   ════════════════════════════════════════════ */
+.quickStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.quickStatCard {
+  background: var(--color-white-03);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.quickStatCard:hover {
+  background: rgba(145, 71, 255, 0.04);
+  border-color: rgba(145, 71, 255, 0.2);
+}
+
+.quickStatValue {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-white);
+  line-height: 1;
+  margin-bottom: 0.3rem;
+}
+
+.quickStatLabel {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* ════════════════════════════════════════════
+   ФОРМА РЕДАКТИРОВАНИЯ
+   ════════════════════════════════════════════ */
+.editPanel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 1.75rem;
+  margin-bottom: 1rem;
+  animation: slideDown 0.2s ease;
+}
+
+.editPanelTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1.25rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .formGroup {
@@ -416,8 +320,12 @@
   gap: 0.4rem;
 }
 
+.formGroupFull {
+  grid-column: 1 / -1;
+}
+
 .formLabel {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-white-64);
   text-transform: uppercase;
@@ -426,12 +334,12 @@
 
 .formInput,
 .formTextarea {
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 0.9rem;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-white);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-family: inherit;
   transition: all 0.2s ease;
 }
@@ -439,276 +347,497 @@
 .formInput:focus,
 .formTextarea:focus {
   outline: none;
-  border-color: var(--color-purple);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(145, 71, 255, 0.5);
+  background: rgba(145, 71, 255, 0.04);
+}
+
+.formInput::placeholder,
+.formTextarea::placeholder {
+  color: var(--color-white-64);
 }
 
 .formTextarea {
-  min-height: 100px;
+  min-height: 88px;
   resize: vertical;
 }
 
 .formCheckbox {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  font-size: 0.875rem;
+  gap: 0.5rem;
+  font-size: 0.85rem;
   color: var(--color-white-64);
   cursor: pointer;
+  margin-bottom: 1rem;
 }
 
 .formCheckbox input {
   width: 16px;
   height: 16px;
   cursor: pointer;
+  accent-color: var(--color-purple);
 }
 
 .formActions {
   display: flex;
   gap: 0.75rem;
-  margin-top: 0.5rem;
 }
 
 .saveButton {
   flex: 1;
-  padding: 0.75rem;
+  padding: 0.7rem;
   background: var(--color-purple);
   color: var(--color-white);
   border: none;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-}
-
-.saveButton:hover:not(:disabled) {
-  opacity: 0.88;
-  transform: translateY(-1px);
-}
-
-.saveButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Loading */
-.loading {
-  text-align: center;
-  padding: 4rem 0;
-  color: var(--color-white-64);
-  font-size: 1.1rem;
-}
-
-.spinner {
-  width: 44px;
-  height: 44px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--color-purple);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ─── RANK BADGE ─── */
-.rankBadge {
-  display: inline-block;
-  font-size: 0.8rem;
-  color: var(--color-purple);
-  background: rgba(145, 71, 255, 0.1);
-  border: 1px solid rgba(145, 71, 255, 0.25);
-  border-radius: 6px;
-  padding: 0.2rem 0.6rem;
-  margin-top: 0.2rem;
-}
-
-/* ─── XP BAR ─── */
-.xpBlock {
-  flex: 1;
-  min-width: 0;
-}
-
-.xpHeader {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 6px;
-}
-
-.xpLabel {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--color-white-64);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-.xpTrack {
-  height: 5px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.xpFill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--color-purple), rgba(145, 71, 255, 0.6));
-  border-radius: 3px;
-  transition: width 0.8s ease;
-}
-
-/* ─── EDIT FORM (expanded in card) ─── */
-.editForm {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.formGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.editGames {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-/* ─── TABS ─── */
-.tabs {
-  display: flex;
-  gap: 0;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  overflow-x: auto;
-}
-
-.tabBtn {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 0.75rem 1.25rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--color-white-64);
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
-  white-space: nowrap;
   font-family: inherit;
 }
 
+.saveButton:hover:not(:disabled) {
+  background: #a855f7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(145, 71, 255, 0.35);
+}
+
+.saveButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.editGamesSection {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.editGamesLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+/* ════════════════════════════════════════════
+   ТАБЫ
+   ════════════════════════════════════════════ */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1.5rem;
+  gap: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tabBtn {
+  position: relative;
+  padding: 0.875rem 1.25rem;
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-white-64);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+}
+
+.tabBtn::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 2px;
+  background: var(--color-purple);
+  border-radius: 2px 2px 0 0;
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
 .tabBtn:hover {
-  color: var(--color-purple);
+  color: var(--color-white-80, rgba(255,255,255,0.8));
 }
 
 .tabBtnActive {
-  color: var(--color-purple) !important;
-  border-bottom-color: var(--color-purple) !important;
+  color: var(--color-white) !important;
 }
 
-/* ─── TAB CONTENT ─── */
-.tabContent {
-  animation: fadeIn 0.25s ease;
+.tabBtnActive::after {
+  transform: scaleX(1);
 }
 
-.tabSection {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-/* ─── STATS GRID ─── */
+/* ════════════════════════════════════════════
+   ТАБ — СТАТИСТИКА
+   ════════════════════════════════════════════ */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 1rem;
 }
 
 .statCard {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 1.5rem 1rem;
-  text-align: center;
+  background: var(--color-white-03);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 1.5rem 1.25rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  transition: border-color 0.2s, background 0.2s;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
 }
 
 .statCard:hover {
-  border-color: rgba(145, 71, 255, 0.3);
   background: rgba(145, 71, 255, 0.04);
+  border-color: rgba(145, 71, 255, 0.2);
+  transform: translateY(-2px);
 }
 
-.statIcon {
-  font-size: 1.6rem;
+.statCardIcon {
+  font-size: 1.4rem;
+  line-height: 1;
 }
 
-.statValue {
-  font-size: 1.35rem;
+.statCardValue {
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-white);
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
-.statLabel {
-  font-size: 0.68rem;
+.statCardLabel {
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--color-white-64);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
 }
 
-/* ─── RESPONSIVE ─── */
-@media (max-width: 900px) {
-  .bottomRow {
-    grid-template-columns: 1fr;
-  }
+/* ════════════════════════════════════════════
+   ТАБ — ИГРЫ
+   ════════════════════════════════════════════ */
+.tabContent {
+  animation: fadeUp 0.2s ease both;
+}
 
-  .accountsSidebar {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.75rem;
+.sectionBlock {
+  background: var(--color-white-03);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.sectionBlockTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1.1rem;
+}
+
+.gameTagsDisplay {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.gameTag {
+  padding: 0.35rem 0.75rem;
+  background: rgba(145, 71, 255, 0.08);
+  border: 1px solid rgba(145, 71, 255, 0.2);
+  border-radius: 100px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-purple);
+  transition: all 0.15s ease;
+}
+
+.gameTag:hover {
+  background: rgba(145, 71, 255, 0.14);
+}
+
+/* ════════════════════════════════════════════
+   ТАБ — ДОСТИЖЕНИЯ
+   ════════════════════════════════════════════ */
+.achievementsMeta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.achievementMetaItem {
+  flex: 1;
+  background: var(--color-white-03);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.achievementMetaLabel {
+  font-size: 0.78rem;
+  color: var(--color-white-64);
+}
+
+.achievementMetaValue {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-white);
+}
+
+/* ════════════════════════════════════════════
+   ТАБ — АКТИВНОСТЬ
+   ════════════════════════════════════════════ */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5rem 2rem;
+  text-align: center;
+  background: var(--color-white-03);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+}
+
+.emptyStateIcon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.emptyStateTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-white-64);
+  margin-bottom: 0.35rem;
+}
+
+.emptyStateText {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ════════════════════════════════════════════
+   ТАБ — АККАУНТЫ
+   ════════════════════════════════════════════ */
+.accountsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.accountRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-white-03);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.accountRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--color-border-hover, rgba(255,255,255,0.12));
+}
+
+.accountIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.iconDiscord { background: rgba(88, 101, 242, 0.12); color: #5865F2; }
+.iconTwitch  { background: rgba(145, 71, 255, 0.12); color: #9147FF; }
+.iconDota    { background: rgba(255, 80, 80, 0.12);  color: #ff5050; }
+
+.accountInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.accountName {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-white);
+  margin-bottom: 0.15rem;
+}
+
+.accountUsername {
+  font-size: 0.78rem;
+  color: #4ade80;
+  font-weight: 500;
+}
+
+.accountSoon {
+  font-size: 0.78rem;
+  color: var(--color-white-64);
+}
+
+.accountStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.accountStatusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.accountStatusDot.connected { background: #4ade80; }
+.accountStatusDot.pending   { background: rgba(255,255,255,0.2); }
+
+.connectBtn {
+  padding: 0.35rem 0.85rem;
+  background: var(--color-purple);
+  color: var(--color-white);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.connectBtn:hover {
+  background: #a855f7;
+  transform: translateY(-1px);
+}
+
+/* ════════════════════════════════════════════
+   ЗАГРУЗКА / ОШИБКА
+   ════════════════════════════════════════════ */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: var(--color-white-64);
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.08);
+  border-top-color: var(--color-purple);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.errorCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3rem;
+  background: var(--color-white-03);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  gap: 0.75rem;
+}
+
+.errorIcon { font-size: 2.5rem; }
+
+.errorTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-white);
+}
+
+.errorText {
+  font-size: 0.875rem;
+  color: var(--color-white-64);
+}
+
+.retryBtn {
+  margin-top: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: rgba(145, 71, 255, 0.12);
+  border: 1px solid rgba(145, 71, 255, 0.3);
+  border-radius: 8px;
+  color: var(--color-purple);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.retryBtn:hover {
+  background: rgba(145, 71, 255, 0.2);
+}
+
+/* ════════════════════════════════════════════
+   АНИМАЦИИ
+   ════════════════════════════════════════════ */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════
+   АДАПТИВ
+   ════════════════════════════════════════════ */
+@media (max-width: 1080px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 }
 
 @media (max-width: 768px) {
   .container {
-    padding: calc(var(--header-height, 74px) + 1.5rem) 1.25rem 2rem;
+    padding: calc(var(--header-height, 74px) + 1.5rem) 1rem 3rem;
   }
 
-  .topRow {
+  .heroTop {
     flex-wrap: wrap;
   }
 
-  .xpBlock {
-    order: 3;
-    width: 100%;
-  }
-
-  .infoRow {
-    grid-template-columns: 1fr;
-  }
-
-  .achievementsBar {
-    order: 3;
-    width: 100%;
+  .quickStats {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .formGrid {
@@ -717,5 +846,25 @@
 
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .achievementsMeta {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroName {
+    font-size: 1.3rem;
+  }
+
+  .tabBtn {
+    padding: 0.75rem 0.9rem;
+    font-size: 0.75rem;
+  }
+
+  .quickStats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
 }
