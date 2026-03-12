@@ -1,16 +1,23 @@
 """
 Модуль для работы с базой данных
 """
+import asyncio
 import asyncpg
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 from .config import settings
 
 
 class Database:
     def __init__(self):
-        self.pool = None
-    
+        self.pool: Optional[asyncpg.Pool] = None
+        self._connect_lock: Optional[asyncio.Lock] = None
+
+    def _get_lock(self) -> asyncio.Lock:
+        if self._connect_lock is None:
+            self._connect_lock = asyncio.Lock()
+        return self._connect_lock
+
     async def connect(self):
         """Создание пула соединений"""
         # Убираем channel_binding из URL, т.к. asyncpg его не поддерживает
@@ -23,18 +30,19 @@ class Database:
             command_timeout=60
         )
 
-    
     async def disconnect(self):
         """Закрытие пула соединений"""
         if self.pool:
             await self.pool.close()
-    
+
     @asynccontextmanager
     async def get_connection(self) -> AsyncGenerator[asyncpg.Connection, None]:
         """Контекстный менеджер для получения соединения"""
         if not self.pool:
-            await self.connect()
-        
+            async with self._get_lock():
+                if not self.pool:
+                    await self.connect()
+
         async with self.pool.acquire() as connection:
             yield connection
 

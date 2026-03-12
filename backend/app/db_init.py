@@ -16,11 +16,13 @@ async def init_db():
         async with database.get_connection() as conn:
             await _create_core_tables(conn)
             await _create_streamers_table(conn)
+            await _create_merch_table(conn)
             await _seed_initial_data(conn)
             await _ensure_admin(conn)
             await _migrate_achievements(conn)
             await _migrate_game_accounts(conn)
             await _migrate_xp_system(conn)
+            await _migrate_missing_columns(conn)
 
             users_count = await conn.fetchval("SELECT COUNT(*) FROM users")
             games_count = await conn.fetchval("SELECT COUNT(*) FROM game_profiles")
@@ -246,6 +248,65 @@ async def _ensure_admin(conn):
         "DELETE FROM admin_users WHERE username = 'admin' AND username != $1",
         admin_username
     )
+
+
+async def _create_merch_table(conn):
+    await conn.execute('''
+        CREATE TABLE IF NOT EXISTS merch (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(200) NOT NULL,
+            description TEXT,
+            price FLOAT NOT NULL,
+            image_url VARCHAR(500),
+            category VARCHAR(100),
+            sizes VARCHAR(100),
+            in_stock BOOLEAN DEFAULT true,
+            display_order INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+    ''')
+    await conn.execute('CREATE INDEX IF NOT EXISTS idx_merch_in_stock ON merch(in_stock, display_order)')
+    logger.info("Merch table created or already exists")
+
+
+async def _migrate_missing_columns(conn):
+    """Добавляет недостающие колонки в существующие таблицы."""
+    logger.info("Applying missing columns migration...")
+    try:
+        # Колонки таблицы users
+        await conn.execute("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS site_nickname VARCHAR(100),
+            ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT false,
+            ADD COLUMN IF NOT EXISTS real_name VARCHAR(100),
+            ADD COLUMN IF NOT EXISTS bio TEXT,
+            ADD COLUMN IF NOT EXISTS team_role VARCHAR(100),
+            ADD COLUMN IF NOT EXISTS twitch_username VARCHAR(100),
+            ADD COLUMN IF NOT EXISTS telegram_url VARCHAR(200),
+            ADD COLUMN IF NOT EXISTS tiktok_url VARCHAR(200),
+            ADD COLUMN IF NOT EXISTS youtube_url VARCHAR(200),
+            ADD COLUMN IF NOT EXISTS is_team_member BOOLEAN DEFAULT false,
+            ADD COLUMN IF NOT EXISTS team_order INTEGER DEFAULT 0
+        """)
+
+        # Колонки таблицы news
+        await conn.execute("""
+            ALTER TABLE news
+            ADD COLUMN IF NOT EXISTS image_url VARCHAR(500),
+            ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}'
+        """)
+
+        # Колонки таблицы events
+        await conn.execute("""
+            ALTER TABLE events
+            ADD COLUMN IF NOT EXISTS telegram_url VARCHAR(500),
+            ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP
+        """)
+
+        logger.info("Missing columns migration applied")
+    except Exception as e:
+        logger.error(f"Missing columns migration failed: {e}", exc_info=True)
 
 
 async def _migrate_achievements(conn):

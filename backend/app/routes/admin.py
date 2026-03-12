@@ -202,7 +202,7 @@ async def delete_event(
 ):
     """Удалить событие."""
     result = await db.execute("DELETE FROM events WHERE id = $1", event_id)
-    if result.endswith("0"):
+    if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Событие не найдено")
     return {"status": "ok"}
 
@@ -329,7 +329,7 @@ async def delete_news(
 ):
     """Удалить новость."""
     result = await db.execute("DELETE FROM news WHERE id = $1", news_id)
-    if result.endswith("0"):
+    if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Новость не найдена")
     return {"status": "ok"}
 
@@ -435,7 +435,7 @@ async def delete_feed_item(
 ):
     """Удалить элемент ленты."""
     result = await db.execute("DELETE FROM home_feed WHERE id = $1", feed_id)
-    if result.endswith("0"):
+    if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Запись не найдена")
     return {"status": "ok"}
 
@@ -663,116 +663,8 @@ async def delete_streamer(
 ):
     """Удалить стримера."""
     result = await db.execute("DELETE FROM streamers WHERE id = $1", streamer_id)
-    if result.endswith("0"):
+    if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Стример не найден")
-    return {"status": "ok"}
-
-
-# ============================================
-# МЕРЧ (ТОВАРЫ)
-# ============================================
-
-class MerchCreate(BaseModel):
-    name: str = Field(..., max_length=200)
-    description: Optional[str] = None
-    price: float = Field(..., gt=0)
-    image_url: Optional[str] = Field(None, max_length=500)
-    category: Optional[str] = Field(None, max_length=50)
-    sizes: Optional[str] = Field(None, max_length=200)
-    in_stock: bool = True
-    display_order: int = 0
-
-
-class MerchOut(MerchCreate):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-
-
-@router.get("/merch", response_model=List[MerchOut])
-async def list_merch(
-    db: asyncpg.Connection = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user),
-):
-    """Список всех товаров (для админки)."""
-    rows = await db.fetch(
-        """
-        SELECT id, name, description, price, image_url, category, sizes, in_stock, display_order, created_at, updated_at
-        FROM merch
-        ORDER BY display_order ASC, id DESC
-        """
-    )
-    return [MerchOut(**dict(row)) for row in rows]
-
-
-@router.post("/merch", response_model=MerchOut)
-async def create_merch(
-    payload: MerchCreate,
-    db: asyncpg.Connection = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user),
-):
-    """Создать товар."""
-    row = await db.fetchrow(
-        """
-        INSERT INTO merch (name, description, price, image_url, category, sizes, in_stock, display_order)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id, name, description, price, image_url, category, sizes, in_stock, display_order, created_at, updated_at
-        """,
-        payload.name,
-        payload.description,
-        payload.price,
-        payload.image_url,
-        payload.category,
-        payload.sizes,
-        payload.in_stock,
-        payload.display_order,
-    )
-    if not row:
-        raise HTTPException(status_code=500, detail="Не удалось создать товар")
-    return MerchOut(**dict(row))
-
-
-@router.put("/merch/{merch_id}", response_model=MerchOut)
-async def update_merch(
-    merch_id: int,
-    payload: MerchCreate,
-    db: asyncpg.Connection = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user),
-):
-    """Обновить товар."""
-    row = await db.fetchrow(
-        """
-        UPDATE merch
-        SET name = $2, description = $3, price = $4, image_url = $5, category = $6,
-            sizes = $7, in_stock = $8, display_order = $9, updated_at = NOW()
-        WHERE id = $1
-        RETURNING id, name, description, price, image_url, category, sizes, in_stock, display_order, created_at, updated_at
-        """,
-        merch_id,
-        payload.name,
-        payload.description,
-        payload.price,
-        payload.image_url,
-        payload.category,
-        payload.sizes,
-        payload.in_stock,
-        payload.display_order,
-    )
-    if not row:
-        raise HTTPException(status_code=404, detail="Товар не найден")
-    return MerchOut(**dict(row))
-
-
-@router.delete("/merch/{merch_id}", response_model=dict)
-async def delete_merch(
-    merch_id: int,
-    db: asyncpg.Connection = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user),
-):
-    """Удалить товар."""
-    result = await db.execute("DELETE FROM merch WHERE id = $1", merch_id)
-    if result.endswith("0"):
-        raise HTTPException(status_code=404, detail="Товар не найден")
     return {"status": "ok"}
 
 
