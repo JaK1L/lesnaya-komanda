@@ -519,6 +519,162 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ─── RANK BADGE ─── */
+.rankBadge {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--color-purple);
+  background: rgba(145, 71, 255, 0.1);
+  border: 1px solid rgba(145, 71, 255, 0.25);
+  border-radius: 6px;
+  padding: 0.2rem 0.6rem;
+  margin-top: 0.2rem;
+}
+
+/* ─── XP BAR ─── */
+.xpBlock {
+  flex: 1;
+  min-width: 0;
+}
+
+.xpHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.xpLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.xpTrack {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.xpFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-purple), rgba(145, 71, 255, 0.6));
+  border-radius: 3px;
+  transition: width 0.8s ease;
+}
+
+/* ─── EDIT FORM (expanded in card) ─── */
+.editForm {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.editGames {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ─── TABS ─── */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-white-64);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.tabBtn:hover {
+  color: var(--color-purple);
+}
+
+.tabBtnActive {
+  color: var(--color-purple) !important;
+  border-bottom-color: var(--color-purple) !important;
+}
+
+/* ─── TAB CONTENT ─── */
+.tabContent {
+  animation: fadeIn 0.25s ease;
+}
+
+.tabSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ─── STATS GRID ─── */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.statCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.statCard:hover {
+  border-color: rgba(145, 71, 255, 0.3);
+  background: rgba(145, 71, 255, 0.04);
+}
+
+.statIcon {
+  font-size: 1.6rem;
+}
+
+.statValue {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-white);
+  line-height: 1.2;
+}
+
+.statLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
 /* ─── RESPONSIVE ─── */
 @media (max-width: 900px) {
   .bottomRow {
@@ -541,6 +697,11 @@
     flex-wrap: wrap;
   }
 
+  .xpBlock {
+    order: 3;
+    width: 100%;
+  }
+
   .infoRow {
     grid-template-columns: 1fr;
   }
@@ -548,5 +709,13 @@
   .achievementsBar {
     order: 3;
     width: 100%;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
