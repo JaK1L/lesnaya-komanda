@@ -19,7 +19,6 @@ export type { BadgeProps } from './Badge'
 export { OptimizedImage } from './OptimizedImage'
 export type { OptimizedImageProps } from './OptimizedImage'
 
-export { Skeleton, SkeletonText, SkeletonCard } from './Skeleton'
-export type { SkeletonProps, SkeletonTextProps, SkeletonCardProps } from './Skeleton'
+export { Skeleton, SkeletonText, SkeletonCard, SkeletonAvatar, SkeletonButton } from './Skeleton'
 
 export { ErrorMessage } from './ErrorMessage/ErrorMessage'
