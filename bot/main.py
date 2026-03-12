@@ -14,7 +14,10 @@ TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 GUILD_ID = int(os.getenv('DISCORD_GUILD_ID', '236652227060563969'))
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/lesnaya')
 
-intents = discord.Intents.all()
+intents = discord.Intents.default()
+intents.members = True
+intents.presences = True
+intents.message_content = True
 # Удаляем встроенную команду help, чтобы использовать свою
 bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 

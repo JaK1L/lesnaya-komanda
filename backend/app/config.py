@@ -1,7 +1,7 @@
 """
 Конфигурация приложения
 """
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator, ValidationError
 from typing import Optional, Union
 import sys
@@ -10,8 +10,7 @@ import sys
 class Settings(BaseSettings):
     # База данных
     DATABASE_URL: str
-    REDIS_URL: str = "redis://localhost:6379/0"
-    
+
     # Безопасность
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
@@ -25,7 +24,12 @@ class Settings(BaseSettings):
         return v
     
     # CORS: в .env можно указать один origin или несколько через запятую
-    ALLOWED_ORIGINS: Union[list, str] = ["http://localhost:3000", "https://lesnaya-komanda.vercel.app"]
+    ALLOWED_ORIGINS: Union[list, str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ]
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
@@ -58,9 +62,10 @@ class Settings(BaseSettings):
             print("⚠️ ПРЕДУПРЕЖДЕНИЕ: ADMIN_PASSWORD слишком короткий (минимум 8 символов)")
         return v
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
 
 
 try:
