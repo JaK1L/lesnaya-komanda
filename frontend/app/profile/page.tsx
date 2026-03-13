@@ -381,10 +381,8 @@ export default function ProfilePage() {
         {/* ════ QUICK STATS ════ */}
         <div className={styles.quickStats}>
           {[
-            { value: level,           label: 'Уровень' },
-            { value: profile.rating,  label: 'Рейтинг' },
-            { value: points,          label: 'Очки'    },
-            { value: joinedStr,       label: 'На сайте с' },
+            { value: level,          label: 'Уровень' },
+            { value: profile.rating, label: 'Рейтинг' },
           ].map(s => (
             <div key={s.label} className={styles.quickStatCard}>
               <span className={styles.quickStatValue}>{s.value}</span>
@@ -464,20 +462,20 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ════ ТАБЫ ════ */}
-        <div className={styles.tabs}>
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              className={`${styles.tabBtn} ${activeTab === tab.id ? styles.tabBtnActive : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* ════ SIDEBAR + КОНТЕНТ ════ */}
+        <div className={styles.layout}>
+          <nav className={styles.sidebar}>
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                className={`${styles.sidebarBtn} ${activeTab === tab.id ? styles.sidebarBtnActive : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
 
-        {/* ════ КОНТЕНТ ТАБОВ ════ */}
         <div className={styles.tabContent} key={activeTab}>
 
           {/* СТАТИСТИКА */}
@@ -488,8 +486,6 @@ export default function ProfilePage() {
                 { icon: '⭐', value: profile.rating,      label: 'Рейтинг'     },
                 { icon: '⚡', value: level,               label: 'Уровень'     },
                 { icon: '💎', value: points,              label: 'Очки'        },
-                { icon: '📅', value: joinedStr,           label: 'На сайте с'  },
-                { icon: '📊', value: `${xpPercent}%`,    label: 'Прогресс XP' },
               ].map(s => (
                 <div key={s.label} className={styles.statCard}>
                   <span className={styles.statCardIcon}>{s.icon}</span>
@@ -786,6 +782,7 @@ export default function ProfilePage() {
           )}
 
         </div>
+        </div>{/* end layout */}
       </main>
 
       <Footer />
