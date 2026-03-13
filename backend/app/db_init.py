@@ -239,7 +239,6 @@ async def _ensure_admin(conn):
         admin_username, admin_hash
     )
     logger.info(f"Admin upserted: {admin_username}")
-        logger.info(f"Admin created: {admin_username}")
 
     await conn.execute(
         "DELETE FROM admin_users WHERE username = 'admin' AND username != $1",
