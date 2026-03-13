@@ -26,6 +26,7 @@ interface ProfileData {
   current_xp?: number
   total_xp?: number
   points?: number
+  twitch_username?: string | null
 }
 
 interface ActivityData {
@@ -217,12 +218,19 @@ export default function ProfilePage() {
     if (!linkGame || !linkId.trim() || !token) return
     setLinkLoading(true); setLinkError('')
     try {
-      await axios.post(`${API_URL}/api/game-stats/link`,
-        { game: linkGame, account_id: linkId.trim(), account_tag: linkTag.trim() || null, region: linkGame === 'valorant' ? linkRegion : null },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      if (linkGame === 'twitch') {
+        const res = await axios.post(`${API_URL}/api/profile/twitch?twitch_username=${encodeURIComponent(linkId.trim())}`,
+          null, { headers: { Authorization: `Bearer ${token}` } }
+        )
+        setProfile(p => p ? { ...p, twitch_username: res.data.twitch_username } : p)
+      } else {
+        await axios.post(`${API_URL}/api/game-stats/link`,
+          { game: linkGame, account_id: linkId.trim(), account_tag: linkTag.trim() || null, region: linkGame === 'valorant' ? linkRegion : null },
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        if (token) loadLinkedAccounts(token)
+      }
       setLinkGame(null); setLinkId(''); setLinkTag(''); setLinkRegion('eu')
-      if (token) loadLinkedAccounts(token)
     } catch (err: any) {
       setLinkError(err.response?.data?.detail || 'Ошибка привязки')
     } finally { setLinkLoading(false) }
@@ -345,7 +353,22 @@ export default function ProfilePage() {
               {/* Инфо */}
               <div className={styles.heroInfo}>
                 <div className={styles.heroName}>
-                  {profile.user_tag || displayName}
+                  {profile.user_tag ? (
+                    <>
+                      {profile.user_tag.split('#')[0]}
+                      <span className={styles.heroTag}>#{profile.user_tag.split('#').slice(1).join('#')}</span>
+                    </>
+                  ) : displayName}
+                  {profile.twitch_username && (
+                    <a
+                      href={`https://twitch.tv/${profile.twitch_username}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.streamerBadge}
+                    >
+                      стример
+                    </a>
+                  )}
                 </div>
                 {profile.site_nickname && (
                   <div className={styles.heroDiscord}>@{profile.discord_username}</div>
@@ -487,7 +510,7 @@ export default function ProfilePage() {
             <div className={styles.modalBox} onClick={e => e.stopPropagation()}>
               <div className={styles.modalHeader}>
                 <span className={styles.modalTitle}>
-                  Привязать {linkGame === 'steam' ? 'Steam' : linkGame === 'dota2' ? 'Dota 2' : 'Valorant'}
+                  Привязать {linkGame === 'steam' ? 'Steam' : linkGame === 'dota2' ? 'Dota 2' : linkGame === 'valorant' ? 'Valorant' : 'Twitch'}
                 </span>
                 <button className={styles.modalClose} onClick={() => setLinkGame(null)}>✕</button>
               </div>
@@ -497,6 +520,7 @@ export default function ProfilePage() {
                   {linkGame === 'steam' && 'Steam ID (76561...)'}
                   {linkGame === 'dota2' && 'Dota 2 Account ID'}
                   {linkGame === 'valorant' && 'Riot ID (без тега)'}
+                  {linkGame === 'twitch' && 'Twitch username'}
                 </label>
                 <input type="text" className={styles.formInput} value={linkId}
                   onChange={e => setLinkId(e.target.value)}
@@ -848,12 +872,32 @@ export default function ProfilePage() {
                   </div>
                   <div className={styles.accountInfo}>
                     <div className={styles.accountName}>Twitch</div>
-                    <div className={styles.accountSoon}>Скоро</div>
+                    {profile.twitch_username ? (
+                      <div className={styles.accountUsername}>@{profile.twitch_username}</div>
+                    ) : (
+                      <div className={styles.accountSoon}>Не привязан</div>
+                    )}
                   </div>
-                  <div className={styles.accountStatus}>
-                    <div className={`${styles.accountStatusDot} ${styles.pending}`} />
-                    <span style={{ color: 'var(--color-white-64)', fontSize: '0.75rem' }}>Скоро</span>
-                  </div>
+                  {profile.twitch_username ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noopener noreferrer"
+                        style={{ color: '#9147ff', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none' }}>
+                        Открыть ↗
+                      </a>
+                      <button className={styles.connectBtn} style={{ background: 'transparent', color: '#f87171', border: '1px solid #f8717140' }}
+                        onClick={async () => {
+                          if (!token) return
+                          await axios.delete(`${API_URL}/api/profile/twitch`, { headers: { Authorization: `Bearer ${token}` } })
+                          setProfile(p => p ? { ...p, twitch_username: null } : p)
+                        }}>
+                        Отвязать
+                      </button>
+                    </div>
+                  ) : (
+                    <button className={styles.connectBtn} onClick={() => { setLinkGame('twitch'); setLinkId(''); setLinkError('') }}>
+                      Привязать
+                    </button>
+                  )}
                 </div>
 
                 {accountsLoading && (

@@ -46,6 +46,12 @@ const GAME_ICONS: Record<string, string> = {
   valorant: 'https://img.icons8.com/ios/50/valorant.png',
 }
 
+const GAME_COLORS: Record<string, { bg: string; border: string; glow: string }> = {
+  steam:    { bg: 'linear-gradient(135deg, #1b2838 0%, #2a475e 100%)', border: '#1b91ff40', glow: '#1b91ff' },
+  dota2:    { bg: 'linear-gradient(135deg, #1a0a0a 0%, #3d0c0c 100%)', border: '#c0392b40', glow: '#e74c3c' },
+  valorant: { bg: 'linear-gradient(135deg, #1a0606 0%, #3d0017 100%)', border: '#ff4655aa', glow: '#ff4655' },
+}
+
 export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
   const [accounts, setAccounts] = useState<GameAccount[]>([])
   const [stats, setStats] = useState<GameStats>({})
@@ -477,15 +483,6 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
     <div className={styles.container}>
       <div className={styles.header}>
         <h3>ПРИВЯЗАННЫЕ АККАУНТЫ</h3>
-        {!isAdding && (
-          <button
-            className={styles.addButton}
-            onClick={() => setIsAdding(true)}
-            aria-label="Добавить аккаунт"
-          >
-            + Добавить
-          </button>
-        )}
       </div>
 
       {error && (
@@ -501,13 +498,16 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
           {/* Список привязанных аккаунтов */}
           {accounts.length > 0 ? (
             <div className={styles.accountsList}>
-              {accounts.map((account) => (
-                <div key={account.id} className={styles.accountCard}>
-                  <div className={styles.accountHeader}>
+              {accounts.map((account) => {
+                const colors = GAME_COLORS[account.game] || { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.1)', glow: '#fff' }
+                return (
+                <div key={account.id} className={styles.accountCard}
+                  style={{ borderColor: colors.border, boxShadow: `0 0 0 0 ${colors.glow}` }}>
+                  <div className={styles.accountHeader} style={{ background: colors.bg }}>
                     <div className={styles.accountInfo}>
                       <span className={styles.gameIcon}>
-                        <img 
-                          src={GAME_ICONS[account.game]} 
+                        <img
+                          src={GAME_ICONS[account.game]}
                           alt={GAME_NAMES[account.game]}
                           width="32"
                           height="32"
@@ -539,7 +539,8 @@ export function GameAccountsSection({ isOwnProfile, apiUrl, token }: Props) {
                   </div>
                   {renderStats(account.game)}
                 </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className={styles.empty}>

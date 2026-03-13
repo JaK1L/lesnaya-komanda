@@ -1,395 +1,340 @@
 .container {
-  background: var(--gray);
-  border: 2px solid var(--gray-light);
-  border-radius: 8px;
-  padding: 2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .header h3 {
   font-family: 'Unbounded', sans-serif;
   margin: 0;
-  font-size: 1.25rem;
-}
-
-.addButton {
-  background: var(--accent);
-  color: var(--dark);
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.addButton:hover {
-  background: var(--accent-light);
-  transform: translateY(-2px);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  color: var(--color-white-64);
 }
 
 .error {
-  background: #ff4444;
-  color: white;
-  padding: 1rem;
-  border-radius: 4px;
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid #f8717140;
+  color: #f87171;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
   margin-bottom: 1rem;
+  font-size: 0.85rem;
 }
 
 .loading {
   text-align: center;
   padding: 2rem;
-  color: #666;
+  color: var(--color-white-64);
+  font-size: 0.85rem;
 }
 
+/* ─── Account List Grid ─── */
 .accountsList {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
 }
 
+/* ─── Card ─── */
 .accountCard {
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, var(--dark) 0%, #1a1a1a 100%);
-  border: 2px solid var(--gray-light);
-  border-radius: 12px;
-  padding: 0;
-  transition: all 0.3s;
+  border-radius: 16px;
   overflow: hidden;
-  min-height: 280px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .accountCard:hover {
-  border-color: var(--accent);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
 }
 
+/* ─── Card Header ─── */
 .accountHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem;
-  background: rgba(0, 0, 0, 0.3);
-  border-bottom: 1px solid var(--gray-light);
+  padding: 1rem 1.25rem;
 }
 
 .accountInfo {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .gameIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
 }
 
 .gameIcon img {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   filter: brightness(0) invert(1);
   opacity: 0.9;
-  transition: all 0.2s;
-}
-
-.accountCard:hover .gameIcon img {
-  filter: brightness(0) invert(1);
-  opacity: 1;
-  transform: scale(1.1);
 }
 
 .accountDetails {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 
 .gameName {
-  font-weight: 600;
-  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
 }
 
 .accountId {
   font-family: 'Courier New', monospace;
-  color: #ccc;
-  font-size: 0.875rem;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.78rem;
 }
 
 .region {
-  font-size: 0.75rem;
-  color: #888;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .removeButton {
-  background: transparent;
-  border: 2px solid #ff4444;
-  color: #ff4444;
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #f87171;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: 1.25rem;
+  transition: all 0.15s;
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .removeButton:hover {
-  background: #ff4444;
-  color: white;
+  background: rgba(248, 113, 113, 0.25);
 }
 
-.empty {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: #666;
-}
-
-.emptyIcon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
-.emptyHint {
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
-}
-
-.addForm {
-  background: var(--dark);
-  border: 2px solid var(--accent);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-top: 1rem;
-}
-
-.addForm h4 {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  font-family: 'Unbounded', sans-serif;
-}
-
-.formGroup {
-  margin-bottom: 1rem;
-}
-
-.formGroup label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.input,
-.select {
-  width: 100%;
-  padding: 0.75rem;
-  background: var(--gray);
-  border: 2px solid var(--gray-light);
-  border-radius: 4px;
-  color: white;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.input:focus,
-.select:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.formActions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.saveButton,
-.cancelButton {
-  flex: 1;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 4px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.saveButton {
-  background: var(--accent);
-  color: var(--dark);
-}
-
-.saveButton:hover:not(:disabled) {
-  background: var(--accent-light);
-  transform: translateY(-2px);
-}
-
-.saveButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.cancelButton {
-  background: transparent;
-  border: 2px solid var(--gray-light);
-  color: white;
-}
-
-.cancelButton:hover:not(:disabled) {
-  border-color: var(--accent);
-}
-
-/* Mobile styles */
-@media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-  }
-
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .addButton {
-    width: 100%;
-  }
-
-  .accountCard {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .removeButton {
-    align-self: flex-end;
-  }
-
-  .formActions {
-    flex-direction: column;
-  }
-}
-
-/* Stats styles */
+/* ─── Stats Content ─── */
 .statsContent {
-  padding: 1.5rem;
+  padding: 1rem 1.25rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .profileInfo {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--gray-light);
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 
 .avatar {
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   border-radius: 8px;
-  border: 2px solid var(--accent);
+  border: 2px solid rgba(255,255,255,0.15);
+  object-fit: cover;
 }
 
 .username {
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: var(--accent);
-  margin-bottom: 0.25rem;
+  color: #fff;
+  margin-bottom: 0.15rem;
 }
 
 .status,
 .level,
 .rank {
-  font-size: 0.875rem;
-  color: #888;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.5);
 }
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 0.5rem;
 }
 
 .statBox {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid var(--gray-light);
+  background: rgba(0,0,0,0.25);
+  padding: 0.6rem 0.5rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
   text-align: center;
-  transition: all 0.2s;
+  transition: border-color 0.15s;
 }
 
 .statBox:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.18);
 }
 
 .statLabel {
-  font-size: 0.75rem;
-  color: #888;
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.45);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.3rem;
   display: block;
 }
 
 .statValue {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  color: var(--accent);
+  color: #fff;
   font-family: 'Unbounded', sans-serif;
+  line-height: 1.1;
 }
 
 .statsLoading,
 .noStats {
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
-  color: #666;
-  font-size: 0.875rem;
-}
-
-.noStats {
+  color: rgba(255,255,255,0.4);
+  font-size: 0.82rem;
   font-style: italic;
 }
 
-/* Mobile stats */
+/* ─── Empty ─── */
+.empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: rgba(255,255,255,0.4);
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.emptyHint {
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+}
+
+/* ─── Add Form ─── */
+.addForm {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+
+.addForm h4 {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.formGroup {
+  margin-bottom: 0.85rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.88rem;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: rgba(255,255,255,0.35);
+}
+
+.formActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.saveButton {
+  flex: 1;
+  padding: 0.65rem;
+  border: none;
+  border-radius: 8px;
+  background: #7c3aed;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #6d28d9;
+}
+
+.saveButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  flex: 1;
+  padding: 0.65rem;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.cancelButton:hover:not(:disabled) {
+  border-color: rgba(255,255,255,0.35);
+}
+
+/* ─── Mobile ─── */
 @media (max-width: 768px) {
   .accountsList {
     grid-template-columns: 1fr;
   }
-  
+
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .statValue {
-    font-size: 1.25rem;
-  }
-  
-  .avatar {
-    width: 48px;
-    height: 48px;
-  }
-  
-  .username {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 }

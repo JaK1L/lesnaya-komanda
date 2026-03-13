@@ -52,7 +52,8 @@ class ProfileService:
                 level,
                 current_xp,
                 total_xp,
-                points
+                points,
+                twitch_username
             FROM users
             WHERE id = $1
         """
@@ -99,7 +100,8 @@ class ProfileService:
                 level=row.get('level', 0),
                 current_xp=row.get('current_xp', 0),
                 total_xp=row.get('total_xp', 0),
-                points=row.get('points', 0)
+                points=row.get('points', 0),
+                twitch_username=row.get('twitch_username')
             )
         except Exception as e:
             print(f"[ERROR] get_user_profile failed for user_id {user_id}: {str(e)}")

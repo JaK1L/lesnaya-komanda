@@ -214,6 +214,33 @@ async def upload_avatar(
         )
 
 
+@router.post("/profile/twitch")
+async def link_twitch(
+    twitch_username: str,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Привязать Twitch-аккаунт к профилю."""
+    username = twitch_username.strip().lstrip('@')
+    if not username:
+        raise HTTPException(status_code=400, detail="Некорректный username")
+    await db.execute(
+        "UPDATE users SET twitch_username = $1 WHERE id = $2",
+        username, current_user.id,
+    )
+    return {"message": "Twitch привязан", "twitch_username": username}
+
+
+@router.delete("/profile/twitch")
+async def unlink_twitch(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Отвязать Twitch-аккаунт."""
+    await db.execute("UPDATE users SET twitch_username = NULL WHERE id = $1", current_user.id)
+    return {"message": "Twitch отвязан"}
+
+
 @router.get("/profile/activity")
 async def get_my_activity(
     db: asyncpg.Connection = Depends(get_db),

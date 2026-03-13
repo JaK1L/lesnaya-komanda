@@ -181,6 +181,7 @@ class ProfileResponse(BaseModel):
     total_xp: int = 0
     points: int = 0
     game_preferences: Optional[List[Dict[str, Any]]] = None
+    twitch_username: Optional[str] = None
 
 
 class XPTransaction(BaseModel):
