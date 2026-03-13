@@ -43,7 +43,7 @@ async def _create_core_tables(conn):
             id SERIAL PRIMARY KEY,
             discord_id BIGINT UNIQUE,
             discord_username VARCHAR(100),
-            forest_rank VARCHAR(50) DEFAULT '🌱 Росток',
+            forest_rank VARCHAR(50) DEFAULT '🐛 Слизняк',
             rating FLOAT DEFAULT 0,
             joined_at TIMESTAMP,
             last_seen TIMESTAMP DEFAULT NOW(),
@@ -204,11 +204,11 @@ async def _seed_initial_data(conn):
     await conn.execute('''
         INSERT INTO users (discord_id, discord_username, forest_rank, rating, joined_at)
         SELECT * FROM (VALUES
-            (123456789::BIGINT, 'JaK1L', '🐺 Старый Волк', 95::FLOAT, NOW()),
-            (987654321::BIGINT, 'DIMA_DIMA', '🌲 Дерево', 45::FLOAT, NOW()),
-            (111222333::BIGINT, 'Лесной_Дух', '🔥 Лесной Дух', 72::FLOAT, NOW()),
-            (444555666::BIGINT, 'Снайпер', '🌿 Трава', 28::FLOAT, NOW()),
-            (777888999::BIGINT, 'Стрелок', '🪵 Бревно', 35::FLOAT, NOW())
+            (123456789::BIGINT, 'JaK1L', '🏕️ Житель леса', 95::FLOAT, NOW()),
+            (987654321::BIGINT, 'DIMA_DIMA', '🐗 Зверь', 45::FLOAT, NOW()),
+            (111222333::BIGINT, 'Лесной_Дух', '🌲 Смотрящий за лесом', 72::FLOAT, NOW()),
+            (444555666::BIGINT, 'Снайпер', '🧟 Болотный житель', 28::FLOAT, NOW()),
+            (777888999::BIGINT, 'Стрелок', '🪓 Дикарь', 35::FLOAT, NOW())
         ) AS v(discord_id, discord_username, forest_rank, rating, joined_at)
         WHERE NOT EXISTS (SELECT 1 FROM users)
     ''')

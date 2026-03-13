@@ -424,3 +424,55 @@ async def grant_achievement_by_discord(
             "points": achievement_type['points']
         }
     }
+
+
+# ── Система уровней ──
+XP_PER_LEVEL = 1000
+
+def _rank_for_level(level: int) -> str:
+    if level >= 501: return '🌲 Смотрящий за лесом'
+    if level >= 71:  return '🏕️ Житель леса'
+    if level >= 51:  return '🐗 Зверь'
+    if level >= 31:  return '🪓 Дикарь'
+    if level >= 11:  return '🧟 Болотный житель'
+    return '🐛 Слизняк'
+
+
+@router.post("/grant-xp/{user_id}")
+async def grant_xp(
+    user_id: int,
+    amount: int,
+    reason: str = "Выдано администратором",
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Выдать XP пользователю (только для админов). Автоматически обновляет уровень и ранг."""
+    user = await db.fetchrow(
+        "SELECT id, level, current_xp, total_xp FROM users WHERE id = $1", user_id
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    new_total_xp = (user["total_xp"] or 0) + amount
+    new_current_xp = (user["current_xp"] or 0) + amount
+    new_level = new_total_xp // XP_PER_LEVEL
+    leftover_xp = new_total_xp % XP_PER_LEVEL
+    new_rank = _rank_for_level(new_level)
+
+    await db.execute(
+        """UPDATE users SET total_xp = $1, current_xp = $2, level = $3, forest_rank = $4 WHERE id = $5""",
+        new_total_xp, leftover_xp, new_level, new_rank, user_id,
+    )
+    await db.execute(
+        """INSERT INTO xp_transactions (user_id, type, amount, reason, created_by)
+           VALUES ($1, 'grant', $2, $3, $4)""",
+        user_id, amount, reason, current_user.id,
+    )
+
+    return {
+        "message": f"Выдано {amount} XP",
+        "level": new_level,
+        "total_xp": new_total_xp,
+        "current_xp": leftover_xp,
+        "rank": new_rank,
+    }

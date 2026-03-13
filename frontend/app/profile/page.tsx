@@ -88,6 +88,14 @@ export default function ProfilePage() {
   const [accountsLoading, setAccountsLoading] = useState(false)
   const [accountsLoaded,  setAccountsLoaded]  = useState(false)
 
+  // ── Link account modal ──
+  const [linkGame,    setLinkGame]    = useState<string | null>(null)
+  const [linkId,      setLinkId]      = useState('')
+  const [linkTag,     setLinkTag]     = useState('')
+  const [linkRegion,  setLinkRegion]  = useState('eu')
+  const [linkLoading, setLinkLoading] = useState(false)
+  const [linkError,   setLinkError]   = useState('')
+
   // ── Auth ──
   useEffect(() => {
     const stored = localStorage.getItem(TOKEN_KEY)
@@ -204,6 +212,21 @@ export default function ProfilePage() {
   }
 
   const handleLogout = () => { localStorage.removeItem(TOKEN_KEY); router.push('/') }
+
+  const handleLinkAccount = async () => {
+    if (!linkGame || !linkId.trim() || !token) return
+    setLinkLoading(true); setLinkError('')
+    try {
+      await axios.post(`${API_URL}/api/game-stats/link`,
+        { game: linkGame, account_id: linkId.trim(), account_tag: linkTag.trim() || null, region: linkGame === 'valorant' ? linkRegion : null },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      setLinkGame(null); setLinkId(''); setLinkTag(''); setLinkRegion('eu')
+      if (token) loadLinkedAccounts(token)
+    } catch (err: any) {
+      setLinkError(err.response?.data?.detail || 'Ошибка привязки')
+    } finally { setLinkLoading(false) }
+  }
 
   // ── Активность ──
   const loadActivityData = async (authToken?: string) => {
@@ -322,8 +345,7 @@ export default function ProfilePage() {
               {/* Инфо */}
               <div className={styles.heroInfo}>
                 <div className={styles.heroName}>
-                  {displayName}
-                  {profile.user_tag && <span className={styles.heroTag}>#{profile.user_tag}</span>}
+                  {profile.user_tag || displayName}
                 </div>
                 {profile.site_nickname && (
                   <div className={styles.heroDiscord}>@{profile.discord_username}</div>
@@ -459,6 +481,56 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {/* ════ МОДАЛ ПРИВЯЗКИ АККАУНТА ════ */}
+        {linkGame && (
+          <div className={styles.modalOverlay} onClick={() => setLinkGame(null)}>
+            <div className={styles.modalBox} onClick={e => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <span className={styles.modalTitle}>
+                  Привязать {linkGame === 'steam' ? 'Steam' : linkGame === 'dota2' ? 'Dota 2' : 'Valorant'}
+                </span>
+                <button className={styles.modalClose} onClick={() => setLinkGame(null)}>✕</button>
+              </div>
+              {linkError && <div style={{ color:'#f87171', marginBottom:'1rem', fontSize:'0.85rem' }}>{linkError}</div>}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  {linkGame === 'steam' && 'Steam ID (76561...)'}
+                  {linkGame === 'dota2' && 'Dota 2 Account ID'}
+                  {linkGame === 'valorant' && 'Riot ID (без тега)'}
+                </label>
+                <input type="text" className={styles.formInput} value={linkId}
+                  onChange={e => setLinkId(e.target.value)}
+                  placeholder={linkGame === 'steam' ? '76561198012345678' : linkGame === 'dota2' ? '123456789' : 'PlayerName'} />
+              </div>
+              {linkGame === 'valorant' && (
+                <>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Тег (после #)</label>
+                    <input type="text" className={styles.formInput} value={linkTag}
+                      onChange={e => setLinkTag(e.target.value)} placeholder="TAG" />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Регион</label>
+                    <select className={styles.formInput} value={linkRegion} onChange={e => setLinkRegion(e.target.value)}>
+                      <option value="eu">Europe</option>
+                      <option value="na">North America</option>
+                      <option value="ap">Asia Pacific</option>
+                      <option value="kr">Korea</option>
+                    </select>
+                  </div>
+                </>
+              )}
+              <div className={styles.formActions} style={{ marginTop: '1.25rem' }}>
+                <button onClick={() => setLinkGame(null)} className={styles.modalClose}
+                  style={{ width:'auto', padding:'0.7rem 1.25rem', fontSize:'0.85rem' }}>Отмена</button>
+                <button onClick={handleLinkAccount} disabled={linkLoading || !linkId.trim()} className={styles.saveButton}>
+                  {linkLoading ? 'Привязка...' : 'Привязать'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ════ SIDEBAR + КОНТЕНТ ════ */}
         <div className={styles.layout}>
           <nav className={styles.sidebar}>
@@ -506,12 +578,27 @@ export default function ProfilePage() {
               <div className={styles.sectionBlock}>
                 <div className={styles.sectionBlockTitle}>Предпочтения</div>
                 {selectedGames.size > 0 ? (
-                  <div className={styles.gameTagsDisplay}>
-                    {Array.from(selectedGames).map(game => (
-                      <span key={game} className={styles.gameTag}>
-                        {game === 'Другое' && customGameName ? customGameName : game}
-                      </span>
-                    ))}
+                  <div className={styles.gamePrefCards}>
+                    {Array.from(selectedGames).map(game => {
+                      const name = game === 'Другое' && customGameName ? customGameName : game
+                      const meta: Record<string, { emoji: string; color: string }> = {
+                        'CS2': { emoji: '🔫', color: '#f97316' },
+                        'Dota 2': { emoji: '🛡️', color: '#c026d3' },
+                        'Valorant': { emoji: '⚡', color: '#ef4444' },
+                        'Minecraft': { emoji: '⛏️', color: '#22c55e' },
+                        'League of Legends': { emoji: '⚔️', color: '#eab308' },
+                        'Fortnite': { emoji: '🏗️', color: '#3b82f6' },
+                        'Apex Legends': { emoji: '🎯', color: '#f43f5e' },
+                        'Другое': { emoji: '🎮', color: '#8b5cf6' },
+                      }
+                      const { emoji, color } = meta[game] || { emoji: '🎮', color: '#6b7280' }
+                      return (
+                        <div key={game} className={styles.gamePrefCard} style={{ borderColor: color + '40', background: color + '15' }}>
+                          <span className={styles.gamePrefCardEmoji}>{emoji}</span>
+                          <span className={styles.gamePrefCardName}>{name}</span>
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <p style={{ fontSize: '0.85rem', color: 'var(--color-white-64)' }}>
@@ -682,7 +769,7 @@ export default function ProfilePage() {
                           <span style={{ color: '#4ade80', fontSize: '0.75rem', fontWeight: 600 }}>Подключён</span>
                         </div>
                       ) : (
-                        <button className={styles.connectBtn} onClick={() => setActiveTab('games')}>
+                        <button className={styles.connectBtn} onClick={() => { setLinkGame('steam'); setLinkId(''); setLinkError('') }}>
                           Привязать
                         </button>
                       )}
@@ -712,7 +799,7 @@ export default function ProfilePage() {
                           <span style={{ color: '#4ade80', fontSize: '0.75rem', fontWeight: 600 }}>Подключён</span>
                         </div>
                       ) : (
-                        <button className={styles.connectBtn} onClick={() => setActiveTab('games')}>
+                        <button className={styles.connectBtn} onClick={() => { setLinkGame('dota2'); setLinkId(''); setLinkError('') }}>
                           Привязать
                         </button>
                       )}
@@ -744,7 +831,7 @@ export default function ProfilePage() {
                           <span style={{ color: '#4ade80', fontSize: '0.75rem', fontWeight: 600 }}>Подключён</span>
                         </div>
                       ) : (
-                        <button className={styles.connectBtn} onClick={() => setActiveTab('games')}>
+                        <button className={styles.connectBtn} onClick={() => { setLinkGame('valorant'); setLinkId(''); setLinkTag(''); setLinkError('') }}>
                           Привязать
                         </button>
                       )}

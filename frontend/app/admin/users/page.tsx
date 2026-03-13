@@ -23,6 +23,10 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [xpModal, setXpModal] = useState<User | null>(null)
+  const [xpAmount, setXpAmount] = useState(100)
+  const [xpReason, setXpReason] = useState('Выдано администратором')
+  const [xpLoading, setXpLoading] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -67,6 +71,27 @@ export default function AdminUsersPage() {
     fetchUsers()
   }
 
+  const handleGrantXp = async () => {
+    if (!xpModal || xpAmount <= 0) return
+    setXpLoading(true)
+    try {
+      const token = localStorage.getItem('admin_token')
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/achievements/grant-xp/${xpModal.id}?amount=${xpAmount}&reason=${encodeURIComponent(xpReason)}`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      alert(`✅ ${data.message}\nУровень: ${data.level} | Ранг: ${data.rank}`)
+      setXpModal(null)
+      fetchUsers()
+    } catch {
+      alert('Ошибка при выдаче XP')
+    } finally {
+      setXpLoading(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className={styles.container}>
@@ -91,6 +116,33 @@ export default function AdminUsersPage() {
         <h1>👥 Управление пользователями</h1>
         <div style={{ color: '#888' }}>Всего: {users.length}</div>
       </header>
+
+      {/* XP Modal */}
+      {xpModal && (
+        <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center' }}
+          onClick={() => setXpModal(null)}>
+          <div style={{ background:'#1a1a2e',border:'1px solid #333',borderRadius:'16px',padding:'2rem',width:'360px' }}
+            onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom:'1rem' }}>⚡ Выдать XP — {xpModal.discord_username}</h3>
+            <label style={{ display:'block',marginBottom:'0.5rem',fontSize:'0.85rem',color:'#aaa' }}>Количество XP</label>
+            <input type="number" min={1} value={xpAmount} onChange={e => setXpAmount(Number(e.target.value))}
+              style={{ width:'100%',padding:'0.6rem',borderRadius:'8px',border:'1px solid #444',background:'#111',color:'#fff',marginBottom:'1rem' }} />
+            <label style={{ display:'block',marginBottom:'0.5rem',fontSize:'0.85rem',color:'#aaa' }}>Причина</label>
+            <input type="text" value={xpReason} onChange={e => setXpReason(e.target.value)}
+              style={{ width:'100%',padding:'0.6rem',borderRadius:'8px',border:'1px solid #444',background:'#111',color:'#fff',marginBottom:'1.5rem' }} />
+            <div style={{ display:'flex',gap:'0.75rem' }}>
+              <button onClick={handleGrantXp} disabled={xpLoading}
+                style={{ flex:1,padding:'0.7rem',borderRadius:'8px',background:'#7c3aed',border:'none',color:'#fff',cursor:'pointer',fontWeight:600 }}>
+                {xpLoading ? 'Выдача...' : 'Выдать'}
+              </button>
+              <button onClick={() => setXpModal(null)}
+                style={{ flex:1,padding:'0.7rem',borderRadius:'8px',background:'#333',border:'none',color:'#fff',cursor:'pointer' }}>
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <UserModal
         isOpen={showModal}
@@ -127,13 +179,8 @@ export default function AdminUsersPage() {
                   </div>
                 </div>
                 <div className={styles.cardActions}>
-                  <button
-                    onClick={() => handleEdit(user)}
-                    className={styles.editButton}
-                    title="Редактировать"
-                  >
-                    ✏️
-                  </button>
+                  <button onClick={() => setXpModal(user)} className={styles.editButton} title="Выдать XP">⚡</button>
+                  <button onClick={() => handleEdit(user)} className={styles.editButton} title="Редактировать">✏️</button>
                 </div>
               </div>
               <div className={styles.cardContent}>

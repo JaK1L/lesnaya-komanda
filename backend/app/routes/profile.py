@@ -290,6 +290,21 @@ async def get_my_activity(
     }
 
 
+def _rank_for_level(level: int) -> str:
+    """Вернуть ранг по уровню."""
+    if level >= 501:
+        return '🌲 Смотрящий за лесом'
+    if level >= 71:
+        return '🏕️ Житель леса'
+    if level >= 51:
+        return '🐗 Зверь'
+    if level >= 31:
+        return '🪓 Дикарь'
+    if level >= 11:
+        return '🧟 Болотный житель'
+    return '🐛 Слизняк'
+
+
 async def _auto_grant_achievements(db, user_id: int, discord_id: int, message_count: int, voice_hours: float):
     """Авто-выдать достижения по порогам активности."""
     # Достижения которые уже есть
@@ -341,6 +356,19 @@ async def _auto_grant_achievements(db, user_id: int, discord_id: int, message_co
                     row["points"], user_id,
                 )
 
+    # "Первые шаги" — просто наличие discord_id
+    row = await db.fetchrow("SELECT id, points FROM achievement_types WHERE name = 'Первые шаги' AND is_active = true")
+    if row and row["id"] not in existing:
+        await db.execute(
+            """INSERT INTO user_achievements (user_id, achievement_type_id, progress, max_progress, is_completed, earned_at)
+               VALUES ($1, $2, 100, 100, true, NOW()) ON CONFLICT DO NOTHING""",
+            user_id, row["id"],
+        )
+        await db.execute(
+            "UPDATE users SET points = COALESCE(points, 0) + $1 WHERE id = $2",
+            row["points"], user_id,
+        )
+
     # "Старожил" — год в сообществе
     joined = await db.fetchval("SELECT joined_at FROM users WHERE id = $1", user_id)
     if joined:
@@ -359,6 +387,29 @@ async def _auto_grant_achievements(db, user_id: int, discord_id: int, message_co
                     "UPDATE users SET points = COALESCE(points, 0) + $1 WHERE id = $2",
                     row["points"], user_id,
                 )
+
+    # "Легенда" — все достижения получены
+    total_types = await db.fetchval("SELECT COUNT(*) FROM achievement_types WHERE is_active = true AND name != 'Легенда'")
+    completed_count = await db.fetchval(
+        "SELECT COUNT(*) FROM user_achievements WHERE user_id = $1 AND is_completed = true", user_id
+    )
+    if total_types and completed_count and completed_count >= total_types:
+        row = await db.fetchrow("SELECT id, points FROM achievement_types WHERE name = 'Легенда' AND is_active = true")
+        if row and row["id"] not in existing:
+            await db.execute(
+                """INSERT INTO user_achievements (user_id, achievement_type_id, progress, max_progress, is_completed, earned_at)
+                   VALUES ($1, $2, 100, 100, true, NOW()) ON CONFLICT DO NOTHING""",
+                user_id, row["id"],
+            )
+            await db.execute(
+                "UPDATE users SET points = COALESCE(points, 0) + $1 WHERE id = $2",
+                row["points"], user_id,
+            )
+
+    # Обновить ранг по уровню
+    level = await db.fetchval("SELECT COALESCE(level, 0) FROM users WHERE id = $1", user_id) or 0
+    new_rank = _rank_for_level(level)
+    await db.execute("UPDATE users SET forest_rank = $1 WHERE id = $2", new_rank, user_id)
 
 
 @router.get("/uploads/avatars/{filename}")
