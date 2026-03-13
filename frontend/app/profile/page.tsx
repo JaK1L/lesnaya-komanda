@@ -55,7 +55,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const TOKEN_KEY = 'lesnaya_token'
 const XP_PER_LEVEL = 1000
 
-type Tab = 'stats' | 'games' | 'achievements' | 'activity' | 'accounts'
+type Tab = 'stats' | 'games' | 'achievements' | 'activity' | 'accounts' | 'tournaments' | 'friends'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'stats',        label: 'Статистика'  },
@@ -63,6 +63,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'achievements', label: 'Достижения'  },
   { id: 'activity',     label: 'Активность'  },
   { id: 'accounts',     label: 'Аккаунты'    },
+  { id: 'tournaments',  label: 'Турниры'     },
+  { id: 'friends',      label: 'Друзья'      },
 ]
 
 function ProfilePageInner() {
@@ -91,6 +93,11 @@ function ProfilePageInner() {
 
   const [activityData,    setActivityData]    = useState<ActivityData | null>(null)
   const [activityLoading, setActivityLoading] = useState(false)
+  const [myRegistrations, setMyRegistrations] = useState<any[]>([])
+  const [regsLoading,     setRegsLoading]     = useState(false)
+  const [friends,         setFriends]         = useState<any[]>([])
+  const [friendRequests,  setFriendRequests]  = useState<any[]>([])
+  const [friendsLoading,  setFriendsLoading]  = useState(false)
   const [linkedAccounts,  setLinkedAccounts]  = useState<LinkedAccount[]>([])
   const [accountsLoading, setAccountsLoading] = useState(false)
   const [accountsLoaded,  setAccountsLoaded]  = useState(false)
@@ -342,6 +349,19 @@ function ProfilePageInner() {
     }
     if (activeTab === 'accounts' && !accountsLoaded && !accountsLoading && token) {
       loadLinkedAccounts(token)
+    }
+    if (activeTab === 'friends' && !friendsLoading && friends.length === 0 && token) {
+      setFriendsLoading(true)
+      Promise.all([
+        fetch(`${API_URL}/api/friends/list`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+        fetch(`${API_URL}/api/friends/requests`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      ]).then(([f, req]) => { setFriends(f); setFriendRequests(req) })
+        .catch(() => {}).finally(() => setFriendsLoading(false))
+    }
+    if (activeTab === 'tournaments' && myRegistrations.length === 0 && !regsLoading && token) {
+      setRegsLoading(true)
+      fetch(`${API_URL}/api/profile/my-registrations`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json()).then(d => setMyRegistrations(d)).catch(() => {}).finally(() => setRegsLoading(false))
     }
   }, [activeTab, profile])
 
@@ -1037,6 +1057,104 @@ function ProfilePageInner() {
                 )}
               </div>
             </SectionErrorBoundary>
+          )}
+
+          {/* ТУРНИРЫ */}
+          {activeTab === 'tournaments' && (
+            <div>
+              {regsLoading ? (
+                <div className={styles.emptyState}>
+                  <div className={styles.spinner} style={{ marginBottom: '1rem' }} />
+                  <p className={styles.emptyStateTitle}>Загрузка...</p>
+                </div>
+              ) : myRegistrations.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <p className={styles.emptyStateTitle}>Нет регистраций</p>
+                  <p className={styles.emptyStateText}>Вы ещё не зарегистрировались ни на один турнир</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {myRegistrations.map((r: any) => (
+                    <div key={r.id} className={styles.sectionBlock} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, color: 'var(--color-white)', marginBottom: 2 }}>{r.title}</div>
+                        <div style={{ fontSize: 12, color: 'var(--color-white-64)' }}>
+                          {r.game && `${r.game} · `}{r.nickname || r.team_name}
+                          {r.registered_at && ` · ${new Date(r.registered_at).toLocaleDateString('ru-RU')}`}
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6,
+                        background: r.status === 'active' ? 'rgba(79,255,79,0.1)' : r.status === 'completed' ? 'rgba(79,159,255,0.1)' : 'rgba(255,255,79,0.1)',
+                        color: r.status === 'active' ? '#4fff4f' : r.status === 'completed' ? '#4f9fff' : '#ffff4f',
+                      }}>
+                        {r.status === 'active' ? 'Идёт' : r.status === 'completed' ? 'Завершён' : 'Скоро'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ДРУЗЬЯ */}
+          {activeTab === 'friends' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Входящие заявки */}
+              {friendRequests.length > 0 && (
+                <div className={styles.sectionBlock}>
+                  <div className={styles.sectionBlockTitle}>Входящие заявки ({friendRequests.length})</div>
+                  {friendRequests.map((req: any) => (
+                    <div key={req.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #1a1e24' }}>
+                      <div style={{ flex: 1, fontWeight: 600, color: 'var(--color-white)', fontSize: 14 }}>{req.from_username}</div>
+                      <button onClick={async () => {
+                        await fetch(`${API_URL}/api/friends/accept/${req.id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+                        setFriendRequests(prev => prev.filter((r: any) => r.id !== req.id))
+                        setFriends([]) // reload
+                      }} style={{ padding: '5px 12px', background: '#4f9fff', border: 'none', color: '#fff', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                        Принять
+                      </button>
+                      <button onClick={async () => {
+                        await fetch(`${API_URL}/api/friends/decline/${req.id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+                        setFriendRequests(prev => prev.filter((r: any) => r.id !== req.id))
+                      }} style={{ padding: '5px 12px', background: '#333', border: 'none', color: '#aaa', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>
+                        Отклонить
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Список друзей */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionBlockTitle}>Друзья ({friends.length})</div>
+                {friendsLoading ? (
+                  <p style={{ color: 'var(--color-white-64)', fontSize: 14 }}>Загрузка...</p>
+                ) : friends.length === 0 ? (
+                  <p style={{ color: 'var(--color-white-64)', fontSize: 14 }}>Друзей пока нет. Зайди на профиль другого игрока и добавь в друзья.</p>
+                ) : (
+                  friends.map((f: any) => (
+                    <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #1a1e24' }}>
+                      {f.avatar_url && <img src={f.avatar_url} alt={f.username} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />}
+                      <div style={{ flex: 1 }}>
+                        <a href={f.discord_id ? `/profile/${f.discord_id}` : '#'} style={{ fontWeight: 600, color: 'var(--color-white)', fontSize: 14, textDecoration: 'none' }}>
+                          {f.username}
+                        </a>
+                        <div style={{ fontSize: 11, color: 'var(--color-white-64)' }}>{f.forest_rank}</div>
+                      </div>
+                      <button onClick={async () => {
+                        if (f.discord_id && confirm(`Удалить ${f.username} из друзей?`)) {
+                          await fetch(`${API_URL}/api/friends/remove/${f.discord_id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+                          setFriends(prev => prev.filter((fr: any) => fr.id !== f.id))
+                        }
+                      }} style={{ padding: '4px 10px', background: 'none', border: '1px solid #444', color: '#888', borderRadius: 6, cursor: 'pointer', fontSize: 11 }}>
+                        Удалить
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           )}
 
         </div>

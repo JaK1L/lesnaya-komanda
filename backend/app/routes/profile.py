@@ -56,6 +56,22 @@ async def get_public_profile(
         if row['is_hidden']:
             raise HTTPException(status_code=403, detail="This profile is hidden")
         
+        # Tournament stats
+        user_id = await db.fetchval("SELECT id FROM users WHERE discord_id = $1", discord_id)
+        tourney_stats = {"played": 0, "wins": 0}
+        if user_id:
+            played = await db.fetchval(
+                "SELECT COUNT(*) FROM tournament_registrations WHERE user_id = $1", user_id
+            ) or 0
+            wins = await db.fetchval(
+                """SELECT COUNT(*) FROM tournaments t
+                   JOIN tournament_registrations tr ON tr.tournament_id = t.id
+                   WHERE tr.user_id = $1 AND t.status = 'completed'
+                   AND (t.winner = tr.nickname OR t.winner = tr.team_name)""",
+                user_id
+            ) or 0
+            tourney_stats = {"played": int(played), "wins": int(wins)}
+
         return {
             "discord_id": row['discord_id'],
             "site_nickname": row['site_nickname'],
@@ -69,7 +85,8 @@ async def get_public_profile(
             "level": row.get('level', 1),
             "current_xp": row.get('current_xp', 0),
             "total_xp": row.get('total_xp', 0),
-            "points": row.get('points', 0)
+            "points": row.get('points', 0),
+            "tourney_stats": tourney_stats,
         }
         
     except HTTPException:
@@ -437,6 +454,26 @@ async def _auto_grant_achievements(db, user_id: int, discord_id: int, message_co
     level = await db.fetchval("SELECT COALESCE(level, 0) FROM users WHERE id = $1", user_id) or 0
     new_rank = _rank_for_level(level)
     await db.execute("UPDATE users SET forest_rank = $1 WHERE id = $2", new_rank, user_id)
+
+
+@router.get("/profile/my-registrations")
+async def my_registrations(
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    """Список турниров, на которые зарегистрирован текущий пользователь."""
+    rows = await db.fetch(
+        """
+        SELECT t.id, t.title, t.game, t.status, t.start_date, t.prize,
+               tr.nickname, tr.team_name, tr.registered_at
+        FROM tournament_registrations tr
+        JOIN tournaments t ON t.id = tr.tournament_id
+        WHERE tr.user_id = $1
+        ORDER BY tr.registered_at DESC
+        """,
+        current_user.id,
+    )
+    return [dict(r) for r in rows]
 
 
 @router.get("/uploads/avatars/{filename}")

@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Calendar, Trophy, Crown, ChevronDown, X, Users } from 'lucide-react'
+import { Calendar, Trophy, Crown, ChevronDown, X, Users, Network } from 'lucide-react'
+import Link from 'next/link'
 import { Navigation } from '../../components/layout'
 import { Footer } from '../../components/layout'
 import styles from './page.module.css'
@@ -40,16 +41,6 @@ const FILTERS = [
   { value: 'completed', label: 'Завершены' },
 ]
 
-function challongeEmbed(url: string): string | null {
-  try {
-    const u = url.trim().replace(/\/$/, '')
-    if (u.endsWith('/module')) return u
-    if (u.includes('challonge.com/')) return u + '/module'
-    return `https://challonge.com/${u}/module`
-  } catch {
-    return null
-  }
-}
 
 // ── Registration Modal ─────────────────────────────────────────────────────
 
@@ -192,7 +183,7 @@ export default function TournamentsPage() {
   const [token, setToken] = useState<string | null>(null)
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [filter, setFilter] = useState('')
-  const [expanded, setExpanded] = useState<number | null>(null)
+
   const [descExpanded, setDescExpanded] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [regTarget, setRegTarget] = useState<Tournament | null>(null)
@@ -338,32 +329,11 @@ export default function TournamentsPage() {
                   )}
                 </div>
 
-                {t.challonge_url && (t.status === 'active' || t.status === 'completed') && (
+                {(t.status === 'active' || t.status === 'completed') && (
                   <div className={styles.bracketSection}>
-                    <button
-                      className={styles.bracketToggle}
-                      onClick={() => setExpanded(expanded === t.id ? null : t.id)}
-                    >
-                      {expanded === t.id ? 'Скрыть сетку' : 'Смотреть сетку'}
-                      <ChevronDown
-                        size={16}
-                        style={{ transform: expanded === t.id ? 'rotate(180deg)' : 'none', transition: '0.2s' }}
-                      />
-                    </button>
-
-                    {expanded === t.id && (
-                      <div className={styles.bracketEmbed}>
-                        <iframe
-                          src={challongeEmbed(t.challonge_url) ?? ''}
-                          width="100%"
-                          height="500"
-                          frameBorder="0"
-                          scrolling="auto"
-                          allowTransparency={true}
-                          title={`Сетка: ${t.title}`}
-                        />
-                      </div>
-                    )}
+                    <Link href={`/tournaments/${t.id}/bracket`} className={styles.bracketBtn}>
+                      <Network size={15} /> Смотреть сетку
+                    </Link>
                   </div>
                 )}
               </article>

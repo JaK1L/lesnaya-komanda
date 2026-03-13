@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { label: 'Наша команда', href: '/team' },
   { label: 'Стримы', href: '#streams' },
   { label: 'Турниры', href: '/tournaments' },
+  { label: 'Медиа', href: '/media' },
   { label: 'О нас', href: '/about' },
   { label: 'Соц. сети', href: '/social' },
   { label: 'Магазин', href: '/shop' },

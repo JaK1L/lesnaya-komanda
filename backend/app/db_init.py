@@ -27,6 +27,9 @@ async def init_db():
             await _migrate_missing_columns(conn)
             await _migrate_showcase(conn)
             await _migrate_tournaments(conn)
+            await _migrate_media(conn)
+            await _migrate_bracket(conn)
+            await _migrate_friends(conn)
 
             users_count = await conn.fetchval("SELECT COUNT(*) FROM users")
             games_count = await conn.fetchval("SELECT COUNT(*) FROM game_profiles")
@@ -592,3 +595,78 @@ async def _migrate_tournaments(conn):
         logger.info("Tournaments tables ready")
     except Exception as e:
         logger.error(f"Tournaments migration failed: {e}", exc_info=True)
+
+
+async def _migrate_media(conn):
+    try:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS media_items (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                media_type VARCHAR(20) DEFAULT 'image',
+                file_url TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        await conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_media_user ON media_items(user_id)"
+        )
+        logger.info("Media table ready")
+    except Exception as e:
+        logger.error(f"Media migration failed: {e}", exc_info=True)
+
+
+async def _migrate_bracket(conn):
+    try:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS bracket_matches (
+                id SERIAL PRIMARY KEY,
+                tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
+                bracket_type VARCHAR(20) NOT NULL DEFAULT 'single',
+                section VARCHAR(20) NOT NULL DEFAULT 'winners',
+                round INTEGER NOT NULL,
+                match_index INTEGER NOT NULL,
+                player1_name VARCHAR(200),
+                player2_name VARCHAR(200),
+                winner_name VARCHAR(200),
+                score1 INTEGER,
+                score2 INTEGER,
+                is_bye BOOLEAN DEFAULT FALSE,
+                status VARCHAR(20) DEFAULT 'pending',
+                next_winner_match_id INTEGER REFERENCES bracket_matches(id),
+                next_loser_match_id INTEGER REFERENCES bracket_matches(id),
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        # Add bracket_type column to tournaments if missing
+        await conn.execute("""
+            DO $$ BEGIN
+                ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS bracket_type VARCHAR(20) DEFAULT 'single';
+            EXCEPTION WHEN duplicate_column THEN NULL;
+            END $$;
+        """)
+        logger.info("Bracket tables ready")
+    except Exception as e:
+        logger.error(f"Bracket migration failed: {e}", exc_info=True)
+
+
+async def _migrate_friends(conn):
+    try:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS friendships (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                friend_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                status VARCHAR(20) DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT NOW(),
+                accepted_at TIMESTAMP,
+                UNIQUE(user_id, friend_id)
+            )
+        """)
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_friends_user ON friendships(user_id)")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_friends_friend ON friendships(friend_id)")
+        logger.info("Friendships table ready")
+    except Exception as e:
+        logger.error(f"Friends migration failed: {e}", exc_info=True)
