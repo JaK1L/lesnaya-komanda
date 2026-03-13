@@ -111,6 +111,8 @@ export default function ProfilePage() {
       setIsHidden(d.is_hidden)
       setAvatarPreview(d.avatar_url)
       await loadGamePreferences(authToken)
+      // Грузим активность сразу для hero card
+      loadActivityData(authToken)
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         localStorage.removeItem(TOKEN_KEY)
@@ -204,12 +206,13 @@ export default function ProfilePage() {
   const handleLogout = () => { localStorage.removeItem(TOKEN_KEY); router.push('/') }
 
   // ── Активность ──
-  const loadActivityData = async () => {
-    if (!token) return
+  const loadActivityData = async (authToken?: string) => {
+    const t = authToken || token
+    if (!t) return
     try {
       setActivityLoading(true)
       const res = await axios.get(`${API_URL}/api/profile/activity`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${t}` },
       })
       setActivityData({
         message_count: res.data.message_count ?? 0,
@@ -238,7 +241,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!profile) return
     if (activeTab === 'activity' && !activityData && !activityLoading) {
-      loadActivityData()
+      loadActivityData(undefined)
     }
     if (activeTab === 'accounts' && !accountsLoaded && !accountsLoading && token) {
       loadLinkedAccounts(token)
@@ -331,29 +334,18 @@ export default function ProfilePage() {
                 <div className={styles.heroBadges}>
                   <span className={styles.rankBadge}>{profile.forest_rank}</span>
                 </div>
-                {profile.bio && !isEditMode && (
+                {profile.bio && (
                   <p className={styles.heroBio}>{profile.bio}</p>
                 )}
               </div>
 
               {/* Кнопка редактирования */}
-              <button onClick={() => setIsEditMode(!isEditMode)} className={styles.editBtn}>
-                {isEditMode ? (
-                  <>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                    Отменить
-                  </>
-                ) : (
-                  <>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                    Изменить
-                  </>
-                )}
+              <button onClick={() => setIsEditMode(true)} className={styles.editBtn}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Изменить
               </button>
             </div>
 
@@ -366,6 +358,22 @@ export default function ProfilePage() {
               <div className={styles.xpTrack}>
                 <div className={styles.xpFill} style={{ width: `${xpPercent}%` }} />
               </div>
+
+              {/* Discord-активность в hero card */}
+              {activityData && (
+                <div className={styles.heroDiscordStats}>
+                  <div className={styles.heroDiscordStat}>
+                    <span>💬</span>
+                    <span className={styles.heroDiscordStatValue}>{activityData.message_count}</span>
+                    <span>сообщений в Discord</span>
+                  </div>
+                  <div className={styles.heroDiscordStat}>
+                    <span>🎤</span>
+                    <span className={styles.heroDiscordStatValue}>{Math.round(activityData.voice_hours * 10) / 10}</span>
+                    <span>часов в голосовых</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </SectionErrorBoundary>
@@ -385,63 +393,73 @@ export default function ProfilePage() {
           ))}
         </div>
 
-        {/* ════ ФОРМА РЕДАКТИРОВАНИЯ ════ */}
+        {/* ════ МОДАЛ РЕДАКТИРОВАНИЯ ════ */}
         {isEditMode && (
-          <div className={styles.editPanel}>
-            <div className={styles.editPanelTitle}>Редактирование профиля</div>
-            <div className={styles.formGrid}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Никнейм на сайте</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={siteNickname}
-                  onChange={e => setSiteNickname(e.target.value)}
-                  placeholder={profile.discord_username}
-                />
+          <div className={styles.modalOverlay} onClick={() => setIsEditMode(false)}>
+            <div className={styles.modalBox} onClick={e => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <span className={styles.modalTitle}>Редактирование профиля</span>
+                <button className={styles.modalClose} onClick={() => setIsEditMode(false)}>✕</button>
               </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Аватар</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => handleAvatarFileChange(e.target.files?.[0] || null)}
-                  className={styles.formInput}
-                />
-              </div>
-              <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-                <label className={styles.formLabel}>О себе</label>
-                <textarea
-                  className={styles.formTextarea}
-                  value={bio}
-                  onChange={e => setBio(e.target.value)}
-                  placeholder="Расскажите о себе..."
-                />
-              </div>
-            </div>
-            <div className={styles.formCheckbox}>
-              <input
-                type="checkbox"
-                id="isHidden"
-                checked={isHidden}
-                onChange={e => setIsHidden(e.target.checked)}
-              />
-              <label htmlFor="isHidden">Скрыть профиль от других пользователей</label>
-            </div>
-            <div className={styles.formActions}>
-              <button onClick={handleSave} disabled={saving} className={styles.saveButton}>
-                {saving ? 'Сохранение...' : 'Сохранить изменения'}
-              </button>
-            </div>
 
-            <div className={styles.editGamesSection}>
-              <span className={styles.editGamesLabel}>Игровые предпочтения</span>
-              <GamePreferencesSection
-                selectedGames={selectedGames}
-                customGameName={customGameName}
-                onGameToggle={handleGameToggle}
-                onCustomGameNameChange={name => { setCustomGameName(name); setGamePreferencesChanged(true) }}
-              />
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Никнейм на сайте</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={siteNickname}
+                    onChange={e => setSiteNickname(e.target.value)}
+                    placeholder={profile.discord_username}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Аватар</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => handleAvatarFileChange(e.target.files?.[0] || null)}
+                    className={styles.formInput}
+                  />
+                </div>
+                <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                  <label className={styles.formLabel}>О себе</label>
+                  <textarea
+                    className={styles.formTextarea}
+                    value={bio}
+                    onChange={e => setBio(e.target.value)}
+                    placeholder="Расскажите о себе..."
+                  />
+                </div>
+              </div>
+              <div className={styles.formCheckbox}>
+                <input
+                  type="checkbox"
+                  id="isHidden"
+                  checked={isHidden}
+                  onChange={e => setIsHidden(e.target.checked)}
+                />
+                <label htmlFor="isHidden">Скрыть профиль от других пользователей</label>
+              </div>
+
+              <div className={styles.editGamesSection}>
+                <span className={styles.editGamesLabel}>Игровые предпочтения</span>
+                <GamePreferencesSection
+                  selectedGames={selectedGames}
+                  customGameName={customGameName}
+                  onGameToggle={handleGameToggle}
+                  onCustomGameNameChange={name => { setCustomGameName(name); setGamePreferencesChanged(true) }}
+                />
+              </div>
+
+              <div className={styles.formActions} style={{ marginTop: '1.25rem' }}>
+                <button onClick={() => setIsEditMode(false)} className={styles.modalClose} style={{ width: 'auto', padding: '0.7rem 1.25rem', fontSize: '0.85rem' }}>
+                  Отмена
+                </button>
+                <button onClick={handleSave} disabled={saving} className={styles.saveButton}>
+                  {saving ? 'Сохранение...' : 'Сохранить'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -552,20 +570,6 @@ export default function ProfilePage() {
               </div>
             ) : activityData ? (
               <>
-                {/* Discord-статистика */}
-                <div className={styles.statsGrid} style={{ marginBottom: '1rem' }}>
-                  <div className={styles.statCard}>
-                    <span className={styles.statCardIcon}>💬</span>
-                    <span className={styles.statCardValue}>{activityData.message_count}</span>
-                    <span className={styles.statCardLabel}>Сообщений в Discord</span>
-                  </div>
-                  <div className={styles.statCard}>
-                    <span className={styles.statCardIcon}>🎤</span>
-                    <span className={styles.statCardValue}>{Math.round(activityData.voice_hours * 10) / 10}</span>
-                    <span className={styles.statCardLabel}>Часов в голосовых</span>
-                  </div>
-                </div>
-
                 {/* Последние голосовые */}
                 {activityData.recent_voice.length > 0 && (
                   <div className={styles.sectionBlock}>
