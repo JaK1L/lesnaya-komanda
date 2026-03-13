@@ -31,14 +31,9 @@ interface ProfileData {
 interface ActivityData {
   message_count: number
   voice_hours: number
-  achievements: Array<{
-    id: number
-    name: string
-    icon: string
-    category: string
-    points: number
-    earned_at: string | null
-  }>
+  achievements: Array<{ name: string; icon: string; points: number; earned_at: string | null }>
+  recent_messages: Array<{ type: string; channel: string; created_at: string | null }>
+  recent_voice: Array<{ channel: string; joined_at: string | null; left_at: string | null; duration_minutes: number }>
 }
 
 interface LinkedAccount {
@@ -209,21 +204,19 @@ export default function ProfilePage() {
   const handleLogout = () => { localStorage.removeItem(TOKEN_KEY); router.push('/') }
 
   // ── Активность ──
-  const loadActivityData = async (discordId: number) => {
+  const loadActivityData = async () => {
+    if (!token) return
     try {
       setActivityLoading(true)
-      const [playerRes, achievementsRes] = await Promise.allSettled([
-        axios.get(`${API_URL}/api/players/${discordId}`),
-        axios.get(`${API_URL}/api/achievements/user/${discordId}`),
-      ])
-      const player = playerRes.status === 'fulfilled' ? playerRes.value.data : null
-      const achievements = achievementsRes.status === 'fulfilled'
-        ? achievementsRes.value.data.filter((a: any) => a.is_completed)
-        : []
+      const res = await axios.get(`${API_URL}/api/profile/activity`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       setActivityData({
-        message_count: player?.message_count ?? 0,
-        voice_hours: player?.voice_hours ?? 0,
-        achievements,
+        message_count: res.data.message_count ?? 0,
+        voice_hours: res.data.voice_hours ?? 0,
+        achievements: res.data.achievements ?? [],
+        recent_messages: res.data.recent_messages ?? [],
+        recent_voice: res.data.recent_voice ?? [],
       })
     } catch { /* silent */ }
     finally { setActivityLoading(false) }
@@ -244,8 +237,8 @@ export default function ProfilePage() {
   // ── Ленивая загрузка по табам ──
   useEffect(() => {
     if (!profile) return
-    if (activeTab === 'activity' && !activityData && !activityLoading && profile.discord_id) {
-      loadActivityData(profile.discord_id)
+    if (activeTab === 'activity' && !activityData && !activityLoading) {
+      loadActivityData()
     }
     if (activeTab === 'accounts' && !accountsLoaded && !accountsLoading && token) {
       loadLinkedAccounts(token)
@@ -573,6 +566,29 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                {/* Последние голосовые */}
+                {activityData.recent_voice.length > 0 && (
+                  <div className={styles.sectionBlock}>
+                    <div className={styles.sectionBlockTitle}>Последние голосовые сессии</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {activityData.recent_voice.map((v, i) => (
+                        <div key={i} className={styles.activityItem}>
+                          <span className={styles.activityItemIcon}>🎤</span>
+                          <div className={styles.activityItemInfo}>
+                            <div className={styles.activityItemName}>{v.channel}</div>
+                            {v.joined_at && (
+                              <div className={styles.activityItemDate}>
+                                {new Date(v.joined_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                              </div>
+                            )}
+                          </div>
+                          <span className={styles.activityItemPoints}>{v.duration_minutes} мин</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Последние достижения */}
                 <div className={styles.sectionBlock}>
                   <div className={styles.sectionBlockTitle}>
@@ -584,16 +600,14 @@ export default function ProfilePage() {
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {activityData.achievements.slice(0, 10).map(a => (
-                        <div key={a.id} className={styles.activityItem}>
+                      {activityData.achievements.map((a, i) => (
+                        <div key={i} className={styles.activityItem}>
                           <span className={styles.activityItemIcon}>{a.icon}</span>
                           <div className={styles.activityItemInfo}>
                             <div className={styles.activityItemName}>{a.name}</div>
                             {a.earned_at && (
                               <div className={styles.activityItemDate}>
-                                {new Date(a.earned_at).toLocaleDateString('ru-RU', {
-                                  day: 'numeric', month: 'long', year: 'numeric',
-                                })}
+                                {new Date(a.earned_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
                               </div>
                             )}
                           </div>

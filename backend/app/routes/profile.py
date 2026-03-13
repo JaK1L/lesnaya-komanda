@@ -214,6 +214,153 @@ async def upload_avatar(
         )
 
 
+@router.get("/profile/activity")
+async def get_my_activity(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Получить активность текущего пользователя и авто-выдать достижения."""
+    discord_id = await db.fetchval("SELECT discord_id FROM users WHERE id = $1", current_user.id)
+    if not discord_id:
+        return {"message_count": 0, "voice_hours": 0, "recent_messages": [], "recent_voice": [], "achievements": []}
+
+    # Счётчики активности
+    message_count = await db.fetchval(
+        "SELECT COUNT(*) FROM activity_log WHERE discord_id = $1", discord_id
+    ) or 0
+
+    voice_seconds = await db.fetchval(
+        """SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (left_at - joined_at))), 0)
+           FROM voice_sessions WHERE discord_id = $1 AND left_at IS NOT NULL""",
+        discord_id,
+    ) or 0
+    voice_hours = float(voice_seconds) / 3600
+
+    # Последние 10 активностей
+    recent_messages = await db.fetch(
+        """SELECT type, channel, created_at FROM activity_log
+           WHERE discord_id = $1 ORDER BY created_at DESC LIMIT 10""",
+        discord_id,
+    )
+
+    recent_voice = await db.fetch(
+        """SELECT channel, joined_at, left_at FROM voice_sessions
+           WHERE discord_id = $1 AND left_at IS NOT NULL ORDER BY joined_at DESC LIMIT 5""",
+        discord_id,
+    )
+
+    # Авто-выдача достижений по порогам
+    try:
+        await _auto_grant_achievements(db, current_user.id, discord_id, message_count, voice_hours)
+    except Exception:
+        pass  # Не блокируем ответ если авто-выдача сломалась
+
+    # Последние достижения пользователя
+    achievements = await db.fetch(
+        """SELECT ua.earned_at, at.name, at.icon, at.points
+           FROM user_achievements ua
+           JOIN achievement_types at ON ua.achievement_type_id = at.id
+           WHERE ua.user_id = $1 AND ua.is_completed = true
+           ORDER BY ua.earned_at DESC NULLS LAST LIMIT 10""",
+        current_user.id,
+    )
+
+    return {
+        "message_count": int(message_count),
+        "voice_hours": round(voice_hours, 1),
+        "recent_messages": [
+            {"type": r["type"], "channel": r["channel"], "created_at": r["created_at"].isoformat() if r["created_at"] else None}
+            for r in recent_messages
+        ],
+        "recent_voice": [
+            {
+                "channel": r["channel"],
+                "joined_at": r["joined_at"].isoformat() if r["joined_at"] else None,
+                "left_at": r["left_at"].isoformat() if r["left_at"] else None,
+                "duration_minutes": round(
+                    (r["left_at"] - r["joined_at"]).total_seconds() / 60
+                ) if r["left_at"] and r["joined_at"] else 0,
+            }
+            for r in recent_voice
+        ],
+        "achievements": [
+            {"name": a["name"], "icon": a["icon"], "points": a["points"], "earned_at": a["earned_at"].isoformat() if a["earned_at"] else None}
+            for a in achievements
+        ],
+    }
+
+
+async def _auto_grant_achievements(db, user_id: int, discord_id: int, message_count: int, voice_hours: float):
+    """Авто-выдать достижения по порогам активности."""
+    # Достижения которые уже есть
+    existing = {
+        r["achievement_type_id"]
+        for r in await db.fetch(
+            "SELECT achievement_type_id FROM user_achievements WHERE user_id = $1", user_id
+        )
+    }
+
+    # Таблица порогов: (category, requirement_type, threshold, achievement_name)
+    msg_thresholds = [
+        ("activity", "messages", 1, "Первые шаги"),
+        ("activity", "messages", 100, "Болтун"),
+        ("activity", "messages", 500, "Говорун"),
+        ("activity", "messages", 1000, "Легенда чата"),
+    ]
+    voice_thresholds = [
+        ("voice", "voice_hours", 10, "Слушатель"),
+        ("voice", "voice_hours", 50, "Собеседник"),
+        ("voice", "voice_hours", 100, "Радиоведущий"),
+    ]
+
+    for _cat, _req, threshold, name in msg_thresholds:
+        if message_count >= threshold:
+            row = await db.fetchrow("SELECT id, points FROM achievement_types WHERE name = $1 AND is_active = true", name)
+            if row and row["id"] not in existing:
+                await db.execute(
+                    """INSERT INTO user_achievements (user_id, achievement_type_id, progress, max_progress, is_completed, earned_at)
+                       VALUES ($1, $2, 100, 100, true, NOW()) ON CONFLICT DO NOTHING""",
+                    user_id, row["id"],
+                )
+                await db.execute(
+                    "UPDATE users SET points = COALESCE(points, 0) + $1 WHERE id = $2",
+                    row["points"], user_id,
+                )
+
+    for _cat, _req, threshold, name in voice_thresholds:
+        if voice_hours >= threshold:
+            row = await db.fetchrow("SELECT id, points FROM achievement_types WHERE name = $1 AND is_active = true", name)
+            if row and row["id"] not in existing:
+                await db.execute(
+                    """INSERT INTO user_achievements (user_id, achievement_type_id, progress, max_progress, is_completed, earned_at)
+                       VALUES ($1, $2, 100, 100, true, NOW()) ON CONFLICT DO NOTHING""",
+                    user_id, row["id"],
+                )
+                await db.execute(
+                    "UPDATE users SET points = COALESCE(points, 0) + $1 WHERE id = $2",
+                    row["points"], user_id,
+                )
+
+    # "Старожил" — год в сообществе
+    joined = await db.fetchval("SELECT joined_at FROM users WHERE id = $1", user_id)
+    if joined:
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        joined_aware = joined.replace(tzinfo=timezone.utc) if joined.tzinfo is None else joined
+        if (now - joined_aware).days >= 365:
+            row = await db.fetchrow("SELECT id, points FROM achievement_types WHERE name = 'Старожил' AND is_active = true")
+            if row and row["id"] not in existing:
+                await db.execute(
+                    """INSERT INTO user_achievements (user_id, achievement_type_id, progress, max_progress, is_completed, earned_at)
+                       VALUES ($1, $2, 100, 100, true, NOW()) ON CONFLICT DO NOTHING""",
+                    user_id, row["id"],
+                )
+                await db.execute(
+                    "UPDATE users SET points = COALESCE(points, 0) + $1 WHERE id = $2",
+                    row["points"], user_id,
+                )
+
+
 @router.get("/uploads/avatars/{filename}")
 async def get_avatar(filename: str):
     """
