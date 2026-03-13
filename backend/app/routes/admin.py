@@ -1275,6 +1275,8 @@ class TournamentCreate(BaseModel):
     start_date: Optional[datetime] = None
     status: str = "upcoming"  # upcoming | active | completed
     winner: Optional[str] = None
+    image_url: Optional[str] = None
+    type: str = "1v1"  # 1v1 | 5v5
 
 
 class TournamentOut(TournamentCreate):
@@ -1300,12 +1302,13 @@ async def admin_create_tournament(
 ):
     row = await db.fetchrow(
         """
-        INSERT INTO tournaments (title, description, game, prize, challonge_url, start_date, status, winner)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO tournaments (title, description, game, prize, challonge_url, start_date, status, winner, image_url, type)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING *
         """,
         payload.title, payload.description, payload.game, payload.prize,
         payload.challonge_url, payload.start_date, payload.status, payload.winner,
+        payload.image_url, payload.type,
     )
     return dict(row)
 
@@ -1321,12 +1324,13 @@ async def admin_update_tournament(
         """
         UPDATE tournaments
         SET title=$1, description=$2, game=$3, prize=$4, challonge_url=$5,
-            start_date=$6, status=$7, winner=$8, updated_at=NOW()
-        WHERE id=$9
+            start_date=$6, status=$7, winner=$8, image_url=$9, type=$10, updated_at=NOW()
+        WHERE id=$11
         RETURNING *
         """,
         payload.title, payload.description, payload.game, payload.prize,
         payload.challonge_url, payload.start_date, payload.status, payload.winner,
+        payload.image_url, payload.type,
         tournament_id,
     )
     if not row:
@@ -1344,3 +1348,23 @@ async def admin_delete_tournament(
     if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Турнир не найден")
     return {"status": "deleted"}
+
+
+@router.get("/tournaments/{tournament_id}/registrations")
+async def admin_list_registrations(
+    tournament_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    rows = await db.fetch(
+        "SELECT * FROM tournament_registrations WHERE tournament_id = $1 ORDER BY registered_at DESC",
+        tournament_id,
+    )
+    result = []
+    for r in rows:
+        d = dict(r)
+        if d.get("players") and isinstance(d["players"], str):
+            import json
+            d["players"] = json.loads(d["players"])
+        result.append(d)
+    return result

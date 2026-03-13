@@ -1,10 +1,11 @@
 """
 Публичные маршруты турниров
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from datetime import datetime
 import asyncpg
+import json
 from pydantic import BaseModel
 
 from ..database import get_db
@@ -22,7 +23,22 @@ class TournamentOut(BaseModel):
     start_date: Optional[datetime]
     status: str
     winner: Optional[str]
+    image_url: Optional[str]
+    type: str
     created_at: datetime
+
+
+class RegisterSolo(BaseModel):
+    nickname: str
+    discord: Optional[str] = None
+    steam: Optional[str] = None
+    user_id: Optional[int] = None
+
+
+class RegisterTeam(BaseModel):
+    team_name: str
+    players: List[str]  # list of nicknames, len 5
+    contact: str        # discord or telegram of captain
 
 
 @router.get("/", response_model=List[TournamentOut])
@@ -45,6 +61,54 @@ async def get_tournament(
 ):
     row = await db.fetchrow("SELECT * FROM tournaments WHERE id = $1", tournament_id)
     if not row:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Турнир не найден")
     return dict(row)
+
+
+@router.post("/{tournament_id}/register", status_code=201)
+async def register_for_tournament(
+    tournament_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+):
+    # This endpoint is called with JSON body parsed in the route below
+    raise HTTPException(status_code=405, detail="Use typed endpoints")
+
+
+@router.post("/{tournament_id}/register/solo", status_code=201)
+async def register_solo(
+    tournament_id: int,
+    payload: RegisterSolo,
+    db: asyncpg.Connection = Depends(get_db),
+):
+    t = await db.fetchrow("SELECT id, type FROM tournaments WHERE id = $1", tournament_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Турнир не найден")
+    await db.execute(
+        """
+        INSERT INTO tournament_registrations
+            (tournament_id, tournament_type, nickname, discord, steam, user_id)
+        VALUES ($1, '1v1', $2, $3, $4, $5)
+        """,
+        tournament_id, payload.nickname, payload.discord, payload.steam, payload.user_id,
+    )
+    return {"status": "registered"}
+
+
+@router.post("/{tournament_id}/register/team", status_code=201)
+async def register_team(
+    tournament_id: int,
+    payload: RegisterTeam,
+    db: asyncpg.Connection = Depends(get_db),
+):
+    t = await db.fetchrow("SELECT id, type FROM tournaments WHERE id = $1", tournament_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Турнир не найден")
+    await db.execute(
+        """
+        INSERT INTO tournament_registrations
+            (tournament_id, tournament_type, team_name, players, contact)
+        VALUES ($1, '5v5', $2, $3::jsonb, $4)
+        """,
+        tournament_id, payload.team_name, json.dumps(payload.players), payload.contact,
+    )
+    return {"status": "registered"}

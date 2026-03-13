@@ -60,7 +60,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 860px;
+  max-width: 480px;
 }
 
 /* Skeleton */
@@ -220,6 +220,172 @@
 .winnerName {
   font-size: 16px;
   font-weight: var(--font-weight-medium);
+}
+
+/* Card image */
+.cardImage {
+  width: 100%;
+  aspect-ratio: 16/7;
+  object-fit: cover;
+  display: block;
+}
+
+/* Type badge */
+.typeBadge {
+  font-size: 12px;
+  padding: 3px 10px;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 99px;
+  color: #a5b4fc;
+  font-weight: 600;
+}
+
+/* Register button */
+.registerBtn {
+  margin-top: 6px;
+  padding: 9px 20px;
+  background: var(--color-purple);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  align-self: flex-start;
+}
+.registerBtn:hover { background: #7c3fe0; }
+
+/* Modal overlay */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalBox {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid #333;
+}
+
+.modalHead h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+.modalClose:hover { color: #fff; }
+
+.modalBody {
+  padding: 1.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.fieldLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  color: #999;
+}
+
+.fieldInput {
+  background: #111;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  padding: 8px 11px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.fieldInput:focus { border-color: var(--color-purple); }
+
+.modalFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 1rem 1.4rem;
+  border-top: 1px solid #333;
+}
+
+.modalCancel {
+  padding: 8px 16px;
+  background: #2a2a2a;
+  color: #999;
+  border: 1px solid #444;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+.modalCancel:hover { background: #333; }
+
+.modalSubmit {
+  padding: 8px 20px;
+  background: var(--color-purple);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.modalSubmit:hover { background: #7c3fe0; }
+.modalSubmit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.modalError {
+  color: #f87171;
+  font-size: 13px;
+  padding: 7px 11px;
+  background: rgba(248,113,113,0.1);
+  border-radius: 6px;
+}
+
+.modalSuccess {
+  color: #4ade80;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px 0 4px;
 }
 
 /* Bracket */

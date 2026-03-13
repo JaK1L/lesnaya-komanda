@@ -545,7 +545,7 @@ async def _migrate_showcase(conn):
 
 
 async def _migrate_tournaments(conn):
-    """Создаёт таблицу турниров."""
+    """Создаёт таблицы турниров и регистраций."""
     try:
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS tournaments (
@@ -558,10 +558,35 @@ async def _migrate_tournaments(conn):
                 start_date TIMESTAMP,
                 status VARCHAR(50) DEFAULT 'upcoming',
                 winner TEXT,
+                image_url TEXT,
+                type VARCHAR(10) DEFAULT '1v1',
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         """)
-        logger.info("Tournaments table ready")
+        await conn.execute("""
+            ALTER TABLE tournaments
+            ADD COLUMN IF NOT EXISTS image_url TEXT,
+            ADD COLUMN IF NOT EXISTS type VARCHAR(10) DEFAULT '1v1'
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS tournament_registrations (
+                id SERIAL PRIMARY KEY,
+                tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
+                tournament_type VARCHAR(10) NOT NULL,
+                nickname VARCHAR(100),
+                discord VARCHAR(100),
+                steam VARCHAR(100),
+                team_name VARCHAR(100),
+                players JSONB DEFAULT '[]',
+                contact VARCHAR(200),
+                user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                registered_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        await conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_tourney_reg_tournament ON tournament_registrations(tournament_id)"
+        )
+        logger.info("Tournaments tables ready")
     except Exception as e:
         logger.error(f"Tournaments migration failed: {e}", exc_info=True)

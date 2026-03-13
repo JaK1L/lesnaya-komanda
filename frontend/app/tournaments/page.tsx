@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Calendar, Trophy, Crown, ChevronDown } from 'lucide-react'
+import { Calendar, Trophy, Crown, ChevronDown, X, Users } from 'lucide-react'
 import { Navigation } from '../../components/layout'
 import { Footer } from '../../components/layout'
 import styles from './page.module.css'
@@ -19,6 +19,8 @@ interface Tournament {
   start_date: string | null
   status: 'upcoming' | 'active' | 'completed'
   winner: string | null
+  image_url: string | null
+  type: '1v1' | '5v5'
   created_at: string
 }
 
@@ -38,16 +40,147 @@ const FILTERS = [
 function challongeEmbed(url: string): string | null {
   try {
     const u = url.trim().replace(/\/$/, '')
-    // Already has /module
     if (u.endsWith('/module')) return u
-    // Full challonge URL
     if (u.includes('challonge.com/')) return u + '/module'
-    // Just slug
     return `https://challonge.com/${u}/module`
   } catch {
     return null
   }
 }
+
+// ── Registration Modal ─────────────────────────────────────────────────────
+
+interface RegModalProps {
+  tournament: Tournament
+  onClose: () => void
+  apiUrl: string
+}
+
+function RegistrationModal({ tournament, onClose, apiUrl }: RegModalProps) {
+  const isSolo = tournament.type === '1v1'
+  const [nickname, setNickname] = useState('')
+  const [discord, setDiscord] = useState('')
+  const [steam, setSteam] = useState('')
+  const [teamName, setTeamName] = useState('')
+  const [players, setPlayers] = useState(['', '', '', '', ''])
+  const [contact, setContact] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token || !isSolo) return
+    fetch(`${apiUrl}/api/profile`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return
+        setNickname(data.site_nickname || data.discord_username || '')
+        setDiscord(data.discord_username || '')
+      })
+      .catch(() => {})
+  }, [apiUrl, isSolo])
+
+  const handleSubmit = async () => {
+    setError('')
+    if (isSolo) {
+      if (!nickname.trim()) { setError('Укажи никнейм'); return }
+    } else {
+      if (!teamName.trim()) { setError('Укажи название команды'); return }
+      if (players.some(p => !p.trim())) { setError('Заполни никнеймы всех 5 игроков'); return }
+      if (!contact.trim()) { setError('Укажи контакт капитана'); return }
+    }
+    setSubmitting(true)
+    try {
+      const endpoint = isSolo
+        ? `${apiUrl}/api/tournaments/${tournament.id}/register/solo`
+        : `${apiUrl}/api/tournaments/${tournament.id}/register/team`
+      const body = isSolo
+        ? { nickname, discord: discord || null, steam: steam || null }
+        : { team_name: teamName, players, contact }
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) { setError('Ошибка при отправке, попробуй позже'); return }
+      setSuccess(true)
+    } catch {
+      setError('Ошибка сети')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={styles.modalBox}>
+        <div className={styles.modalHead}>
+          <h3>Регистрация: {tournament.title}</h3>
+          <button className={styles.modalClose} onClick={onClose}><X size={18} /></button>
+        </div>
+
+        {success ? (
+          <div className={styles.modalBody}>
+            <p className={styles.modalSuccess}>Заявка отправлена! Ждём тебя на турнире.</p>
+          </div>
+        ) : (
+          <>
+            <div className={styles.modalBody}>
+              {isSolo ? (
+                <>
+                  <label className={styles.fieldLabel}>
+                    Никнейм *
+                    <input className={styles.fieldInput} value={nickname} onChange={e => setNickname(e.target.value)} placeholder="Твой игровой ник" />
+                  </label>
+                  <label className={styles.fieldLabel}>
+                    Discord
+                    <input className={styles.fieldInput} value={discord} onChange={e => setDiscord(e.target.value)} placeholder="username#0000" />
+                  </label>
+                  <label className={styles.fieldLabel}>
+                    Steam (ссылка или ник)
+                    <input className={styles.fieldInput} value={steam} onChange={e => setSteam(e.target.value)} placeholder="https://steamcommunity.com/id/..." />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <label className={styles.fieldLabel}>
+                    Название команды *
+                    <input className={styles.fieldInput} value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="Название команды" />
+                  </label>
+                  {players.map((p, i) => (
+                    <label key={i} className={styles.fieldLabel}>
+                      Игрок {i + 1} *
+                      <input
+                        className={styles.fieldInput}
+                        value={p}
+                        onChange={e => setPlayers(prev => prev.map((x, j) => j === i ? e.target.value : x))}
+                        placeholder={`Никнейм игрока ${i + 1}`}
+                      />
+                    </label>
+                  ))}
+                  <label className={styles.fieldLabel}>
+                    Контакт капитана (Discord или Telegram) *
+                    <input className={styles.fieldInput} value={contact} onChange={e => setContact(e.target.value)} placeholder="@username или discord#0000" />
+                  </label>
+                </>
+              )}
+              {error && <p className={styles.modalError}>{error}</p>}
+            </div>
+            <div className={styles.modalFoot}>
+              <button className={styles.modalCancel} onClick={onClose}>Отмена</button>
+              <button className={styles.modalSubmit} onClick={handleSubmit} disabled={submitting}>
+                {submitting ? 'Отправка...' : 'Зарегистрироваться'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
 
 export default function TournamentsPage() {
   const [token, setToken] = useState<string | null>(null)
@@ -55,6 +188,7 @@ export default function TournamentsPage() {
   const [filter, setFilter] = useState('')
   const [expanded, setExpanded] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [regTarget, setRegTarget] = useState<Tournament | null>(null)
 
   useEffect(() => {
     setToken(localStorage.getItem(TOKEN_KEY))
@@ -90,7 +224,6 @@ export default function TournamentsPage() {
           <p className={styles.pageSubtitle}>Соревнования сообщества Лесной Команды</p>
         </div>
 
-        {/* Filters */}
         <div className={styles.filters}>
           {FILTERS.map(f => (
             <button
@@ -103,21 +236,26 @@ export default function TournamentsPage() {
           ))}
         </div>
 
-        {/* List */}
         <div className={styles.list}>
           {loading ? (
             Array.from({ length: 3 }).map((_, i) => <div key={i} className={styles.skeleton} />)
           ) : tournaments.length === 0 ? (
-            <div className={styles.empty}>
-              <p>Турниров пока нет</p>
-            </div>
+            <div className={styles.empty}><p>Турниров пока нет</p></div>
           ) : (
             tournaments.map(t => (
               <article key={t.id} className={`${styles.card} ${styles[`card_${t.status}`]}`}>
+                {t.image_url && (
+                  <img src={t.image_url} alt={t.title} className={styles.cardImage} />
+                )}
+
                 <div className={styles.cardTop}>
                   <div className={styles.cardMeta}>
                     <span className={`${styles.statusBadge} ${styles[`status_${t.status}`]}`}>
                       {STATUS_LABEL[t.status]}
+                    </span>
+                    <span className={styles.typeBadge}>
+                      <Users size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
+                      {t.type}
                     </span>
                     {t.game && <span className={styles.gameBadge}>{t.game}</span>}
                   </div>
@@ -141,7 +279,6 @@ export default function TournamentsPage() {
                     )}
                   </div>
 
-                  {/* Winner */}
                   {t.status === 'completed' && t.winner && (
                     <div className={styles.winnerBanner}>
                       <Crown size={20} />
@@ -151,9 +288,14 @@ export default function TournamentsPage() {
                       </div>
                     </div>
                   )}
+
+                  {t.status !== 'completed' && (
+                    <button className={styles.registerBtn} onClick={() => setRegTarget(t)}>
+                      Зарегистрироваться
+                    </button>
+                  )}
                 </div>
 
-                {/* Bracket toggle */}
                 {t.challonge_url && (t.status === 'active' || t.status === 'completed') && (
                   <div className={styles.bracketSection}>
                     <button
@@ -188,6 +330,14 @@ export default function TournamentsPage() {
         </div>
       </main>
       <Footer />
+
+      {regTarget && (
+        <RegistrationModal
+          tournament={regTarget}
+          onClose={() => setRegTarget(null)}
+          apiUrl={API_URL}
+        />
+      )}
     </>
   )
 }

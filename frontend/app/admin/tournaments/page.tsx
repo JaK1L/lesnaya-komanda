@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trophy, Pencil, Trash2, Calendar, Crown, Plus } from 'lucide-react'
+import { Trophy, Pencil, Trash2, Calendar, Crown, Plus, X, Users } from 'lucide-react'
 import styles from '../news/page.module.css'
 import modalStyles from './modal.module.css'
 
@@ -18,6 +18,8 @@ interface Tournament {
   start_date: string | null
   status: 'upcoming' | 'active' | 'completed'
   winner: string | null
+  image_url: string | null
+  type: '1v1' | '5v5'
 }
 
 const EMPTY: Omit<Tournament, 'id'> = {
@@ -29,12 +31,77 @@ const EMPTY: Omit<Tournament, 'id'> = {
   start_date: '',
   status: 'upcoming',
   winner: '',
+  image_url: '',
+  type: '1v1',
 }
 
 const STATUS_LABEL: Record<string, string> = {
   upcoming: 'Скоро',
   active: 'Идёт',
   completed: 'Завершён',
+}
+
+interface Registration {
+  id: number
+  tournament_type: string
+  nickname: string | null
+  discord: string | null
+  steam: string | null
+  team_name: string | null
+  players: string[] | null
+  contact: string | null
+  registered_at: string
+}
+
+function RegViewer({ tournamentId, token, onClose }: { tournamentId: number; token: string; onClose: () => void }) {
+  const [regs, setRegs] = useState<Registration[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/registrations`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(data => { setRegs(data); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [tournamentId, token])
+
+  return (
+    <div className={modalStyles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={modalStyles.modal}>
+        <div className={modalStyles.modalHeader}>
+          <h2>Заявки</h2>
+          <button className={modalStyles.close} onClick={onClose}><X size={16} /></button>
+        </div>
+        <div className={modalStyles.body}>
+          {loading ? (
+            <p style={{ color: '#888' }}>Загрузка...</p>
+          ) : regs.length === 0 ? (
+            <p style={{ color: '#888' }}>Заявок пока нет</p>
+          ) : regs.map(r => (
+            <div key={r.id} style={{ padding: '10px 0', borderBottom: '1px solid #333', fontSize: 13 }}>
+              {r.tournament_type === '1v1' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ color: '#fff', fontWeight: 600 }}>{r.nickname}</span>
+                  {r.discord && <span style={{ color: '#888' }}>Discord: {r.discord}</span>}
+                  {r.steam && <span style={{ color: '#888' }}>Steam: {r.steam}</span>}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ color: '#fff', fontWeight: 600 }}>Команда: {r.team_name}</span>
+                  {r.players && <span style={{ color: '#aaa' }}>Игроки: {r.players.join(', ')}</span>}
+                  {r.contact && <span style={{ color: '#888' }}>Контакт: {r.contact}</span>}
+                </div>
+              )}
+              <span style={{ color: '#555', fontSize: 11 }}>
+                {new Date(r.registered_at).toLocaleString('ru-RU')}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function AdminTournamentsPage() {
@@ -46,6 +113,7 @@ export default function AdminTournamentsPage() {
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [regViewId, setRegViewId] = useState<number | null>(null)
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
@@ -84,6 +152,8 @@ export default function AdminTournamentsPage() {
       start_date: item.start_date ? item.start_date.slice(0, 16) : '',
       status: item.status,
       winner: item.winner ?? '',
+      image_url: item.image_url ?? '',
+      type: item.type ?? '1v1',
     })
     setError('')
     setShowModal(true)
@@ -102,6 +172,7 @@ export default function AdminTournamentsPage() {
       prize: form.prize || null,
       challonge_url: form.challonge_url || null,
       winner: form.winner || null,
+      image_url: form.image_url || null,
     }
     try {
       const url = editing
@@ -158,7 +229,8 @@ export default function AdminTournamentsPage() {
               <div className={styles.cardHeader}>
                 <h3>{item.title}</h3>
                 <div className={styles.cardActions}>
-                  <span className={styles.published}>{STATUS_LABEL[item.status]} {item.game ? `· ${item.game}` : ''}</span>
+                  <span className={styles.published}>{STATUS_LABEL[item.status]} · {item.type} {item.game ? `· ${item.game}` : ''}</span>
+                  <button onClick={() => setRegViewId(item.id)} className={styles.editButton} title="Заявки"><Users size={15} /></button>
                   <button onClick={() => openEdit(item)} className={styles.editButton} title="Редактировать"><Pencil size={15} /></button>
                   <button onClick={() => handleDelete(item.id)} className={styles.deleteButton} title="Удалить"><Trash2 size={15} /></button>
                 </div>
@@ -174,13 +246,22 @@ export default function AdminTournamentsPage() {
         </div>
       )}
 
+      {/* Registrations viewer */}
+      {regViewId !== null && (
+        <RegViewer
+          tournamentId={regViewId}
+          token={localStorage.getItem('admin_token') ?? ''}
+          onClose={() => setRegViewId(null)}
+        />
+      )}
+
       {/* Modal */}
       {showModal && (
         <div className={modalStyles.overlay} onClick={e => e.target === e.currentTarget && setShowModal(false)}>
           <div className={modalStyles.modal}>
             <div className={modalStyles.modalHeader}>
               <h2>{editing ? 'Редактировать турнир' : 'Новый турнир'}</h2>
-              <button className={modalStyles.close} onClick={() => setShowModal(false)}>✕</button>
+              <button className={modalStyles.close} onClick={() => setShowModal(false)}><X size={16} /></button>
             </div>
 
             <div className={modalStyles.body}>
@@ -227,26 +308,17 @@ export default function AdminTournamentsPage() {
                 </label>
               </div>
 
-              <label className={modalStyles.label}>
-                Ссылка Challonge
-                <input
-                  className={modalStyles.input}
-                  value={form.challonge_url ?? ''}
-                  onChange={e => setForm(f => ({ ...f, challonge_url: e.target.value }))}
-                  placeholder="https://challonge.com/your_tournament"
-                />
-                <span className={modalStyles.hint}>Вставьте URL турнира с challonge.com</span>
-              </label>
-
               <div className={modalStyles.row}>
                 <label className={modalStyles.label}>
-                  Дата начала
-                  <input
-                    className={modalStyles.input}
-                    type="datetime-local"
-                    value={form.start_date ?? ''}
-                    onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                  />
+                  Формат
+                  <select
+                    className={modalStyles.select}
+                    value={form.type}
+                    onChange={e => setForm(f => ({ ...f, type: e.target.value as '1v1' | '5v5' }))}
+                  >
+                    <option value="1v1">1 на 1</option>
+                    <option value="5v5">5 на 5</option>
+                  </select>
                 </label>
 
                 <label className={modalStyles.label}>
@@ -260,6 +332,39 @@ export default function AdminTournamentsPage() {
                     <option value="active">Идёт</option>
                     <option value="completed">Завершён</option>
                   </select>
+                </label>
+              </div>
+
+              <label className={modalStyles.label}>
+                Ссылка Challonge
+                <input
+                  className={modalStyles.input}
+                  value={form.challonge_url ?? ''}
+                  onChange={e => setForm(f => ({ ...f, challonge_url: e.target.value }))}
+                  placeholder="https://challonge.com/your_tournament"
+                />
+                <span className={modalStyles.hint}>Вставьте URL турнира с challonge.com</span>
+              </label>
+
+              <label className={modalStyles.label}>
+                Картинка (URL)
+                <input
+                  className={modalStyles.input}
+                  value={form.image_url ?? ''}
+                  onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
+                  placeholder="https://..."
+                />
+              </label>
+
+              <div className={modalStyles.row}>
+                <label className={modalStyles.label}>
+                  Дата начала
+                  <input
+                    className={modalStyles.input}
+                    type="datetime-local"
+                    value={form.start_date ?? ''}
+                    onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                  />
                 </label>
               </div>
 
