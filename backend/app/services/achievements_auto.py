@@ -75,7 +75,7 @@ async def check_rank_achievement(db: asyncpg.Connection, user_id: int, rank: str
         "🪓 Дикарь": "rank_dikar",
         "🐗 Зверь": "rank_zver",
         "🏕️ Житель леса": "rank_zhitel",
-        "🌲 Смотрящий за лесом": "rank_smotrящiy",
+        "🌲 Смотрящий за лесом": "rank_smotrashchiy",
     }
     slug = RANK_SLUGS.get(rank)
     if slug:

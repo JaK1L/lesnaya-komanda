@@ -21,6 +21,7 @@ async def init_db():
             await _seed_initial_data(conn)
             await _ensure_admin(conn)
             await _migrate_achievements(conn)
+            await _cleanup_legacy_achievements(conn)
             await _migrate_game_accounts(conn)
             await _migrate_xp_system(conn)
             await _migrate_missing_columns(conn)
@@ -28,7 +29,7 @@ async def init_db():
 
             users_count = await conn.fetchval("SELECT COUNT(*) FROM users")
             games_count = await conn.fetchval("SELECT COUNT(*) FROM game_profiles")
-            achievements_count = await conn.fetchval("SELECT COUNT(*) FROM achievements")
+            achievements_count = await conn.fetchval("SELECT COUNT(*) FROM achievement_types")
             logger.info(
                 f"DB ready: {users_count} users, {games_count} game profiles, "
                 f"{achievements_count} achievements"
@@ -388,7 +389,7 @@ async def _migrate_achievements(conn):
             ('Дикарь', 'Получил ранг Дикарь', '🪓', 'ranks', '{"slug":"rank_dikar"}', 25),
             ('Зверь', 'Получил ранг Зверь', '🐗', 'ranks', '{"slug":"rank_zver"}', 50),
             ('Житель леса', 'Получил ранг Житель леса', '🏕️', 'ranks', '{"slug":"rank_zhitel"}', 100),
-            ('Смотрящий за лесом', 'Получил ранг Смотрящий за лесом', '🌲', 'ranks', '{"slug":"rank_smotrящiy"}', 200),
+            ('Смотрящий за лесом', 'Получил ранг Смотрящий за лесом', '🌲', 'ranks', '{"slug":"rank_smotrashchiy"}', 200),
             # Likes
             ('Первый лайк', 'Поставил первый лайк', '👍', 'activity', '{"slug":"likes_1"}', 5),
             ('Активный читатель', 'Поставил 10 лайков', '📖', 'activity', '{"slug":"likes_10"}', 10),
@@ -416,31 +417,35 @@ async def _migrate_achievements(conn):
                 name, desc, icon, cat, req, pts, __import__('json').loads(req)['slug'],
             )
 
-        await conn.execute('''
-            INSERT INTO achievement_types (name, description, icon, category, requirement, points) VALUES
-            ('Первые шаги', 'Присоединился к сообществу', '🌱', 'activity', '{"type": "join"}', 5),
-            ('Болтун', 'Отправил 100 сообщений', '💬', 'activity', '{"type": "messages", "count": 100}', 10),
-            ('Говорун', 'Отправил 500 сообщений', '🗣️', 'activity', '{"type": "messages", "count": 500}', 25),
-            ('Легенда чата', 'Отправил 1000 сообщений', '👑', 'activity', '{"type": "messages", "count": 1000}', 50),
-            ('Слушатель', 'Провел 10 часов в войсе', '🎧', 'voice', '{"type": "voice_hours", "count": 10}', 10),
-            ('Собеседник', 'Провел 50 часов в войсе', '🎤', 'voice', '{"type": "voice_hours", "count": 50}', 25),
-            ('Радиоведущий', 'Провел 100 часов в войсе', '📻', 'voice', '{"type": "voice_hours", "count": 100}', 50),
-            ('Участник', 'Посетил первое событие', '🎯', 'events', '{"type": "events_attended", "count": 1}', 10),
-            ('Активист', 'Посетил 5 событий', '⭐', 'events', '{"type": "events_attended", "count": 5}', 25),
-            ('Фанат', 'Посетил 10 событий', '🌟', 'events', '{"type": "events_attended", "count": 10}', 50),
-            ('Новичок CS2', 'Первая победа в CS2', '🔫', 'games', '{"type": "game_wins", "game": "cs2", "count": 1}', 10),
-            ('Боец CS2', '10 побед в CS2', '⚔️', 'games', '{"type": "game_wins", "game": "cs2", "count": 10}', 25),
-            ('Мастер CS2', '50 побед в CS2', '👑', 'games', '{"type": "game_wins", "game": "cs2", "count": 50}', 50),
-            ('Новичок Dota 2', 'Первая победа в Dota 2', '🛡️', 'games', '{"type": "game_wins", "game": "dota2", "count": 1}', 10),
-            ('Боец Dota 2', '10 побед в Dota 2', '⚡', 'games', '{"type": "game_wins", "game": "dota2", "count": 10}', 25),
-            ('Мастер Dota 2', '50 побед в Dota 2', '🏆', 'games', '{"type": "game_wins", "game": "dota2", "count": 50}', 50),
-            ('Старожил', 'В сообществе более года', '🎂', 'special', '{"type": "member_days", "count": 365}', 100),
-            ('Легенда', 'Получил все достижения', '💎', 'special', '{"type": "all_achievements"}', 500)
-            ON CONFLICT DO NOTHING
-        ''')
         logger.info("Achievements migration applied")
     except Exception as e:
         logger.error(f"Achievements migration failed: {e}", exc_info=True)
+
+
+async def _cleanup_legacy_achievements(conn):
+    """Удаляет старые достижения без slug, исправляет кириллический slug."""
+    try:
+        # Fix old Cyrillic slug if present
+        await conn.execute("""
+            UPDATE achievement_types
+            SET requirement = jsonb_set(requirement, '{slug}', '"rank_smotrashchiy"')
+            WHERE requirement->>'slug' = 'rank_smotrящiy'
+        """)
+
+        deleted = await conn.fetchval("""
+            WITH deleted AS (
+                DELETE FROM achievement_types
+                WHERE requirement IS NULL
+                   OR requirement->>'slug' IS NULL
+                   OR requirement->>'slug' = ''
+                RETURNING id
+            )
+            SELECT COUNT(*) FROM deleted
+        """)
+        if deleted:
+            logger.info(f"Cleaned up {deleted} legacy achievement types")
+    except Exception as e:
+        logger.error(f"Legacy achievements cleanup failed: {e}", exc_info=True)
 
 
 async def _migrate_game_accounts(conn):
