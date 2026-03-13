@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { Navigation, Footer, SkipToContent } from '../../components/layout'
@@ -60,7 +60,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'accounts',     label: 'Аккаунты'    },
 ]
 
-export default function ProfilePage() {
+function ProfilePageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -946,5 +946,13 @@ export default function ProfilePage() {
 
       <Footer />
     </PageErrorBoundary>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense>
+      <ProfilePageInner />
+    </Suspense>
   )
 }
