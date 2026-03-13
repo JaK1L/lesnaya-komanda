@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
 import { Calendar, Trophy, Crown, ChevronDown } from 'lucide-react'
 import { Navigation } from '../../components/layout'
 import { Footer } from '../../components/layout'
