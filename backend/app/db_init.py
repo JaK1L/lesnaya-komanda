@@ -231,17 +231,14 @@ async def _ensure_admin(conn):
     )
 
     admin_hash = get_password_hash(admin_password)
-    if existing_admin:
-        await conn.execute(
-            "UPDATE admin_users SET username = $1, password_hash = $2, role = 'admin' WHERE id = $3",
-            admin_username, admin_hash, existing_admin['id']
-        )
-        logger.info(f"Admin updated: {existing_admin['username']} -> {admin_username}")
-    else:
-        await conn.execute(
-            "INSERT INTO admin_users (username, password_hash, role) VALUES ($1, $2, 'admin')",
-            admin_username, admin_hash
-        )
+    await conn.execute(
+        """
+        INSERT INTO admin_users (username, password_hash, role) VALUES ($1, $2, 'admin')
+        ON CONFLICT (username) DO UPDATE SET password_hash = $2, role = 'admin'
+        """,
+        admin_username, admin_hash
+    )
+    logger.info(f"Admin upserted: {admin_username}")
         logger.info(f"Admin created: {admin_username}")
 
     await conn.execute(
