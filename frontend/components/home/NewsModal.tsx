@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import styles from './NewsModal.module.css'
 
@@ -24,6 +24,7 @@ interface Comment {
   created_at: string
 }
 
+const RIGHT_PANEL_W = 380
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
@@ -34,10 +35,16 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
   const [newComment, setNewComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null)
 
   useEffect(() => {
     setIsAuthenticated(!!localStorage.getItem('lesnaya_token'))
   }, [])
+
+  // Reset image size when news changes
+  useEffect(() => {
+    setImgSize(null)
+  }, [news?.id])
 
   useEffect(() => {
     if (isOpen && news) {
@@ -113,6 +120,40 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
     }
   }
 
+  // Compute modal & image panel dimensions based on natural image size
+  const computeLayout = useCallback((natW: number, natH: number) => {
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const maxH = Math.min(vh * 0.9, 860)
+    const maxImgW = Math.min(vw * 0.9, 1200) - RIGHT_PANEL_W
+
+    let imgW = natW
+    let imgH = natH
+
+    // Scale down to fit height
+    if (imgH > maxH) {
+      imgW = imgW * (maxH / imgH)
+      imgH = maxH
+    }
+    // Scale down to fit max width
+    if (imgW > maxImgW) {
+      imgH = imgH * (maxImgW / imgW)
+      imgW = maxImgW
+    }
+    // Scale up tiny images to at least 300px wide
+    if (imgW < 300) {
+      imgH = imgH * (300 / imgW)
+      imgW = 300
+    }
+
+    setImgSize({ w: Math.round(imgW), h: Math.round(imgH) })
+  }, [])
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget
+    computeLayout(img.naturalWidth, img.naturalHeight)
+  }
+
   if (!isOpen || !news) return null
 
   const formatDate = (s: string) =>
@@ -120,18 +161,36 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
 
   const initials = (name: string) => name.slice(0, 2).toUpperCase()
 
+  const hasImage = !!news.image_url
+
+  // Dynamic modal style when image dimensions are known
+  const modalStyle = hasImage && imgSize
+    ? { width: imgSize.w + RIGHT_PANEL_W, height: imgSize.h }
+    : undefined
+
+  const imagePanelStyle = hasImage && imgSize
+    ? { width: imgSize.w, height: imgSize.h, flex: 'none' }
+    : undefined
+
   return (
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={styles.modal}>
+      <div
+        className={`${styles.modal} ${!hasImage ? styles.modalNoImage : ''}`}
+        style={modalStyle}
+      >
         <button className={styles.closeBtn} onClick={onClose} aria-label="Закрыть">×</button>
 
         {/* Left: image */}
-        <div className={styles.imagePanel}>
-          {news.image_url
-            ? <img src={news.image_url} alt={news.title} />
-            : <div className={styles.imagePlaceholder}>📰</div>
-          }
-        </div>
+        {hasImage && (
+          <div className={styles.imagePanel} style={imagePanelStyle}>
+            <img
+              src={news.image_url!}
+              alt={news.title}
+              onLoad={handleImageLoad}
+              className={imgSize ? styles.imgLoaded : styles.imgLoading}
+            />
+          </div>
+        )}
 
         {/* Right: content */}
         <div className={styles.rightPanel}>

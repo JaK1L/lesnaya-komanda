@@ -17,16 +17,24 @@
 
 .modal {
   display: flex;
-  width: 92vw;
-  max-width: 1100px;
-  height: 88vh;
-  max-height: 800px;
+  /* size driven by JS based on image natural dimensions */
+  max-width: min(95vw, 1300px);
+  max-height: 92vh;
+  min-width: 420px;
   background: #1a1a1a;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
   animation: slideUp 0.25s ease;
   position: relative;
+  transition: width 0.2s ease, height 0.2s ease;
+}
+
+/* No image: fixed comfortable size */
+.modalNoImage {
+  width: 600px;
+  height: 80vh;
+  max-height: 700px;
 }
 
 @keyframes slideUp {
@@ -36,34 +44,36 @@
 
 /* ── Left panel: image ── */
 .imagePanel {
-  flex: 0 0 55%;
+  /* width & height set via inline style from JS */
+  flex: none;
   background: #111;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  /* Before JS fires: show loading state */
+  min-width: 200px;
 }
 
-.imagePanel img {
+.imgLoading {
+  /* Image is loaded but layout not computed yet — hide briefly */
+  visibility: hidden;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
-.imagePlaceholder {
+.imgLoaded {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #1e1e2e 0%, #2a1a3e 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 4rem;
-  opacity: 0.4;
+  object-fit: contain;
+  display: block;
 }
 
 /* ── Right panel: content ── */
 .rightPanel {
-  flex: 1;
+  flex: 0 0 380px;
+  width: 380px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -323,20 +333,31 @@
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .modal {
+  .modal,
+  .modalNoImage {
     flex-direction: column;
-    width: 100vw;
-    height: 100dvh;
+    width: 100vw !important;
+    height: 100dvh !important;
     max-width: none;
     max-height: none;
+    min-width: unset;
     border-radius: 0;
   }
 
   .imagePanel {
-    flex: 0 0 220px;
+    flex: 0 0 220px !important;
+    width: 100% !important;
+    height: 220px !important;
+  }
+
+  .imgLoaded,
+  .imgLoading {
+    object-fit: cover;
   }
 
   .rightPanel {
+    flex: 1 !important;
+    width: 100% !important;
     border-left: none;
     border-top: 1px solid rgba(255,255,255,0.06);
   }
