@@ -6,12 +6,12 @@ import axios from 'axios'
 import styles from './HeroSection.module.css'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-const SLIDE_COUNT = 2
 const AUTOPLAY_MS = 6000
 
 interface Event {
   id: number
   title: string
+  description: string
   game: string | null
   event_date: string
   registered_count: number
@@ -27,6 +27,8 @@ export function HeroSection() {
   const [paused, setPaused] = useState(false)
   const touchStartX = useRef(0)
 
+  const totalSlides = 1 + events.length
+
   useEffect(() => {
     axios.get(`${API_URL}/api/telegram/latest-post`)
       .then(r => { if (r.data.success && r.data.widget_data) setTelegramPost(r.data.widget_data) })
@@ -35,7 +37,7 @@ export function HeroSection() {
 
   useEffect(() => {
     axios.get(`${API_URL}/api/events/?upcoming_only=true`)
-      .then(r => setEvents((r.data as Event[]).slice(0, 4)))
+      .then(r => setEvents((r.data as Event[]).slice(0, 5)))
       .catch(() => {})
   }, [])
 
@@ -54,9 +56,12 @@ export function HeroSection() {
     return () => { if (telegramWidgetRef.current) telegramWidgetRef.current.innerHTML = '' }
   }, [telegramPost])
 
-  const goTo = useCallback((i: number) => setCurrent(((i % SLIDE_COUNT) + SLIDE_COUNT) % SLIDE_COUNT), [])
-  const next = useCallback(() => goTo(current + 1), [current, goTo])
-  const prev = useCallback(() => goTo(current - 1), [current, goTo])
+  const goTo = useCallback((i: number) => {
+    setCurrent(((i % totalSlides) + totalSlides) % totalSlides)
+  }, [totalSlides])
+
+  const next = useCallback(() => setCurrent(c => ((c + 1) % totalSlides)), [totalSlides])
+  const prev = useCallback(() => setCurrent(c => ((c - 1 + totalSlides) % totalSlides)), [totalSlides])
 
   useEffect(() => {
     if (paused) return
@@ -71,7 +76,10 @@ export function HeroSection() {
   }
 
   const fmtDate = (s: string) =>
-    new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+
+  const fmtTime = (s: string) =>
+    new Date(s).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
 
   return (
     <section className={styles.hero} id="hero">
@@ -125,63 +133,74 @@ export function HeroSection() {
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
-          <div className={styles.slidesTrack} style={{ transform: `translateX(-${current * 100}%)` }}>
-            {/* Slide 0: Telegram */}
-            <div className={styles.slide}>
-              <div ref={telegramWidgetRef} className={styles.widgetContainer} />
-            </div>
+          {/* Slides */}
+          <div className={styles.slidesWrapper}>
+            <div className={styles.slidesTrack} style={{ transform: `translateX(-${current * 100}%)` }}>
 
-            {/* Slide 1: Events */}
-            <div className={styles.slide}>
-              <div className={styles.eventsSlide}>
-                <div className={styles.eventsHeader}>
-                  <span>Предстоящие события</span>
-                  <Link href="/events" className={styles.eventsLink}>Все →</Link>
-                </div>
-                {events.length === 0 ? (
-                  <p className={styles.noEvents}>Событий пока нет</p>
-                ) : (
-                  <ul className={styles.eventsList}>
-                    {events.map(ev => (
-                      <li key={ev.id} className={styles.eventItem}>
-                        <div className={styles.eventMeta}>
-                          <span className={styles.eventDate}>{fmtDate(ev.event_date)}</span>
-                          {ev.game && <span className={styles.eventGame}>{ev.game}</span>}
-                        </div>
-                        <div className={styles.eventTitle}>{ev.title}</div>
-                        <div className={styles.eventFooter}>
-                          <span className={styles.eventCount}>{ev.registered_count} чел.</span>
-                          {ev.can_register && <span className={styles.registerBadge}>Открыта запись</span>}
-                          {ev.telegram_url && (
-                            <a href={ev.telegram_url} target="_blank" rel="noopener noreferrer" className={styles.eventTgLink}>TG</a>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              {/* Slide 0: Telegram */}
+              <div className={styles.slide}>
+                <div ref={telegramWidgetRef} className={styles.widgetContainer} />
               </div>
+
+              {/* Slides 1..N: one event per slide */}
+              {events.map(ev => (
+                <div key={ev.id} className={styles.slide}>
+                  <div className={styles.eventCard}>
+                    <div className={styles.eventCardHeader}>
+                      {ev.game && <span className={styles.eventGame}>{ev.game}</span>}
+                      {ev.can_register && <span className={styles.registerBadge}>Открыта запись</span>}
+                    </div>
+
+                    <div className={styles.eventCardBody}>
+                      <h3 className={styles.eventCardTitle}>{ev.title}</h3>
+                      {ev.description && (
+                        <p className={styles.eventCardDesc}>{ev.description}</p>
+                      )}
+                    </div>
+
+                    <div className={styles.eventCardFooter}>
+                      <div className={styles.eventDateTime}>
+                        <span className={styles.eventDateMain}>{fmtDate(ev.event_date)}</span>
+                        <span className={styles.eventTime}>{fmtTime(ev.event_date)}</span>
+                      </div>
+                      <div className={styles.eventCardActions}>
+                        <span className={styles.eventCount}>{ev.registered_count} чел.</span>
+                        {ev.telegram_url && (
+                          <a href={ev.telegram_url} target="_blank" rel="noopener noreferrer" className={styles.eventTgLink}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+                            </svg>
+                            Подробнее
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Arrows */}
-          <button className={`${styles.arrowBtn} ${styles.arrowPrev}`} onClick={prev} aria-label="Предыдущий">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-          </button>
-          <button className={`${styles.arrowBtn} ${styles.arrowNext}`} onClick={next} aria-label="Следующий">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-          </button>
+          {/* Controls: prev · dots · next */}
+          <div className={styles.controls}>
+            <button className={styles.arrowBtn} onClick={prev} aria-label="Предыдущий">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
 
-          {/* Dots */}
-          <div className={styles.dots}>
-            {Array.from({ length: SLIDE_COUNT }).map((_, i) => (
-              <button
-                key={i}
-                className={`${styles.dot} ${i === current ? styles.dotActive : ''}`}
-                onClick={() => goTo(i)}
-                aria-label={`Слайд ${i + 1}`}
-              />
-            ))}
+            <div className={styles.dots}>
+              {Array.from({ length: totalSlides }).map((_, i) => (
+                <button
+                  key={i}
+                  className={`${styles.dot} ${i === current ? styles.dotActive : ''}`}
+                  onClick={() => goTo(i)}
+                  aria-label={`Слайд ${i + 1}`}
+                />
+              ))}
+            </div>
+
+            <button className={styles.arrowBtn} onClick={next} aria-label="Следующий">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+            </button>
           </div>
         </div>
       </div>
