@@ -74,7 +74,6 @@ export default function MerchPage() {
 
   return (
     <>
-      <SkipToContent />
       <Navigation
         apiUrl={API_URL}
         isAuthenticated={false}

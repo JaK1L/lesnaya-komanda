@@ -91,14 +91,13 @@ export default function StreamsPage() {
 
   return (
     <>
-      <SkipToContent />
       <Navigation
         apiUrl={API_URL}
         isAuthenticated={false}
         onLogout={() => {}}
       />
-      
-      <main id="main-content" tabIndex={-1}>
+
+      <main>
         <div className={styles.hero}>
           <h1 className={styles.title}>Стримы</h1>
           <p className={styles.subtitle}>
