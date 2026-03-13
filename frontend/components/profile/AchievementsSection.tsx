@@ -43,6 +43,8 @@ const getCategoryName = (category: string) => {
   return names[category] || category
 }
 
+const TOKEN_KEY = 'lesnaya_token'
+
 export function AchievementsSection({ discordId }: { discordId: number }) {
   const [achievements, setAchievements] = useState<UserAchievement[]>([])
   const [stats, setStats] = useState<AchievementStats | null>(null)
@@ -59,9 +61,11 @@ export function AchievementsSection({ discordId }: { discordId: number }) {
       setLoading(true)
       setFetchError(null)
 
+      const token = localStorage.getItem(TOKEN_KEY)
+      const headers = token ? { Authorization: `Bearer ${token}` } : {}
       const [achievementsResponse, statsResponse] = await Promise.all([
-        axios.get(`${API_URL}/api/achievements/user/${discordId}`),
-        axios.get(`${API_URL}/api/achievements/user/${discordId}/stats`),
+        axios.get(`${API_URL}/api/achievements/me`, { headers }),
+        axios.get(`${API_URL}/api/achievements/me/stats`, { headers }),
       ])
       setAchievements(achievementsResponse.data)
       setStats(statsResponse.data)

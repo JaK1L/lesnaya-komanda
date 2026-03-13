@@ -85,6 +85,56 @@ async def list_achievement_types(
         return []
 
 
+@router.get("/me", response_model=List[UserAchievementOut])
+async def get_my_achievements(
+    completed_only: bool = False,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Получить достижения текущего пользователя по JWT-токену."""
+    query = """
+        SELECT
+            ua.id, ua.user_id, ua.achievement_type_id, ua.progress, ua.max_progress,
+            ua.earned_at, ua.is_completed, ua.created_at,
+            at.name, at.description, at.icon, at.category, at.points
+        FROM user_achievements ua
+        JOIN achievement_types at ON ua.achievement_type_id = at.id
+        WHERE ua.user_id = $1
+    """
+    if completed_only:
+        query += " AND ua.is_completed = true"
+    query += " ORDER BY ua.earned_at DESC NULLS LAST, at.points DESC"
+    rows = await db.fetch(query, current_user.id)
+    return [UserAchievementOut(**dict(row)) for row in rows]
+
+
+@router.get("/me/stats")
+async def get_my_achievement_stats(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Получить статистику достижений текущего пользователя по JWT-токену."""
+    total = await db.fetchval("SELECT COUNT(*) FROM achievement_types WHERE is_active = true")
+    completed = await db.fetchval(
+        "SELECT COUNT(*) FROM user_achievements WHERE user_id = $1 AND is_completed = true",
+        current_user.id,
+    )
+    total_points = await db.fetchval(
+        """SELECT COALESCE(SUM(at.points), 0)
+           FROM user_achievements ua
+           JOIN achievement_types at ON ua.achievement_type_id = at.id
+           WHERE ua.user_id = $1 AND ua.is_completed = true""",
+        current_user.id,
+    )
+    return {
+        "total_achievements": total or 0,
+        "completed_achievements": completed or 0,
+        "completion_percentage": round((completed / total * 100) if total else 0, 1),
+        "total_points": total_points or 0,
+        "by_category": [],
+    }
+
+
 @router.get("/user/{discord_id}", response_model=List[UserAchievementOut])
 async def get_user_achievements(
     discord_id: int,
