@@ -164,31 +164,41 @@ async def get_bracket(
     return [MatchOut(**dict(r)) for r in rows]
 
 
+class GenerateRequest(BaseModel):
+    bracket_type: str = "single"
+    custom_players: Optional[List[str]] = None  # if provided, override registrations
+
+
 @router.post("/admin/tournaments/{tournament_id}/bracket/generate")
 async def generate_bracket(
     tournament_id: int,
-    bracket_type: str = "single",
+    body: GenerateRequest = GenerateRequest(),
     db: asyncpg.Connection = Depends(get_db),
     _: User = Depends(get_current_admin_user),
 ):
+    bracket_type = body.bracket_type
     if bracket_type not in ("single", "double"):
         raise HTTPException(400, "bracket_type must be 'single' or 'double'")
 
     # Delete existing bracket
     await db.execute("DELETE FROM bracket_matches WHERE tournament_id = $1", tournament_id)
 
-    # Fetch participants
-    regs = await db.fetch(
-        """
-        SELECT COALESCE(nickname, team_name) AS name
-        FROM tournament_registrations
-        WHERE tournament_id = $1
-        """,
-        tournament_id,
-    )
-    players = [r["name"] for r in regs if r["name"]]
+    if body.custom_players:
+        players = [p.strip() for p in body.custom_players if p.strip()]
+    else:
+        # Fetch participants from registrations
+        regs = await db.fetch(
+            """
+            SELECT COALESCE(nickname, team_name) AS name
+            FROM tournament_registrations
+            WHERE tournament_id = $1
+            """,
+            tournament_id,
+        )
+        players = [r["name"] for r in regs if r["name"]]
+
     if len(players) < 2:
-        raise HTTPException(400, "Нужно минимум 2 участника")
+        raise HTTPException(400, "Нужно минимум 2 участника. Добавьте участников вручную или через регистрацию.")
     if len(players) > 32:
         raise HTTPException(400, "Максимум 32 участника")
 

@@ -148,6 +148,8 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
   const [loading, setLoading] = useState(true)
   const [bracketType, setBracketType] = useState<'single' | 'double'>('single')
   const [generating, setGenerating] = useState(false)
+  const [genError, setGenError] = useState('')
+  const [customPlayers, setCustomPlayers] = useState('')  // one per line
   const [editMatch, setEditMatch] = useState<Match | null>(null)
   const [score1, setScore1] = useState(0)
   const [score2, setScore2] = useState(0)
@@ -156,7 +158,7 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
   const load = () => {
     setLoading(true)
     fetch(`${API_URL}/api/tournaments/${tournamentId}/bracket`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json()).then(d => { setMatches(d); setLoading(false) }).catch(() => setLoading(false))
+      .then(r => r.json()).then(d => { setMatches(Array.isArray(d) ? d : []); setLoading(false) }).catch(() => setLoading(false))
   }
 
   useEffect(() => { load() }, [tournamentId])
@@ -164,11 +166,27 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
   const generate = async () => {
     if (!confirm(`Сформировать сетку (${bracketType === 'single' ? 'Single' : 'Double'} Elimination)? Старая сетка будет удалена.`)) return
     setGenerating(true)
-    await fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/bracket/generate?bracket_type=${bracketType}`, {
-      method: 'POST', headers: { Authorization: `Bearer ${token}` }
-    })
-    setGenerating(false)
-    load()
+    setGenError('')
+    const customList = customPlayers.split('\n').map(s => s.trim()).filter(Boolean)
+    const body: any = { bracket_type: bracketType }
+    if (customList.length > 0) body.custom_players = customList
+    try {
+      const res = await fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/bracket/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setGenError(data.detail || `Ошибка ${res.status}`)
+      } else {
+        load()
+      }
+    } catch {
+      setGenError('Ошибка сети')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   const reset = async () => {
@@ -221,8 +239,23 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
             )}
           </div>
 
+          {/* Custom players input */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 12, color: '#888', marginBottom: 4 }}>
+              Участники вручную (по одному на строку). Если оставить пустым — берутся из заявок.
+            </label>
+            <textarea
+              value={customPlayers}
+              onChange={e => setCustomPlayers(e.target.value)}
+              placeholder={'Игрок 1\nИгрок 2\nИгрок 3\n...'}
+              rows={4}
+              style={{ width: '100%', background: '#111', border: '1px solid #2a2f36', borderRadius: 8, color: '#fff', padding: '8px', fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          {genError && <p style={{ color: '#e74c3c', fontSize: 13, marginBottom: 8 }}>{genError}</p>}
           {loading && <p style={{ color: '#888' }}>Загрузка...</p>}
-          {!loading && matches.length === 0 && <p style={{ color: '#888' }}>Сетка не сформирована. Нажмите "Сформировать".</p>}
+          {!loading && matches.length === 0 && !genError && <p style={{ color: '#888' }}>Сетка не сформирована. Введите участников и нажмите "Сформировать".</p>}
 
           {/* Matches grouped by section and round */}
           {['winners', 'losers', 'grand_final'].filter(s => rounds[s]).map(section => (
