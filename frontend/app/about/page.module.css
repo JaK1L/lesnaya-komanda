@@ -1,31 +1,33 @@
 .container {
-  min-height: 100vh;
-  background: var(--color-bg);
+  min-height: calc(100vh - 72px);
+  padding: var(--page-padding-y) var(--page-padding-x);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 .hero {
-  text-align: center;
-  padding: 6rem var(--page-padding-x) 4rem;
-  background: linear-gradient(135deg, rgba(74, 255, 117, 0.1) 0%, rgba(74, 255, 117, 0.05) 100%);
-  border-bottom: 1px solid rgba(74, 255, 117, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .title {
-  font-size: 3rem;
-  font-weight: 700;
+  font-size: 48px;
+  font-weight: var(--font-weight-medium);
   color: var(--color-white);
-  margin-bottom: 1rem;
+  margin: 0;
+  line-height: 1;
 }
 
 .subtitle {
-  font-size: 1.25rem;
+  font-size: 18px;
   color: var(--color-white-64);
+  margin: 0;
 }
 
 .content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 4rem var(--page-padding-x);
+  max-width: 860px;
 }
 
 .section {
@@ -88,54 +90,27 @@
 .discordButton {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 2rem;
-  background: var(--color-accent);
-  color: var(--color-bg);
-  font-size: 1.125rem;
+  gap: 10px;
+  padding: 12px 24px;
+  background: var(--color-purple);
+  color: #fff;
+  font-size: 15px;
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: 10px;
   text-decoration: none;
-  transition: transform 0.2s, box-shadow 0.2s;
-  margin-top: 1.5rem;
+  transition: background 0.2s, transform 0.2s;
+  margin-top: 1rem;
+  align-self: flex-start;
 }
 
 .discordButton:hover {
+  background: #7c3fe0;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(74, 255, 117, 0.3);
-}
-
-.discordButton span {
-  font-size: 1.5rem;
 }
 
 @media (max-width: 768px) {
-  .hero {
-    padding: 4rem 1.5rem 3rem;
-  }
-
-  .title {
-    font-size: 2rem;
-  }
-
-  .subtitle {
-    font-size: 1rem;
-  }
-
-  .content {
-    padding: 3rem 1.5rem;
-  }
-
-  .section h2 {
-    font-size: 1.5rem;
-  }
-
-  .section p {
-    font-size: 1rem;
-  }
-
-  .features {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
+  .title { font-size: 2rem; }
+  .subtitle { font-size: 1rem; }
+  .features { grid-template-columns: 1fr; gap: 1.5rem; }
+  .section h2 { font-size: 1.5rem; }
 }

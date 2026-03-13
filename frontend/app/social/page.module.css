@@ -1,31 +1,35 @@
 .container {
-  min-height: 100vh;
-  background: var(--color-bg);
+  min-height: calc(100vh - 72px);
+  padding: var(--page-padding-y) var(--page-padding-x);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 .hero {
-  text-align: center;
-  padding: 6rem var(--page-padding-x) 4rem;
-  background: linear-gradient(135deg, rgba(74, 255, 117, 0.1) 0%, rgba(74, 255, 117, 0.05) 100%);
-  border-bottom: 1px solid rgba(74, 255, 117, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .title {
-  font-size: 3rem;
-  font-weight: 700;
+  font-size: 48px;
+  font-weight: var(--font-weight-medium);
   color: var(--color-white);
-  margin-bottom: 1rem;
+  margin: 0;
+  line-height: 1;
 }
 
 .subtitle {
-  font-size: 1.25rem;
+  font-size: 18px;
   color: var(--color-white-64);
+  margin: 0;
 }
 
 .content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 4rem var(--page-padding-x);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 .socialsGrid {
@@ -105,36 +109,9 @@
 }
 
 @media (max-width: 768px) {
-  .hero {
-    padding: 4rem 1.5rem 3rem;
-  }
-
-  .title {
-    font-size: 2rem;
-  }
-
-  .subtitle {
-    font-size: 1rem;
-  }
-
-  .content {
-    padding: 3rem 1.5rem;
-  }
-
-  .socialsGrid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  .callToAction {
-    padding: 2rem 1.5rem;
-  }
-
-  .callToAction h2 {
-    font-size: 1.5rem;
-  }
-
-  .callToAction p {
-    font-size: 1rem;
-  }
+  .title { font-size: 2rem; }
+  .subtitle { font-size: 1rem; }
+  .socialsGrid { grid-template-columns: 1fr; gap: 1.5rem; }
+  .callToAction { padding: 2rem 1.5rem; }
+  .callToAction h2 { font-size: 1.5rem; }
 }
