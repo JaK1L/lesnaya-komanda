@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 import { LoginModal } from '../auth/LoginModal'
 import Logo from '../Logo/Logo'
@@ -25,9 +26,21 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loginModalOpen, setLoginModalOpen] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
+  const pathname = usePathname()
+  const router = useRouter()
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen)
+  }
+
+  const handleStreamsClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setMobileMenuOpen(false)
+    if (pathname === '/') {
+      document.getElementById('streams')?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      router.push('/streams')
+    }
   }
 
   const handleLoginSuccess = () => {
@@ -70,16 +83,27 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
 
           {/* Desktop Navigation */}
           <div className={`${styles.navLinks} ${mobileMenuOpen ? styles.open : ''}`}>
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={styles.link}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {NAV_ITEMS.map((item) =>
+              item.label === 'Стримы' ? (
+                <a
+                  key="streams"
+                  href="#"
+                  className={styles.link}
+                  onClick={handleStreamsClick}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={styles.link}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
           </div>
 
           {/* Auth Buttons */}

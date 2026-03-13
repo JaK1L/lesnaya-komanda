@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Navigation, Footer, SkipToContent } from '../../components/layout'
+import { Navigation, Footer } from '../../components/layout'
 import styles from './page.module.css'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -43,13 +43,12 @@ export default function MerchPage() {
   if (loading) {
     return (
       <>
-        <SkipToContent />
         <Navigation
           apiUrl={API_URL}
           isAuthenticated={false}
           onLogout={() => {}}
         />
-        <main className="container" id="main-content" tabIndex={-1}>
+        <main className="container">
           <div className={styles.loading}>Загрузка товаров...</div>
           <Footer />
         </main>
@@ -60,13 +59,12 @@ export default function MerchPage() {
   if (error) {
     return (
       <>
-        <SkipToContent />
         <Navigation
           apiUrl={API_URL}
           isAuthenticated={false}
           onLogout={() => {}}
         />
-        <main className="container" id="main-content" tabIndex={-1}>
+        <main className="container">
           <div className={styles.error}>{error}</div>
           <Footer />
         </main>
@@ -83,7 +81,7 @@ export default function MerchPage() {
         onLogout={() => {}}
       />
       
-      <main className="container" id="main-content" tabIndex={-1}>
+      <main className="container">
         <div className={styles.hero}>
           <h1 className={styles.title}>МАГАЗИН</h1>
           <p className={styles.subtitle}>

@@ -1,0 +1,18 @@
+{
+  "model": "claude-sonnet-4",
+  "maxTurns": 6,
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(python *)",
+      "Bash(pytest *)",
+      "Bash(docker *)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "4096"
+  }
+}

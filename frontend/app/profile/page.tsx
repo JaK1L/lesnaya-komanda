@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
-import { Navigation, Footer, SkipToContent } from '../../components/layout'
+import { Navigation, Footer } from '../../components/layout'
 import { GamePreferencesSection, AchievementsSection, GameAccountsSection } from '../../components/profile'
 import { PageErrorBoundary } from '../../components/PageErrorBoundary'
 import { SectionErrorBoundary } from '../../components/SectionErrorBoundary'
@@ -11,6 +11,8 @@ import { GamePreference } from '../../types/gamePreferences'
 import styles from './page.module.css'
 
 interface UserRole { id: number; name: string; color: string }
+interface ShowcaseAch { id: number; name: string; description: string | null; icon: string; category: string; points: number; earned_at: string | null }
+interface UserAchievementSimple { id: number; achievement_type_id: number; name: string; icon: string; is_completed: boolean }
 
 interface ProfileData {
   discord_id: number | null
@@ -93,6 +95,11 @@ function ProfilePageInner() {
   const [accountsLoading, setAccountsLoading] = useState(false)
   const [accountsLoaded,  setAccountsLoaded]  = useState(false)
 
+  const [showcase,          setShowcase]          = useState<ShowcaseAch[]>([])
+  const [allAchievements,   setAllAchievements]   = useState<UserAchievementSimple[]>([])
+  const [showcaseEditMode,  setShowcaseEditMode]  = useState(false)
+  const [showcaseSelected,  setShowcaseSelected]  = useState<number[]>([])
+
   // ── Link account modal ──
   const [linkGame,    setLinkGame]    = useState<string | null>(null)
   const [linkId,      setLinkId]      = useState('')
@@ -151,6 +158,7 @@ function ProfilePageInner() {
       setIsHidden(d.is_hidden)
       setAvatarPreview(d.avatar_url)
       await loadGamePreferences(authToken)
+      loadShowcase(authToken)
       // Грузим активность сразу для hero card
       loadActivityData(authToken)
     } catch (err) {
@@ -267,6 +275,33 @@ function ProfilePageInner() {
     } finally { setLinkLoading(false) }
   }
 
+  // ── Витрина достижений ──
+  const loadShowcase = async (authToken?: string) => {
+    const t = authToken || token
+    if (!t) return
+    try {
+      const [showcaseRes, achRes] = await Promise.all([
+        axios.get(`${API_URL}/api/achievements/showcase/me`, { headers: { Authorization: `Bearer ${t}` } }),
+        axios.get(`${API_URL}/api/achievements/me?completed_only=true`, { headers: { Authorization: `Bearer ${t}` } }),
+      ])
+      setShowcase(showcaseRes.data || [])
+      setAllAchievements(achRes.data || [])
+      setShowcaseSelected((showcaseRes.data || []).map((a: ShowcaseAch) => a.id))
+    } catch { /* silent */ }
+  }
+
+  const saveShowcase = async (ids: number[]) => {
+    if (!token) return
+    try {
+      await axios.put(`${API_URL}/api/achievements/showcase`, { achievement_ids: ids }, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setShowcaseSelected(ids)
+      await loadShowcase(token)
+      setShowcaseEditMode(false)
+    } catch { /* silent */ }
+  }
+
   // ── Активность ──
   const loadActivityData = async (authToken?: string) => {
     const t = authToken || token
@@ -313,9 +348,8 @@ function ProfilePageInner() {
   // ── Loading ──
   if (loading) return (
     <>
-      <SkipToContent />
       <Navigation isAuthenticated={!!token} onLogout={handleLogout} apiUrl={API_URL} />
-      <main id="main-content" className={styles.container} tabIndex={-1}>
+      <main className={styles.container}>
         <div className={styles.loading}>
           <div className={styles.spinner} />
           <span>Загрузка профиля...</span>
@@ -328,9 +362,8 @@ function ProfilePageInner() {
   // ── Error ──
   if (error || !profile) return (
     <>
-      <SkipToContent />
       <Navigation isAuthenticated={!!token} onLogout={handleLogout} apiUrl={API_URL} />
-      <main id="main-content" className={styles.container} tabIndex={-1}>
+      <main className={styles.container}>
         <div className={styles.errorCard}>
           <span className={styles.errorIcon}>⚠️</span>
           <p className={styles.errorTitle}>Ошибка загрузки</p>
@@ -353,10 +386,9 @@ function ProfilePageInner() {
 
   return (
     <PageErrorBoundary pageName="Профиль">
-      <SkipToContent />
       <Navigation isAuthenticated={!!token} onLogout={handleLogout} apiUrl={API_URL} />
 
-      <main id="main-content" className={styles.container} tabIndex={-1}>
+      <main className={styles.container}>
 
         {/* ── Уведомления ── */}
         {error   && <div className={`${styles.message} ${styles.messageError}`}>{error}</div>}
@@ -459,6 +491,61 @@ function ProfilePageInner() {
             </div>
           </div>
         </SectionErrorBoundary>
+
+        {/* ════ SHOWCASE ДОСТИЖЕНИЙ ════ */}
+        <div className={styles.showcaseSection}>
+          <div className={styles.showcaseHeader}>
+            <span className={styles.showcaseTitle}>⭐ Витрина достижений</span>
+            <button className={styles.showcaseEditBtn} onClick={() => setShowcaseEditMode(!showcaseEditMode)}>
+              {showcaseEditMode ? 'Отмена' : 'Изменить'}
+            </button>
+          </div>
+
+          {showcaseEditMode ? (
+            <div className={styles.showcasePicker}>
+              <p className={styles.showcasePickerHint}>Выберите до 3 достижений для показа</p>
+              <div className={styles.showcasePickerGrid}>
+                {allAchievements.filter(a => a.is_completed).map(a => {
+                  const sel = showcaseSelected.includes(a.achievement_type_id)
+                  return (
+                    <div
+                      key={a.achievement_type_id}
+                      className={`${styles.showcasePickerItem} ${sel ? styles.showcasePickerSelected : ''}`}
+                      onClick={() => {
+                        if (sel) {
+                          setShowcaseSelected(prev => prev.filter(x => x !== a.achievement_type_id))
+                        } else if (showcaseSelected.length < 3) {
+                          setShowcaseSelected(prev => [...prev, a.achievement_type_id])
+                        }
+                      }}
+                    >
+                      <span className={styles.showcaseIcon}>{a.icon}</span>
+                      <span className={styles.showcaseItemName}>{a.name}</span>
+                    </div>
+                  )
+                })}
+              </div>
+              <button className={styles.showcaseSaveBtn} onClick={() => saveShowcase(showcaseSelected)}>
+                Сохранить
+              </button>
+            </div>
+          ) : (
+            <div className={styles.showcaseCards}>
+              {showcase.length === 0 ? (
+                <p className={styles.showcaseEmpty}>Нет закреплённых достижений</p>
+              ) : showcase.map(a => (
+                <div key={a.id} className={styles.showcaseCard}>
+                  <div className={styles.showcaseCardIcon}>{a.icon}</div>
+                  <div className={styles.showcaseCardInfo}>
+                    <div className={styles.showcaseCardName}>{a.name}</div>
+                    <div className={styles.showcaseCardDesc}>{a.description}</div>
+                    <div className={styles.showcaseCardPts}>{a.points} очков</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* ════ QUICK STATS ════ */}
         <div className={styles.quickStats}>

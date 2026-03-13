@@ -4,6 +4,11 @@ backend/.env
 frontend/.env.local
 *.env.local
 
+# Fly.io секреты (не коммитить!)
+fly-secrets.txt
+fly-secrets-*.txt
+!fly-secrets.example.txt
+
 # Python
 __pycache__/
 *.py[cod]
@@ -49,3 +54,4 @@ Dockerfile.backend
 *.md
 !README.md
 !docs/*.md
+!FLY-QUICKSTART.md

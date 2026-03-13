@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l \"C:/Users/jak1l/Desktop/lesnaya-komanda/backend/app/routes/\"*.py 2>/dev/null | tail -5)",
+      "Bash(find \"C:/Users/jak1l/Desktop/lesnaya-komanda/frontend\" -name \"*.tsx\" -not -path \"*/node_modules/*\" 2>/dev/null | wc -l && find \"C:/Users/jak1l/Desktop/lesnaya-komanda/backend\" -name \"*.py\" -not -path \"*/venv/*\" 2>/dev/null | wc -l)",
+      "Bash(grep -rn \"SkeletonProps\\\\|SkeletonTextProps\\\\|SkeletonCardProps\" \"C:/Users/jak1l/Desktop/lesnaya-komanda/frontend\" --include=\"*.tsx\" --include=\"*.ts\" 2>/dev/null | grep -v \"node_modules\")",
+      "Bash(railway --version 2>/dev/null || echo \"railway CLI not found\")",
+      "Bash(grep -A 30 \"CREATE TABLE.*streamers\" \"C:/Users/jak1l/Desktop/lesnaya-komanda/backend/migrate_streamers_simple.sql\" 2>/dev/null || grep -A 30 \"CREATE TABLE.*streamers\" \"C:/Users/jak1l/Desktop/lesnaya-komanda/backend/recreate_streamers_table.py\" 2>/dev/null || grep -rn \"CREATE TABLE.*streamers\" \"C:/Users/jak1l/Desktop/lesnaya-komanda/backend/\" --include=\"*.py\" --include=\"*.sql\" 2>/dev/null | head -5)",
+      "Bash(git push:*)",
+      "Bash(python -m py_compile backend/app/main.py)",
+      "Bash(xargs python:*)",
+      "Bash(grep -rn .endswith.*0 /c/Users/jak1l/Desktop/lesnaya-komanda/backend/app/routes/)",
+      "Bash(find /c/Users/jak1l/Desktop/lesnaya-komanda/frontend -type f \\\\\\(-name *profile* -o -path */[id]/* \\\\\\))",
+      "Bash(find /c/Users/jak1l/Desktop/lesnaya-komanda/frontend -path */app/profile/* -type f)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -n \"GET.*users\\\\|/api/users\" backend/app/routes/*.py)",
+      "Bash(sed -n '249,260p' frontend/app/profile/page.module.css)",
+      "Bash(sed -n '524,640p' frontend/app/profile/page.module.css)"
+    ]
+  }
+}

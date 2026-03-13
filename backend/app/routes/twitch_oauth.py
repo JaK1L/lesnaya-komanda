@@ -11,6 +11,7 @@ import logging
 
 from ..config import settings
 from ..database import database
+from ..services.achievements_auto import check_charged
 
 logger = logging.getLogger(__name__)
 
@@ -123,5 +124,11 @@ async def twitch_link_callback(
             twitch_login,
             discord_id,
         )
+        try:
+            user_id = await db.fetchval("SELECT id FROM users WHERE discord_id = $1", discord_id)
+            if user_id:
+                await check_charged(db, user_id)
+        except Exception as _e:
+            logger.warning(f"check_charged failed: {_e}")
 
     return RedirectResponse(url=f"{settings.FRONTEND_URL}/profile?twitch_linked=1")

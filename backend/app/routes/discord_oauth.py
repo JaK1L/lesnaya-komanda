@@ -13,6 +13,7 @@ from ..config import settings
 from ..database import get_db
 from ..auth import create_access_token
 from ..services.admin_service import AdminService
+from ..services.achievements_auto import grant_by_slug
 from datetime import timedelta
 import logging
 
@@ -127,6 +128,15 @@ async def discord_callback(
             avatar_url,
             user_tag,
         )
+        # Автовыдача достижений за регистрацию
+        try:
+            new_user_id = await db.fetchval("SELECT id FROM users WHERE discord_id = $1", discord_id)
+            if new_user_id:
+                await grant_by_slug(db, new_user_id, "register")
+                await grant_by_slug(db, new_user_id, "discord_linked")
+                await grant_by_slug(db, new_user_id, "rank_sliznyak")
+        except Exception as _e:
+            logger.warning(f"Auto-grant failed for new user: {_e}")
 
     # Синхронизировать статус администратора на основе Discord роли
     try:

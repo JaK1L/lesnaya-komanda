@@ -24,6 +24,7 @@ async def init_db():
             await _migrate_game_accounts(conn)
             await _migrate_xp_system(conn)
             await _migrate_missing_columns(conn)
+            await _migrate_showcase(conn)
 
             users_count = await conn.fetchval("SELECT COUNT(*) FROM users")
             games_count = await conn.fetchval("SELECT COUNT(*) FROM game_profiles")
@@ -375,6 +376,46 @@ async def _migrate_achievements(conn):
             CREATE INDEX IF NOT EXISTS idx_user_achievements_earned ON user_achievements(earned_at DESC);
         ''')
 
+        # Seed new auto-grant achievements by slug
+        new_achievements = [
+            # Registration
+            ('Новорег', 'Добро пожаловать в Лесную Команду!', '🌱', 'general', '{"slug":"register"}', 5),
+            ('Дискордный', 'Привязал Discord аккаунт', '💜', 'general', '{"slug":"discord_linked"}', 5),
+            ('Заряженный', 'Привязал все возможные аккаунты', '⚡', 'special', '{"slug":"charged"}', 50),
+            # Ranks
+            ('Слизняк', 'Получил ранг Слизняк', '🐛', 'ranks', '{"slug":"rank_sliznyak"}', 0),
+            ('Болотный житель', 'Получил ранг Болотный житель', '🧟', 'ranks', '{"slug":"rank_bolotny"}', 10),
+            ('Дикарь', 'Получил ранг Дикарь', '🪓', 'ranks', '{"slug":"rank_dikar"}', 25),
+            ('Зверь', 'Получил ранг Зверь', '🐗', 'ranks', '{"slug":"rank_zver"}', 50),
+            ('Житель леса', 'Получил ранг Житель леса', '🏕️', 'ranks', '{"slug":"rank_zhitel"}', 100),
+            ('Смотрящий за лесом', 'Получил ранг Смотрящий за лесом', '🌲', 'ranks', '{"slug":"rank_smotrящiy"}', 200),
+            # Likes
+            ('Первый лайк', 'Поставил первый лайк', '👍', 'activity', '{"slug":"likes_1"}', 5),
+            ('Активный читатель', 'Поставил 10 лайков', '📖', 'activity', '{"slug":"likes_10"}', 10),
+            ('Завсегдатай', 'Поставил 30 лайков', '☕', 'activity', '{"slug":"likes_30"}', 15),
+            ('Преданный фанат', 'Поставил 50 лайков', '❤️', 'activity', '{"slug":"likes_50"}', 20),
+            ('Кнопкожим', 'Поставил 100 лайков', '🖱️', 'activity', '{"slug":"likes_100"}', 30),
+            ('Лайкомёт', 'Поставил 250 лайков', '🎯', 'activity', '{"slug":"likes_250"}', 50),
+            ('Мастер лайков', 'Поставил 500 лайков', '⭐', 'activity', '{"slug":"likes_500"}', 75),
+            ('Легенда одобрения', 'Поставил 1000 лайков', '👑', 'activity', '{"slug":"likes_1000"}', 150),
+            # Comments
+            ('Первый голос', 'Оставил первый комментарий', '💬', 'activity', '{"slug":"comments_1"}', 5),
+            ('Собеседник_к', 'Оставил 10 комментариев', '🗣️', 'activity', '{"slug":"comments_10"}', 10),
+            ('Активный комментатор', 'Оставил 30 комментариев', '📝', 'activity', '{"slug":"comments_30"}', 15),
+            ('Эксперт мнений', 'Оставил 50 комментариев', '💡', 'activity', '{"slug":"comments_50"}', 20),
+            ('Трибун', 'Оставил 100 комментариев', '📢', 'activity', '{"slug":"comments_100"}', 30),
+            ('Оратор', 'Оставил 250 комментариев', '🎤', 'activity', '{"slug":"comments_250"}', 50),
+            ('Мастер слова', 'Оставил 500 комментариев', '✍️', 'activity', '{"slug":"comments_500"}', 75),
+            ('Голос сообщества', 'Оставил 1000 комментариев', '👑', 'activity', '{"slug":"comments_1000"}', 150),
+        ]
+        for (name, desc, icon, cat, req, pts) in new_achievements:
+            await conn.execute(
+                """INSERT INTO achievement_types (name, description, icon, category, requirement, points)
+                   SELECT $1,$2,$3,$4,$5::jsonb,$6
+                   WHERE NOT EXISTS (SELECT 1 FROM achievement_types WHERE requirement->>'slug' = $7)""",
+                name, desc, icon, cat, req, pts, __import__('json').loads(req)['slug'],
+            )
+
         await conn.execute('''
             INSERT INTO achievement_types (name, description, icon, category, requirement, points) VALUES
             ('Первые шаги', 'Присоединился к сообществу', '🌱', 'activity', '{"type": "join"}', 5),
@@ -483,3 +524,15 @@ async def _migrate_xp_system(conn):
         logger.info("XP system migration applied")
     except Exception as e:
         logger.error(f"XP system migration failed: {e}", exc_info=True)
+
+
+async def _migrate_showcase(conn):
+    """Добавляет колонку showcase_achievement_ids для витрины достижений."""
+    try:
+        await conn.execute("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS showcase_achievement_ids INTEGER[] DEFAULT '{}'
+        """)
+        logger.info("Showcase migration applied")
+    except Exception as e:
+        logger.error(f"Showcase migration failed: {e}", exc_info=True)

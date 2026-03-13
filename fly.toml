@@ -1,0 +1,64 @@
+# Fly.io configuration for Lesnaya Komanda Backend
+# Документация: https://fly.io/docs/reference/configuration/
+
+# Имя приложения (должно быть уникальным в Fly.io)
+app = "lesnaya-komanda-backend"
+
+# Основной регион (Amsterdam - ближайший к России/Европе)
+# Другие варианты: fra (Frankfurt), waw (Warsaw), cdg (Paris)
+primary_region = "ams"
+
+# Сборка из Dockerfile
+[build]
+  dockerfile = "Dockerfile.backend"
+
+# Переменные окружения (не секретные!)
+# Секреты устанавливаются через: fly secrets set KEY=value
+[env]
+  PORT = "8000"
+  DEBUG = "false"
+  ALGORITHM = "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES = "30"
+
+# Настройки HTTP сервиса
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = false  # Не останавливать машины автоматически
+  auto_start_machines = true   # Автоматически запускать при запросах
+  min_machines_running = 1     # Минимум 1 машина всегда работает
+  processes = ["app"]
+
+  # Настройки конкурентности (сколько одновременных подключений)
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 250  # Максимум подключений
+    soft_limit = 200  # Мягкий лимит (начинает масштабирование)
+
+# Health checks - проверка работоспособности
+[[http_service.checks]]
+  grace_period = "10s"  # Время на запуск перед проверками
+  interval = "30s"      # Интервал между проверками
+  method = "GET"
+  timeout = "5s"
+  path = "/health"
+
+# Проверка подключения к базе данных
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "60s"      # Реже проверяем БД
+  method = "GET"
+  timeout = "10s"       # Больше времени на БД
+  path = "/health/db"
+
+# Ресурсы виртуальной машины
+[[vm]]
+  memory = "512mb"      # 512MB RAM (можно увеличить до 1024mb для production)
+  cpu_kind = "shared"   # Shared CPU (дешевле)
+  cpus = 1              # 1 vCPU
+
+# Для масштабирования раскомментируйте:
+# [[vm]]
+#   memory = "1024mb"
+#   cpu_kind = "shared"
+#   cpus = 2

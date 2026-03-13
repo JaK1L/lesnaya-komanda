@@ -1141,3 +1141,88 @@
   text-align: center;
   letter-spacing: 0.02em;
 }
+
+/* ════ SHOWCASE ════ */
+.showcaseSection {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+}
+.showcaseHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.showcaseTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-white-64);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.showcaseEditBtn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--color-white-64);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.showcaseEditBtn:hover { border-color: var(--color-purple); color: var(--color-white); }
+.showcaseCards { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.showcaseCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  flex: 1;
+  min-width: 200px;
+  transition: border-color 0.15s;
+}
+.showcaseCard:hover { border-color: var(--color-purple); }
+.showcaseCardIcon { font-size: 2rem; flex-shrink: 0; }
+.showcaseCardInfo { display: flex; flex-direction: column; gap: 0.2rem; }
+.showcaseCardName { font-size: 0.875rem; font-weight: 600; color: var(--color-white); }
+.showcaseCardDesc { font-size: 0.75rem; color: var(--color-white-64); }
+.showcaseCardPts { font-size: 0.7rem; color: var(--color-purple); font-weight: 500; }
+.showcaseEmpty { color: var(--color-white-64); font-size: 0.85rem; }
+.showcasePicker { display: flex; flex-direction: column; gap: 0.75rem; }
+.showcasePickerHint { font-size: 0.8rem; color: var(--color-white-64); margin: 0; }
+.showcasePickerGrid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.showcasePickerItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.8rem;
+  color: var(--color-white-80);
+}
+.showcasePickerItem:hover { border-color: var(--color-purple); }
+.showcasePickerSelected { border-color: var(--color-purple) !important; background: rgba(138,43,226,0.15) !important; color: var(--color-white) !important; }
+.showcaseIcon { font-size: 1.1rem; }
+.showcaseItemName { font-size: 0.8rem; }
+.showcaseSaveBtn {
+  align-self: flex-start;
+  background: var(--color-purple);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.showcaseSaveBtn:hover { opacity: 0.85; }

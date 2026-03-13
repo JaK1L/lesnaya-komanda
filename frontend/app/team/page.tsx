@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { getImageUrl } from '../../lib/imageUtils'
+import { Navigation, Footer } from '../../components/layout'
 import styles from './page.module.css'
 
 interface TeamMember {
@@ -41,36 +42,19 @@ export default function TeamPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Наша команда</h1>
-          <p className={styles.subtitle}>Познакомьтесь с участниками Лесной Команды</p>
-        </div>
-        <div className={styles.loading}>Загрузка...</div>
-      </div>
-    )
-  }
-
-  if (members.length === 0) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Наша команда</h1>
-          <p className={styles.subtitle}>Познакомьтесь с участниками Лесной Команды</p>
-        </div>
-        <div className={styles.empty}>Информация о команде скоро появится</div>
-      </div>
-    )
-  }
-
   return (
-    <div className={styles.container}>
+    <>
+      <Navigation isAuthenticated={false} onLogout={() => {}} apiUrl={API_URL} />
+      <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Наша команда</h1>
         <p className={styles.subtitle}>Познакомьтесь с участниками Лесной Команды</p>
       </div>
+
+      {loading && <div className={styles.loading}>Загрузка...</div>}
+      {!loading && members.length === 0 && (
+        <div className={styles.empty}>Информация о команде скоро появится</div>
+      )}
 
       <div className={styles.grid}>
         {members.map((member) => (
@@ -160,5 +144,7 @@ export default function TeamPage() {
         ))}
       </div>
     </div>
+      <Footer />
+    </>
   )
 }

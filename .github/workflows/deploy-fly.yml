@@ -1,0 +1,42 @@
+name: Deploy Backend to Fly.io
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'Dockerfile.backend'
+      - 'fly.toml'
+      - '.github/workflows/deploy-fly.yml'
+  workflow_dispatch: # Позволяет запускать вручную
+
+jobs:
+  deploy:
+    name: Deploy to Fly.io
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      
+      - name: Health Check
+        run: |
+          echo "Waiting for deployment to be ready..."
+          sleep 10
+          
+          echo "Checking health endpoint..."
+          curl -f https://lesnaya-komanda-backend.fly.dev/health || exit 1
+          
+          echo "Checking database connection..."
+          curl -f https://lesnaya-komanda-backend.fly.dev/health/db || exit 1
+          
+          echo "✓ Deployment successful!"

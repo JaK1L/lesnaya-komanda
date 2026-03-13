@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Navigation, Footer, SkipToContent } from '../../components/layout'
+import { Navigation, Footer } from '../../components/layout'
 import styles from './page.module.css'
 import { Twitch, Users, Eye } from 'lucide-react'
 
@@ -52,13 +52,12 @@ export default function StreamsPage() {
   if (loading) {
     return (
       <>
-        <SkipToContent />
         <Navigation
           apiUrl={API_URL}
           isAuthenticated={false}
           onLogout={() => {}}
         />
-        <main id="main-content" tabIndex={-1}>
+        <main>
           <div className={styles.loading}>
             <div className={styles.spinner}></div>
             <p>Загрузка стримеров...</p>
@@ -72,13 +71,12 @@ export default function StreamsPage() {
   if (error) {
     return (
       <>
-        <SkipToContent />
         <Navigation
           apiUrl={API_URL}
           isAuthenticated={false}
           onLogout={() => {}}
         />
-        <main id="main-content" tabIndex={-1}>
+        <main>
           <div className={styles.error}>
             <p>{error}</p>
             <button onClick={fetchStreamers} className={styles.retryButton}>

@@ -9,6 +9,7 @@ import asyncpg
 from pydantic import BaseModel
 
 from ..database import get_db
+from ..services.achievements_auto import check_comments, check_likes
 
 
 router = APIRouter()
@@ -403,6 +404,11 @@ async def react_to_news(
             "INSERT INTO news_reactions (news_id, user_id, reaction) VALUES ($1, $2, $3)",
             news_id, current_user.id, request.reaction
         )
+        if request.reaction == "like":
+            try:
+                await check_likes(db, current_user.id)
+            except Exception:
+                pass
         return {"status": "added", "reaction": request.reaction}
 
 
@@ -480,6 +486,10 @@ async def add_news_comment(
         news_id, current_user.id, request.content.strip()
     )
     
+    try:
+        await check_comments(db, current_user.id)
+    except Exception:
+        pass
     return {
         "status": "success",
         "comment_id": comment_id,

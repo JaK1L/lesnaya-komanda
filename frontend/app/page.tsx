@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
-import { Navigation, Footer, SkipToContent } from '../components/layout'
+import { Navigation, Footer } from '../components/layout'
 import { HeroSection, NewsSection, StreamersSection } from '../components/home'
 import { PageErrorBoundary } from '../components/PageErrorBoundary'
 import { SectionErrorBoundary } from '../components/SectionErrorBoundary'
@@ -110,9 +110,6 @@ export default function Home() {
 
   return (
     <PageErrorBoundary pageName="Главная">
-      {/* Skip to content для keyboard navigation */}
-      <SkipToContent />
-
       {/* Модалка выбора игр */}
       <GamePreferencesModal
         isOpen={showGamePreferencesModal}
@@ -129,7 +126,7 @@ export default function Home() {
       />
 
       {/* Основной контент */}
-      <main id="main-content" tabIndex={-1}>
+      <main>
         {/* Hero секция */}
         <SectionErrorBoundary sectionName="Hero">
           <HeroSection />

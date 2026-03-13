@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 from ..database import get_db
 from ..auth import get_current_user, get_current_admin_user
 from ..models import User
+from ..services.achievements_auto import check_rank_achievement
 
 router = APIRouter(prefix="/achievements", tags=["achievements"])
 
@@ -469,6 +470,11 @@ async def grant_xp(
         user_id, amount, reason, current_user.id,
     )
 
+    try:
+        await check_rank_achievement(db, user_id, new_rank)
+    except Exception:
+        pass
+
     return {
         "message": f"Выдано {amount} XP",
         "level": new_level,
@@ -476,3 +482,67 @@ async def grant_xp(
         "current_xp": leftover_xp,
         "rank": new_rank,
     }
+
+
+# ── Витрина достижений (Steam-style) ──
+
+class ShowcaseUpdate(BaseModel):
+    achievement_ids: List[int] = Field(default_factory=list, max_length=3)
+
+
+@router.put("/showcase")
+async def update_showcase(
+    payload: ShowcaseUpdate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Установить до 3 достижений для витрины профиля."""
+    ids = payload.achievement_ids[:3]
+    if ids:
+        valid = await db.fetchval(
+            """SELECT COUNT(*) FROM user_achievements
+               WHERE user_id = $1 AND achievement_type_id = ANY($2::int[]) AND is_completed = true""",
+            current_user.id, ids,
+        )
+        if valid != len(ids):
+            raise HTTPException(status_code=400, detail="Одно или несколько достижений не получены")
+    await db.execute(
+        "UPDATE users SET showcase_achievement_ids = $1 WHERE id = $2",
+        ids, current_user.id,
+    )
+    return {"message": "Витрина обновлена"}
+
+
+@router.get("/showcase/me")
+async def get_my_showcase(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return await _get_showcase(db, current_user.id)
+
+
+@router.get("/showcase/{discord_id}")
+async def get_showcase_by_discord(
+    discord_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+):
+    user = await db.fetchrow("SELECT id FROM users WHERE discord_id = $1", discord_id)
+    if not user:
+        return []
+    return await _get_showcase(db, user["id"])
+
+
+async def _get_showcase(db: asyncpg.Connection, user_id: int):
+    ids = await db.fetchval("SELECT showcase_achievement_ids FROM users WHERE id = $1", user_id) or []
+    if not ids:
+        return []
+    rows = await db.fetch(
+        """SELECT at.id, at.name, at.description, at.icon, at.category, at.points,
+                  ua.earned_at
+           FROM achievement_types at
+           JOIN user_achievements ua ON ua.achievement_type_id = at.id
+           WHERE ua.user_id = $1 AND at.id = ANY($2::int[]) AND ua.is_completed = true""",
+        user_id, list(ids),
+    )
+    order = {v: i for i, v in enumerate(ids)}
+    return sorted([dict(r) for r in rows], key=lambda r: order.get(r["id"], 99))
