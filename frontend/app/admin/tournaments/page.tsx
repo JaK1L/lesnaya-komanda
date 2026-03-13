@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Trophy, Pencil, Trash2, Calendar, Crown, Plus } from 'lucide-react'
 import styles from '../news/page.module.css'
 import modalStyles from './modal.module.css'
 
@@ -137,8 +138,8 @@ export default function AdminTournamentsPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <button onClick={() => router.push('/admin')} className={styles.backButton}>← Назад</button>
-        <h1>🏆 Управление турнирами</h1>
-        <button onClick={openCreate} className={styles.addButton}>+ Добавить</button>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Trophy size={22} /> Управление турнирами</h1>
+        <button onClick={openCreate} className={styles.addButton} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Plus size={16} /> Добавить</button>
       </header>
 
       {loading ? (
@@ -158,15 +159,15 @@ export default function AdminTournamentsPage() {
                 <h3>{item.title}</h3>
                 <div className={styles.cardActions}>
                   <span className={styles.published}>{STATUS_LABEL[item.status]} {item.game ? `· ${item.game}` : ''}</span>
-                  <button onClick={() => openEdit(item)} className={styles.editButton} title="Редактировать">✏️</button>
-                  <button onClick={() => handleDelete(item.id)} className={styles.deleteButton} title="Удалить">🗑️</button>
+                  <button onClick={() => openEdit(item)} className={styles.editButton} title="Редактировать"><Pencil size={15} /></button>
+                  <button onClick={() => handleDelete(item.id)} className={styles.deleteButton} title="Удалить"><Trash2 size={15} /></button>
                 </div>
               </div>
               {item.description && <p className={styles.cardContent}>{item.description}</p>}
               <div className={styles.cardFooter}>
-                <span className={styles.date}>📅 {fmtDate(item.start_date)}</span>
-                {item.prize && <span className={styles.draft}>🏆 {item.prize}</span>}
-                {item.winner && <span className={styles.published}>👑 {item.winner}</span>}
+                <span className={styles.date} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Calendar size={13} /> {fmtDate(item.start_date)}</span>
+                {item.prize && <span className={styles.draft} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Trophy size={13} /> {item.prize}</span>}
+                {item.winner && <span className={styles.published} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Crown size={13} /> {item.winner}</span>}
               </div>
             </div>
           ))}

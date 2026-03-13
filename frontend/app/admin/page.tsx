@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import {
+  Newspaper, Calendar, Trophy, FileText, Users, User,
+  Award, Monitor, Shield, ShoppingBag, Settings,
+} from 'lucide-react'
 import { PageErrorBoundary } from '../../components/PageErrorBoundary'
 import styles from './page.module.css'
 
@@ -169,37 +173,37 @@ export default function AdminPage() {
 
         <nav className={styles.nav}>
           <button onClick={() => router.push('/admin/news')} className={styles.navButton}>
-            📰 Новости
+            <Newspaper size={16} /> Новости
           </button>
           <button onClick={() => router.push('/admin/events')} className={styles.navButton}>
-            📅 События
+            <Calendar size={16} /> События
           </button>
           <button onClick={() => router.push('/admin/tournaments')} className={styles.navButton}>
-            🏆 Турниры
+            <Trophy size={16} /> Турниры
           </button>
           <button onClick={() => router.push('/admin/feed')} className={styles.navButton}>
-            📝 Лента
+            <FileText size={16} /> Лента
           </button>
           <button onClick={() => router.push('/admin/team')} className={styles.navButton}>
-            👥 Наша команда
+            <Users size={16} /> Наша команда
           </button>
           <button onClick={() => router.push('/admin/users')} className={styles.navButton}>
-            👤 Пользователи
+            <User size={16} /> Пользователи
           </button>
           <button onClick={() => router.push('/admin/achievements')} className={styles.navButton}>
-            🏆 Достижения
+            <Award size={16} /> Достижения
           </button>
           <button onClick={() => router.push('/admin/streamers')} className={styles.navButton}>
-            🎮 Стримеры
+            <Monitor size={16} /> Стримеры
           </button>
           <button onClick={() => router.push('/admin/roles')} className={styles.navButton}>
-            🎭 Роли
+            <Shield size={16} /> Роли
           </button>
           <button onClick={() => router.push('/admin/merch')} className={styles.navButton}>
-            🛍️ Магазин
+            <ShoppingBag size={16} /> Магазин
           </button>
           <button onClick={() => router.push('/admin/settings')} className={styles.navButton}>
-            ⚙️ Настройки
+            <Settings size={16} /> Настройки
           </button>
         </nav>
 
@@ -211,7 +215,7 @@ export default function AdminPage() {
 
           <div className={styles.stats}>
             <div className={styles.statCard}>
-              <div className={styles.statIcon}>📰</div>
+              <div className={styles.statIcon}><Newspaper size={22} /></div>
               <div className={styles.statInfo}>
                 <div className={styles.statLabel}>Новости</div>
                 <div className={styles.statValue}>
@@ -222,7 +226,7 @@ export default function AdminPage() {
             </div>
 
             <div className={styles.statCard}>
-              <div className={styles.statIcon}>📅</div>
+              <div className={styles.statIcon}><Calendar size={22} /></div>
               <div className={styles.statInfo}>
                 <div className={styles.statLabel}>События</div>
                 <div className={styles.statValue}>
@@ -233,7 +237,7 @@ export default function AdminPage() {
             </div>
 
             <div className={styles.statCard}>
-              <div className={styles.statIcon}>📝</div>
+              <div className={styles.statIcon}><FileText size={22} /></div>
               <div className={styles.statInfo}>
                 <div className={styles.statLabel}>Записи ленты</div>
                 <div className={styles.statValue}>
@@ -243,7 +247,7 @@ export default function AdminPage() {
             </div>
 
             <div className={styles.statCard}>
-              <div className={styles.statIcon}>👥</div>
+              <div className={styles.statIcon}><Users size={22} /></div>
               <div className={styles.statInfo}>
                 <div className={styles.statLabel}>Пользователи</div>
                 <div className={styles.statValue}>
@@ -254,7 +258,7 @@ export default function AdminPage() {
             </div>
 
             <div className={styles.statCard}>
-              <div className={styles.statIcon}>🎮</div>
+              <div className={styles.statIcon}><Monitor size={22} /></div>
               <div className={styles.statInfo}>
                 <div className={styles.statLabel}>Стримеры</div>
                 <div className={styles.statValue}>
@@ -265,7 +269,7 @@ export default function AdminPage() {
             </div>
 
             <div className={styles.statCard}>
-              <div className={styles.statIcon}>🛍️</div>
+              <div className={styles.statIcon}><ShoppingBag size={22} /></div>
               <div className={styles.statInfo}>
                 <div className={styles.statLabel}>Товары</div>
                 <div className={styles.statValue}>

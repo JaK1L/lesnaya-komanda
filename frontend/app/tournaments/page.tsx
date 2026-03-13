@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import { Calendar, Trophy, Crown, ChevronDown } from 'lucide-react'
 import { Navigation } from '../../components/layout'
 import { Footer } from '../../components/layout'
 import styles from './page.module.css'
@@ -129,17 +130,13 @@ export default function TournamentsPage() {
                   <div className={styles.cardInfo}>
                     {t.start_date && (
                       <span className={styles.infoItem}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M19 3h-1V1h-2v2H8V1H6v2H5C3.89 3 3 3.9 3 5v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/>
-                        </svg>
+                        <Calendar size={14} />
                         {fmtDate(t.start_date)}
                       </span>
                     )}
                     {t.prize && (
                       <span className={styles.infoItem}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M19 5h-2V3H7v2H5C3.9 5 3 5.9 3 7v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V18H9v2h6v-2h-2v-2.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2z"/>
-                        </svg>
+                        <Trophy size={14} />
                         {t.prize}
                       </span>
                     )}
@@ -148,9 +145,7 @@ export default function TournamentsPage() {
                   {/* Winner */}
                   {t.status === 'completed' && t.winner && (
                     <div className={styles.winnerBanner}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 5h-2V3H7v2H5C3.9 5 3 5.9 3 7v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V18H9v2h6v-2h-2v-2.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2z"/>
-                      </svg>
+                      <Crown size={20} />
                       <div>
                         <span className={styles.winnerLabel}>Победитель</span>
                         <span className={styles.winnerName}>{t.winner}</span>
@@ -167,12 +162,10 @@ export default function TournamentsPage() {
                       onClick={() => setExpanded(expanded === t.id ? null : t.id)}
                     >
                       {expanded === t.id ? 'Скрыть сетку' : 'Смотреть сетку'}
-                      <svg
-                        width="16" height="16" viewBox="0 0 24 24" fill="currentColor"
+                      <ChevronDown
+                        size={16}
                         style={{ transform: expanded === t.id ? 'rotate(180deg)' : 'none', transition: '0.2s' }}
-                      >
-                        <path d="M7 10l5 5 5-5z"/>
-                      </svg>
+                      />
                     </button>
 
                     {expanded === t.id && (
