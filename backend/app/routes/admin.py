@@ -809,8 +809,21 @@ async def update_user(
     query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = ${param_count}"
     
     await db.execute(query, *values)
-    
+
     return {"message": "Пользователь обновлен"}
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Удалить пользователя (только для админов)."""
+    result = await db.execute("DELETE FROM users WHERE id = $1", user_id)
+    if result == "DELETE 0":
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return {"status": "deleted"}
 
 
 # Team Members Management

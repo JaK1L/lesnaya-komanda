@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { ShoppingBag, Gift, Package } from 'lucide-react'
 import { Navigation } from '../../components/layout/Navigation'
 import { Footer } from '../../components/layout/Footer'
 import styles from './page.module.css'
@@ -26,13 +27,7 @@ export default function ShopPage() {
   const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem(TOKEN_KEY)
-      setToken(storedToken)
-    }
-  }, [])
-
-  useEffect(() => {
+    setToken(localStorage.getItem(TOKEN_KEY))
     fetchMerch()
   }, [])
 
@@ -40,7 +35,6 @@ export default function ShopPage() {
     try {
       setLoading(true)
       const response = await axios.get<MerchItem[]>(`${API_URL}/api/merch`)
-      // Фильтруем только товары в наличии
       setItems(response.data.filter(item => item.in_stock))
     } catch (err) {
       console.error('Error fetching merch:', err)
@@ -49,21 +43,12 @@ export default function ShopPage() {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem(TOKEN_KEY)
-    setToken(null)
-  }
-
   return (
     <>
-      <Navigation
-        isAuthenticated={!!token}
-        onLogout={handleLogout}
-        apiUrl={API_URL}
-      />
+      <Navigation isAuthenticated={!!token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }} apiUrl={API_URL} />
       <div className={styles.container}>
         <div className={styles.hero}>
-          <h1 className={styles.title}>🛍️ Магазин мерча</h1>
+          <h1 className={styles.title}>Магазин мерча</h1>
           <p className={styles.subtitle}>Официальный мерч Лесной Команды</p>
         </div>
 
@@ -74,7 +59,7 @@ export default function ShopPage() {
           </div>
         ) : items.length === 0 ? (
           <div className={styles.empty}>
-            <div className={styles.emptyIcon}>🎁</div>
+            <div className={styles.emptyIcon}><Gift size={48} /></div>
             <h2>Товары скоро появятся</h2>
             <p>Мы работаем над запуском магазина. Следите за новостями!</p>
           </div>
@@ -88,29 +73,23 @@ export default function ShopPage() {
                       <img src={item.image_url} alt={item.name} />
                     ) : (
                       <div className={styles.imagePlaceholder}>
-                        <span>🛍️</span>
+                        <Package size={40} />
                       </div>
                     )}
                   </div>
-                  
                   <div className={styles.cardBody}>
                     <div className={styles.cardCategory}>{item.category || 'Мерч'}</div>
                     <h3 className={styles.cardTitle}>{item.name}</h3>
-                    {item.description && (
-                      <p className={styles.cardDescription}>{item.description}</p>
-                    )}
-                    
+                    {item.description && <p className={styles.cardDescription}>{item.description}</p>}
                     <div className={styles.cardFooter}>
                       <div className={styles.price}>{item.price} ₽</div>
                       <button className={styles.buyButton}>
+                        <ShoppingBag size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
                         Купить
                       </button>
                     </div>
-                    
                     {item.stock_quantity !== undefined && item.stock_quantity < 10 && (
-                      <div className={styles.stockWarning}>
-                        Осталось: {item.stock_quantity} шт.
-                      </div>
+                      <div className={styles.stockWarning}>Осталось: {item.stock_quantity} шт.</div>
                     )}
                   </div>
                 </div>
@@ -119,13 +98,8 @@ export default function ShopPage() {
 
             <section className={styles.info}>
               <h2>Информация о доставке</h2>
-              <p>
-                Доставка осуществляется по всей России. Стоимость и сроки доставки 
-                рассчитываются индивидуально при оформлении заказа.
-              </p>
-              <p>
-                По вопросам заказа обращайтесь в наш Discord или Telegram.
-              </p>
+              <p>Доставка осуществляется по всей России. Стоимость и сроки доставки рассчитываются индивидуально при оформлении заказа.</p>
+              <p>По вопросам заказа обращайтесь в наш Discord или Telegram.</p>
             </section>
           </div>
         )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { Twitch, Youtube } from 'lucide-react'
 import { getImageUrl } from '../../lib/imageUtils'
 import { Navigation, Footer } from '../../components/layout'
 import styles from './page.module.css'
@@ -21,12 +22,15 @@ interface TeamMember {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const TOKEN_KEY = 'lesnaya_token'
 
 export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
+  const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
+    setToken(localStorage.getItem(TOKEN_KEY))
     fetchTeamMembers()
   }, [])
 
@@ -44,106 +48,74 @@ export default function TeamPage() {
 
   return (
     <>
-      <Navigation isAuthenticated={false} onLogout={() => {}} apiUrl={API_URL} />
+      <Navigation isAuthenticated={!!token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }} apiUrl={API_URL} />
       <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Наша команда</h1>
-        <p className={styles.subtitle}>Познакомьтесь с участниками Лесной Команды</p>
-      </div>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Наша команда</h1>
+          <p className={styles.subtitle}>Познакомьтесь с участниками Лесной Команды</p>
+        </div>
 
-      {loading && <div className={styles.loading}>Загрузка...</div>}
-      {!loading && members.length === 0 && (
-        <div className={styles.empty}>Информация о команде скоро появится</div>
-      )}
+        {loading && <div className={styles.loading}>Загрузка...</div>}
+        {!loading && members.length === 0 && (
+          <div className={styles.empty}>Информация о команде скоро появится</div>
+        )}
 
-      <div className={styles.grid}>
-        {members.map((member) => (
-          <div key={member.discord_id} className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div className={styles.avatar}>
-                {member.avatar_url ? (
-                  <img src={getImageUrl(member.avatar_url) || ''} alt={member.discord_username} />
-                ) : (
-                  <div className={styles.avatarPlaceholder}>
-                    {member.discord_username[0]?.toUpperCase()}
-                  </div>
+        <div className={styles.grid}>
+          {members.map((member) => (
+            <div key={member.discord_id} className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div className={styles.avatar}>
+                  {member.avatar_url ? (
+                    <img src={getImageUrl(member.avatar_url) || ''} alt={member.discord_username} />
+                  ) : (
+                    <div className={styles.avatarPlaceholder}>
+                      {member.discord_username[0]?.toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className={styles.cardInfo}>
+                  <h3 className={styles.cardName}>{member.real_name || member.discord_username}</h3>
+                  {member.real_name && <p className={styles.cardNickname}>@{member.discord_username}</p>}
+                  <p className={styles.cardRole}>{member.team_role || member.forest_rank}</p>
+                </div>
+              </div>
+
+              {member.bio && <p className={styles.cardBio}>{member.bio}</p>}
+
+              <div className={styles.cardSocials}>
+                {member.twitch_username && (
+                  <a href={`https://twitch.tv/${member.twitch_username}`} target="_blank" rel="noopener noreferrer"
+                    className={styles.socialLink} aria-label="Twitch">
+                    <Twitch size={20} />
+                  </a>
+                )}
+                {member.telegram_url && (
+                  <a href={member.telegram_url} target="_blank" rel="noopener noreferrer"
+                    className={styles.socialLink} aria-label="Telegram">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+                    </svg>
+                  </a>
+                )}
+                {member.tiktok_url && (
+                  <a href={member.tiktok_url} target="_blank" rel="noopener noreferrer"
+                    className={styles.socialLink} aria-label="TikTok">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                    </svg>
+                  </a>
+                )}
+                {member.youtube_url && (
+                  <a href={member.youtube_url} target="_blank" rel="noopener noreferrer"
+                    className={styles.socialLink} aria-label="YouTube">
+                    <Youtube size={20} />
+                  </a>
                 )}
               </div>
-              <div className={styles.cardInfo}>
-                <h3 className={styles.cardName}>
-                  {member.real_name || member.discord_username}
-                </h3>
-                {member.real_name && (
-                  <p className={styles.cardNickname}>@{member.discord_username}</p>
-                )}
-                <p className={styles.cardRole}>
-                  {member.team_role || member.forest_rank}
-                </p>
-              </div>
             </div>
-
-            {member.bio && (
-              <p className={styles.cardBio}>{member.bio}</p>
-            )}
-
-            <div className={styles.cardSocials}>
-              {member.twitch_username && (
-                <a
-                  href={`https://twitch.tv/${member.twitch_username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.socialLink}
-                  aria-label="Twitch"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
-                  </svg>
-                </a>
-              )}
-              {member.telegram_url && (
-                <a
-                  href={member.telegram_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.socialLink}
-                  aria-label="Telegram"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
-                  </svg>
-                </a>
-              )}
-              {member.tiktok_url && (
-                <a
-                  href={member.tiktok_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.socialLink}
-                  aria-label="TikTok"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                  </svg>
-                </a>
-              )}
-              {member.youtube_url && (
-                <a
-                  href={member.youtube_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.socialLink}
-                  aria-label="YouTube"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                  </svg>
-                </a>
-              )}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
       <Footer />
     </>
   )

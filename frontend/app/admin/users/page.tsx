@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Zap, Pencil, Trash2 } from 'lucide-react'
 import { UserModal } from '../../../components/admin/UserModal'
 import { AdminTableSkeleton } from '../../../components/skeletons'
 import styles from '../news/page.module.css'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface User {
   id: number
@@ -30,26 +33,19 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token')
-    if (!token) {
-      router.push('/admin')
-      return
-    }
+    if (!token) { router.push('/admin'); return }
     fetchUsers()
   }, [router])
 
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('admin_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const response = await fetch(`${API_URL}/api/admin/users?limit=100`, {
+        headers: { Authorization: `Bearer ${token}` },
       })
-
       if (!response.ok) throw new Error('Failed to fetch')
-      
       const data = await response.json()
-      setUsers(data)
+      setUsers(data.items ?? data)
     } catch (error) {
       console.error('Error fetching users:', error)
     } finally {
@@ -57,17 +53,17 @@ export default function AdminUsersPage() {
     }
   }
 
-  const handleEdit = (user: User) => {
-    setEditingUser(user)
-    setShowModal(true)
-  }
+  const handleEdit = (user: User) => { setEditingUser(user); setShowModal(true) }
+  const handleCloseModal = () => { setShowModal(false); setEditingUser(null) }
+  const handleSave = () => { fetchUsers() }
 
-  const handleCloseModal = () => {
-    setShowModal(false)
-    setEditingUser(null)
-  }
-
-  const handleSave = () => {
+  const handleDelete = async (user: User) => {
+    if (!confirm(`Удалить пользователя ${user.discord_username}?`)) return
+    const token = localStorage.getItem('admin_token')
+    await fetch(`${API_URL}/api/admin/users/${user.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
     fetchUsers()
   }
 
@@ -77,12 +73,12 @@ export default function AdminUsersPage() {
     try {
       const token = localStorage.getItem('admin_token')
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/achievements/grant-xp/${xpModal.id}?amount=${xpAmount}&reason=${encodeURIComponent(xpReason)}`,
+        `${API_URL}/api/achievements/grant-xp/${xpModal.id}?amount=${xpAmount}&reason=${encodeURIComponent(xpReason)}`,
         { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
       )
       if (!res.ok) throw new Error()
       const data = await res.json()
-      alert(`✅ ${data.message}\nУровень: ${data.level} | Ранг: ${data.rank}`)
+      alert(`${data.message}\nУровень: ${data.level} | Ранг: ${data.rank}`)
       setXpModal(null)
       fetchUsers()
     } catch {
@@ -96,10 +92,8 @@ export default function AdminUsersPage() {
     return (
       <div className={styles.container}>
         <header className={styles.header}>
-          <button onClick={() => router.push('/admin')} className={styles.backButton}>
-            ← Назад
-          </button>
-          <h1>👥 Управление пользователями</h1>
+          <button onClick={() => router.push('/admin')} className={styles.backButton}>← Назад</button>
+          <h1>Управление пользователями</h1>
           <div style={{ width: '120px' }} />
         </header>
         <AdminTableSkeleton rows={10} />
@@ -110,33 +104,32 @@ export default function AdminUsersPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <button onClick={() => router.push('/admin')} className={styles.backButton}>
-          ← Назад
-        </button>
-        <h1>👥 Управление пользователями</h1>
+        <button onClick={() => router.push('/admin')} className={styles.backButton}>← Назад</button>
+        <h1>Управление пользователями</h1>
         <div style={{ color: '#888' }}>Всего: {users.length}</div>
       </header>
 
-      {/* XP Modal */}
       {xpModal && (
-        <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setXpModal(null)}>
-          <div style={{ background:'#1a1a2e',border:'1px solid #333',borderRadius:'16px',padding:'2rem',width:'360px' }}
+          <div style={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: '16px', padding: '2rem', width: '360px' }}
             onClick={e => e.stopPropagation()}>
-            <h3 style={{ marginBottom:'1rem' }}>⚡ Выдать XP — {xpModal.discord_username}</h3>
-            <label style={{ display:'block',marginBottom:'0.5rem',fontSize:'0.85rem',color:'#aaa' }}>Количество XP</label>
+            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Zap size={18} /> Выдать XP — {xpModal.discord_username}
+            </h3>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#aaa' }}>Количество XP</label>
             <input type="number" min={1} value={xpAmount} onChange={e => setXpAmount(Number(e.target.value))}
-              style={{ width:'100%',padding:'0.6rem',borderRadius:'8px',border:'1px solid #444',background:'#111',color:'#fff',marginBottom:'1rem' }} />
-            <label style={{ display:'block',marginBottom:'0.5rem',fontSize:'0.85rem',color:'#aaa' }}>Причина</label>
+              style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', marginBottom: '1rem' }} />
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#aaa' }}>Причина</label>
             <input type="text" value={xpReason} onChange={e => setXpReason(e.target.value)}
-              style={{ width:'100%',padding:'0.6rem',borderRadius:'8px',border:'1px solid #444',background:'#111',color:'#fff',marginBottom:'1.5rem' }} />
-            <div style={{ display:'flex',gap:'0.75rem' }}>
+              style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #444', background: '#111', color: '#fff', marginBottom: '1.5rem' }} />
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button onClick={handleGrantXp} disabled={xpLoading}
-                style={{ flex:1,padding:'0.7rem',borderRadius:'8px',background:'#7c3aed',border:'none',color:'#fff',cursor:'pointer',fontWeight:600 }}>
+                style={{ flex: 1, padding: '0.7rem', borderRadius: '8px', background: '#7c3aed', border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
                 {xpLoading ? 'Выдача...' : 'Выдать'}
               </button>
               <button onClick={() => setXpModal(null)}
-                style={{ flex:1,padding:'0.7rem',borderRadius:'8px',background:'#333',border:'none',color:'#fff',cursor:'pointer' }}>
+                style={{ flex: 1, padding: '0.7rem', borderRadius: '8px', background: '#333', border: 'none', color: '#fff', cursor: 'pointer' }}>
                 Отмена
               </button>
             </div>
@@ -144,34 +137,19 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      <UserModal
-        isOpen={showModal}
-        onClose={handleCloseModal}
-        onSave={handleSave}
-        editingUser={editingUser}
-      />
+      <UserModal isOpen={showModal} onClose={handleCloseModal} onSave={handleSave} editingUser={editingUser} />
 
       <div className={styles.list}>
         {users.length === 0 ? (
-          <div className={styles.empty}>
-            <p>Пользователей пока нет</p>
-          </div>
+          <div className={styles.empty}><p>Пользователей пока нет</p></div>
         ) : (
           users.map((user) => (
             <div key={user.id} className={styles.card}>
               <div className={styles.cardHeader}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   {user.avatar_url && (
-                    <img 
-                      src={user.avatar_url} 
-                      alt={user.discord_username}
-                      style={{ 
-                        width: '48px', 
-                        height: '48px', 
-                        borderRadius: '50%',
-                        objectFit: 'cover'
-                      }}
-                    />
+                    <img src={user.avatar_url} alt={user.discord_username}
+                      style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} />
                   )}
                   <div>
                     <h3>{user.discord_username}</h3>
@@ -179,23 +157,17 @@ export default function AdminUsersPage() {
                   </div>
                 </div>
                 <div className={styles.cardActions}>
-                  <button onClick={() => setXpModal(user)} className={styles.editButton} title="Выдать XP">⚡</button>
-                  <button onClick={() => handleEdit(user)} className={styles.editButton} title="Редактировать">✏️</button>
+                  <button onClick={() => setXpModal(user)} className={styles.editButton} title="Выдать XP"><Zap size={15} /></button>
+                  <button onClick={() => handleEdit(user)} className={styles.editButton} title="Редактировать"><Pencil size={15} /></button>
+                  <button onClick={() => handleDelete(user)} className={styles.deleteButton} title="Удалить"><Trash2 size={15} /></button>
                 </div>
               </div>
               <div className={styles.cardContent}>
                 <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
-                  <div>
-                    <strong>Ранг:</strong> {user.forest_rank}
-                  </div>
-                  <div>
-                    <strong>Рейтинг:</strong> {user.rating}
-                  </div>
+                  <div><strong>Ранг:</strong> {user.forest_rank}</div>
+                  <div><strong>Рейтинг:</strong> {user.rating}</div>
                   {user.joined_at && (
-                    <div>
-                      <strong>Присоединился:</strong>{' '}
-                      {new Date(user.joined_at).toLocaleDateString('ru-RU')}
-                    </div>
+                    <div><strong>Присоединился:</strong> {new Date(user.joined_at).toLocaleDateString('ru-RU')}</div>
                   )}
                 </div>
               </div>

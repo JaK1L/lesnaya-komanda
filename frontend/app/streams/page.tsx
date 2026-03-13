@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Navigation, Footer } from '../../components/layout'
 import styles from './page.module.css'
-import { Twitch, Users, Eye } from 'lucide-react'
+import { Twitch, Users, Eye, Gamepad2 } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const TOKEN_KEY = 'lesnaya_token'
 
 interface Streamer {
   id: number
@@ -27,8 +28,10 @@ export default function StreamsPage() {
   const [streamers, setStreamers] = useState<Streamer[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
+    setToken(localStorage.getItem(TOKEN_KEY))
     fetchStreamers()
   }, [])
 
@@ -54,8 +57,8 @@ export default function StreamsPage() {
       <>
         <Navigation
           apiUrl={API_URL}
-          isAuthenticated={false}
-          onLogout={() => {}}
+          isAuthenticated={!!token}
+          onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }}
         />
         <main>
           <div className={styles.loading}>
@@ -73,8 +76,8 @@ export default function StreamsPage() {
       <>
         <Navigation
           apiUrl={API_URL}
-          isAuthenticated={false}
-          onLogout={() => {}}
+          isAuthenticated={!!token}
+          onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }}
         />
         <main>
           <div className={styles.error}>
@@ -230,7 +233,8 @@ function StreamerCardNew({ streamer }: { streamer: Streamer }) {
         {/* Игра */}
         {streamer.game_name && (
           <div className={styles.game}>
-            🎮 {streamer.game_name}
+            <Gamepad2 size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+            {streamer.game_name}
           </div>
         )}
 

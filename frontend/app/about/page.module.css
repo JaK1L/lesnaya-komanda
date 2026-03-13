@@ -67,7 +67,9 @@
 }
 
 .featureIcon {
-  font-size: 3rem;
+  display: flex;
+  justify-content: center;
+  color: var(--color-accent);
   margin-bottom: 1rem;
 }
 
