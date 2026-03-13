@@ -163,6 +163,12 @@ class ErrorResponse(BaseModel):
 
 
 # Модели для профиля пользователя
+class RoleOut(BaseModel):
+    id: int
+    name: str
+    color: str
+
+
 class ProfileResponse(BaseModel):
     """Response model for user profile data"""
     discord_id: Optional[int] = None
@@ -182,6 +188,7 @@ class ProfileResponse(BaseModel):
     points: int = 0
     game_preferences: Optional[List[Dict[str, Any]]] = None
     twitch_username: Optional[str] = None
+    roles: List[RoleOut] = []
 
 
 class XPTransaction(BaseModel):

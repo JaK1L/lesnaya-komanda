@@ -32,6 +32,25 @@ export interface GameStatistics {
   ДРУГИЕ: number
 }
 
+// Steam CDN covers for known games
+export const GAME_COVERS: Record<string, string> = {
+  "CS2":          "https://cdn.cloudflare.steamstatic.com/steam/apps/730/header.jpg",
+  "DOTA 2":       "https://cdn.cloudflare.steamstatic.com/steam/apps/570/header.jpg",
+  "PUBG":         "https://cdn.cloudflare.steamstatic.com/steam/apps/578080/header.jpg",
+  "Apex Legends": "https://cdn.cloudflare.steamstatic.com/steam/apps/1172470/header.jpg",
+  "GTA V":        "https://cdn.cloudflare.steamstatic.com/steam/apps/271590/header.jpg",
+}
+
+// Fallback accent colors for games without a cover
+export const GAME_COLORS: Record<string, string> = {
+  "VALORANT":          "#ff4655",
+  "League of Legends": "#c89b3c",
+  "Overwatch 2":       "#f99e1a",
+  "Fortnite":          "#00d4ff",
+  "Minecraft":         "#5d9e31",
+  "Другое":            "#6b7280",
+}
+
 // Valid game names
 export const VALID_GAMES = [
   "CS2",

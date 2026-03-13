@@ -17,6 +17,7 @@ async def init_db():
             await _create_core_tables(conn)
             await _create_streamers_table(conn)
             await _create_merch_table(conn)
+            await _create_roles_tables(conn)
             await _seed_initial_data(conn)
             await _ensure_admin(conn)
             await _migrate_achievements(conn)
@@ -264,6 +265,26 @@ async def _create_merch_table(conn):
     ''')
     await conn.execute('CREATE INDEX IF NOT EXISTS idx_merch_in_stock ON merch(in_stock, display_order)')
     logger.info("Merch table created or already exists")
+
+
+async def _create_roles_tables(conn):
+    await conn.execute('''
+        CREATE TABLE IF NOT EXISTS roles (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            color VARCHAR(7) NOT NULL DEFAULT '#99aab5',
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    ''')
+    await conn.execute('''
+        CREATE TABLE IF NOT EXISTS user_roles (
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+            assigned_at TIMESTAMP DEFAULT NOW(),
+            PRIMARY KEY (user_id, role_id)
+        )
+    ''')
+    logger.info("Roles tables created or already exist")
 
 
 async def _migrate_missing_columns(conn):

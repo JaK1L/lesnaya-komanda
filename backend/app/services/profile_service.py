@@ -60,10 +60,16 @@ class ProfileService:
         
         try:
             row = await self.db.fetchrow(query, user_id)
-            
+
             if not row:
                 return None
-            
+
+            roles_rows = await self.db.fetch(
+                "SELECT r.id, r.name, r.color FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = $1 ORDER BY r.name",
+                user_id
+            )
+            roles = [{"id": r["id"], "name": r["name"], "color": r["color"]} for r in roles_rows]
+
             # Safely extract game_preferences
             game_prefs = row['game_preferences']
             if game_prefs is None:
@@ -101,7 +107,8 @@ class ProfileService:
                 current_xp=row.get('current_xp', 0),
                 total_xp=row.get('total_xp', 0),
                 points=row.get('points', 0),
-                twitch_username=row.get('twitch_username')
+                twitch_username=row.get('twitch_username'),
+                roles=roles
             )
         except Exception as e:
             print(f"[ERROR] get_user_profile failed for user_id {user_id}: {str(e)}")

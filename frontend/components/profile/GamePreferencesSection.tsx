@@ -1,5 +1,5 @@
 import { Gamepad2 } from 'lucide-react'
-import { VALID_GAMES } from '../../types/gamePreferences'
+import { VALID_GAMES, GAME_COVERS, GAME_COLORS } from '../../types/gamePreferences'
 import styles from './GamePreferencesSection.module.css'
 
 interface GamePreferencesSectionProps {
@@ -30,20 +30,33 @@ export function GamePreferencesSection({
       </p>
 
       <div className={styles.grid}>
-        {VALID_GAMES.map((game) => (
-          <label
-            key={game}
-            className={`${styles.gameOption} ${selectedGames.has(game) ? styles.selected : ''}`}
-          >
-            <input
-              type="checkbox"
-              checked={selectedGames.has(game)}
-              onChange={() => onGameToggle(game)}
-              className={styles.checkbox}
-            />
-            <span className={styles.gameName}>{game}</span>
-          </label>
-        ))}
+        {VALID_GAMES.map((game) => {
+          const cover = GAME_COVERS[game]
+          const accent = GAME_COLORS[game] || '#4a5568'
+          return (
+            <label
+              key={game}
+              className={`${styles.gameOption} ${selectedGames.has(game) ? styles.selected : ''}`}
+              style={!cover ? { borderColor: selectedGames.has(game) ? accent : 'transparent' } : undefined}
+            >
+              {cover ? (
+                <div className={styles.coverWrap}>
+                  <img src={cover} alt={game} className={styles.cover} />
+                  <div className={styles.coverOverlay} />
+                </div>
+              ) : (
+                <div className={styles.colorDot} style={{ background: accent }} />
+              )}
+              <input
+                type="checkbox"
+                checked={selectedGames.has(game)}
+                onChange={() => onGameToggle(game)}
+                className={styles.checkbox}
+              />
+              <span className={styles.gameName}>{game}</span>
+            </label>
+          )
+        })}
       </div>
 
       {/* Custom game name input */}

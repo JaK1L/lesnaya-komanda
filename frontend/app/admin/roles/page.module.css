@@ -1,0 +1,206 @@
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+.panel {
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #444;
+}
+
+.panelTitle {
+  font-size: 1.1rem;
+  margin: 0 0 1.25rem;
+  color: #ccc;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.input {
+  background: #1a1a1a;
+  border: 1px solid #555;
+  color: #fff;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input:focus { outline: none; border-color: #888; }
+
+.colorRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.colorLabel { font-size: 0.85rem; color: #888; }
+
+.colorPicker {
+  width: 40px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+  background: none;
+}
+
+.colorHex { font-size: 0.8rem; color: #666; font-family: monospace; }
+
+.formButtons { display: flex; gap: 0.5rem; }
+
+.saveBtn {
+  padding: 0.5rem 1.25rem;
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.saveBtn:hover { background: #45a049; }
+.saveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.cancelBtn {
+  padding: 0.5rem 1rem;
+  background: #555;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.cancelBtn:hover { background: #666; }
+
+.error { font-size: 0.8rem; color: #ff6b6b; }
+
+.roleList { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.roleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #1a1a1a;
+  border-radius: 6px;
+}
+
+.roleDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.roleName { flex: 1; font-weight: 600; font-size: 0.9rem; }
+
+.roleActions { display: flex; gap: 0.25rem; }
+
+.editBtn, .delBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.editBtn:hover { background: #333; }
+.delBtn:hover { background: #ff4444; }
+
+.empty { color: #666; font-size: 0.85rem; }
+
+/* User assignment */
+.searchWrap { position: relative; margin-bottom: 1.25rem; }
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  border-radius: 6px;
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.dropItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.dropItem:hover { background: #333; }
+
+.userCard {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #333;
+}
+
+.userHeader { margin-bottom: 0.5rem; font-size: 0.9rem; }
+
+.userRoles { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.removeBadge {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.7;
+}
+
+.removeBadge:hover { opacity: 1; }
+
+.select {
+  background: #2a2a2a;
+  border: 1px solid #555;
+  color: #ccc;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.addRoleRow { margin-top: 0.25rem; }

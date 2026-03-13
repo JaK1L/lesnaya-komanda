@@ -189,6 +189,9 @@ export default function AdminPage() {
           <button onClick={() => router.push('/admin/streamers')} className={styles.navButton}>
             🎮 Стримеры
           </button>
+          <button onClick={() => router.push('/admin/roles')} className={styles.navButton}>
+            🎭 Роли
+          </button>
           <button onClick={() => router.push('/admin/merch')} className={styles.navButton}>
             🛍️ Магазин
           </button>

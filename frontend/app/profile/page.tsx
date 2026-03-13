@@ -10,6 +10,8 @@ import { SectionErrorBoundary } from '../../components/SectionErrorBoundary'
 import { GamePreference } from '../../types/gamePreferences'
 import styles from './page.module.css'
 
+interface UserRole { id: number; name: string; color: string }
+
 interface ProfileData {
   discord_id: number | null
   site_nickname: string | null
@@ -27,6 +29,7 @@ interface ProfileData {
   total_xp?: number
   points?: number
   twitch_username?: string | null
+  roles?: UserRole[]
 }
 
 interface ActivityData {
@@ -403,6 +406,15 @@ function ProfilePageInner() {
                 )}
                 <div className={styles.heroBadges}>
                   <span className={styles.rankBadge}>{profile.forest_rank}</span>
+                  {profile.roles?.map(role => (
+                    <span
+                      key={role.id}
+                      className={styles.roleBadge}
+                      style={{ background: role.color + '22', border: `1px solid ${role.color}`, color: role.color }}
+                    >
+                      {role.name}
+                    </span>
+                  ))}
                 </div>
                 {profile.bio && (
                   <p className={styles.heroBio}>{profile.bio}</p>

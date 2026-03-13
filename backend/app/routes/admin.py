@@ -1134,5 +1134,131 @@ async def delete_merch_item(
     
     if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Merch item not found")
-    
+
     return {"status": "success", "message": "Merch item deleted"}
+
+
+# ─── Roles ────────────────────────────────────────────────────────────────────
+
+class RoleCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    color: str = Field(default="#99aab5", pattern=r"^#[0-9a-fA-F]{6}$")
+
+
+class RoleUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    color: Optional[str] = Field(None, pattern=r"^#[0-9a-fA-F]{6}$")
+
+
+class RoleOut(BaseModel):
+    id: int
+    name: str
+    color: str
+
+
+@router.get("/roles", response_model=List[RoleOut])
+async def list_roles(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    rows = await db.fetch("SELECT id, name, color FROM roles ORDER BY name")
+    return [dict(r) for r in rows]
+
+
+@router.post("/roles", response_model=RoleOut, status_code=201)
+async def create_role(
+    data: RoleCreate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    try:
+        row = await db.fetchrow(
+            "INSERT INTO roles (name, color) VALUES ($1, $2) RETURNING id, name, color",
+            data.name, data.color
+        )
+    except Exception:
+        raise HTTPException(status_code=400, detail="Role with this name already exists")
+    return dict(row)
+
+
+@router.put("/roles/{role_id}", response_model=RoleOut)
+async def update_role(
+    role_id: int,
+    data: RoleUpdate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    fields, vals = [], []
+    if data.name is not None:
+        fields.append(f"name = ${len(vals)+1}"); vals.append(data.name)
+    if data.color is not None:
+        fields.append(f"color = ${len(vals)+1}"); vals.append(data.color)
+    if not fields:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    vals.append(role_id)
+    row = await db.fetchrow(
+        f"UPDATE roles SET {', '.join(fields)} WHERE id = ${len(vals)} RETURNING id, name, color",
+        *vals
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Role not found")
+    return dict(row)
+
+
+@router.delete("/roles/{role_id}")
+async def delete_role(
+    role_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    result = await db.execute("DELETE FROM roles WHERE id = $1", role_id)
+    if result == "DELETE 0":
+        raise HTTPException(status_code=404, detail="Role not found")
+    return {"status": "success"}
+
+
+@router.post("/users/{user_id}/roles/{role_id}", status_code=201)
+async def assign_role(
+    user_id: int,
+    role_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    user_exists = await db.fetchval("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", user_id)
+    if not user_exists:
+        raise HTTPException(status_code=404, detail="User not found")
+    role_exists = await db.fetchval("SELECT EXISTS(SELECT 1 FROM roles WHERE id = $1)", role_id)
+    if not role_exists:
+        raise HTTPException(status_code=404, detail="Role not found")
+    await db.execute(
+        "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        user_id, role_id
+    )
+    return {"status": "success"}
+
+
+@router.delete("/users/{user_id}/roles/{role_id}")
+async def remove_role(
+    user_id: int,
+    role_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    await db.execute(
+        "DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2",
+        user_id, role_id
+    )
+    return {"status": "success"}
+
+
+@router.get("/users/{user_id}/roles", response_model=List[RoleOut])
+async def get_user_roles(
+    user_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    rows = await db.fetch(
+        "SELECT r.id, r.name, r.color FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = $1 ORDER BY r.name",
+        user_id
+    )
+    return [dict(r) for r in rows]
