@@ -38,6 +38,10 @@ class Settings(BaseSettings):
             return [x.strip() for x in v.split(",") if x.strip()]
         return v
     
+    # Twitch OAuth (для привязки аккаунта)
+    TWITCH_CLIENT_ID: Optional[str] = None
+    TWITCH_CLIENT_SECRET: Optional[str] = None
+
     # Discord (бот и OAuth для входа на сайт)
     DISCORD_BOT_TOKEN: Optional[str] = None
     DISCORD_GUILD_ID: Optional[int] = None

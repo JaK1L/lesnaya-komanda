@@ -8,6 +8,7 @@ import { getImageUrl } from '../../../lib/imageUtils'
 import styles from '../news/page.module.css'
 
 interface TeamMember {
+  id: number
   discord_id: number
   discord_username: string
   real_name?: string
@@ -24,6 +25,7 @@ interface TeamMember {
 }
 
 interface SearchUser {
+  id: number
   discord_id: number
   discord_username: string
   avatar_url?: string
@@ -97,7 +99,7 @@ export default function AdminTeamPage() {
   }
 
   const handleAddUser = async (user: SearchUser) => {
-    if (!user || !user.discord_id) {
+    if (!user || !user.id) {
       console.error('Invalid user data:', user)
       alert('Ошибка: неверные данные пользователя')
       return
@@ -105,10 +107,8 @@ export default function AdminTeamPage() {
 
     try {
       const token = localStorage.getItem('admin_token')
-      console.log('Adding user to team:', user.discord_id)
-      
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/team/${user.discord_id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/team/${user.id}`,
         {
           method: 'PUT',
           headers: {
@@ -116,7 +116,6 @@ export default function AdminTeamPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            discord_id: user.discord_id,
             is_team_member: true,
             team_order: members.length
           }),
@@ -139,13 +138,13 @@ export default function AdminTeamPage() {
     }
   }
 
-  const handleRemove = async (discord_id: number) => {
+  const handleRemove = async (user_id: number) => {
     if (!confirm('Убрать из команды?')) return
 
     try {
       const token = localStorage.getItem('admin_token')
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/team/${discord_id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/team/${user_id}`,
         {
           method: 'DELETE',
           headers: {
@@ -370,7 +369,7 @@ export default function AdminTeamPage() {
                     ✏️
                   </button>
                   <button
-                    onClick={() => handleRemove(member.discord_id)}
+                    onClick={() => handleRemove(member.id)}
                     className={styles.deleteButton}
                     title="Убрать из команды"
                   >

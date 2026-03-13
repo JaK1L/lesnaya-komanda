@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { Navigation, Footer, SkipToContent } from '../../components/layout'
 import { GamePreferencesSection, AchievementsSection, GameAccountsSection } from '../../components/profile'
@@ -62,6 +62,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 export default function ProfilePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [token,   setToken]   = useState<string | null>(null)
   const [profile, setProfile] = useState<ProfileData | null>(null)
@@ -104,6 +105,33 @@ export default function ProfilePage() {
     setToken(stored)
     loadProfile(stored)
   }, [router])
+
+  // ── Обработка результата Twitch OAuth ──
+  useEffect(() => {
+    const twitchLinked = searchParams.get('twitch_linked')
+    const oauthError = searchParams.get('error')
+    if (twitchLinked === '1') {
+      setSuccess('Twitch успешно привязан!')
+      setActiveTab('accounts')
+      setTimeout(() => setSuccess(null), 4000)
+      // Обновляем профиль чтобы показать новый twitch_username
+      const stored = localStorage.getItem(TOKEN_KEY)
+      if (stored) loadProfile(stored)
+    } else if (oauthError) {
+      const msgs: Record<string, string> = {
+        twitch_denied: 'Авторизация Twitch отменена',
+        twitch_not_configured: 'Twitch OAuth не настроен',
+        twitch_token_failed: 'Ошибка обмена токена Twitch',
+        invalid_session: 'Сессия устарела, войдите снова',
+      }
+      setError(msgs[oauthError] || `Ошибка: ${oauthError}`)
+      setTimeout(() => setError(null), 5000)
+    }
+    if (twitchLinked || oauthError) {
+      // Убираем query params из URL
+      router.replace('/profile')
+    }
+  }, [searchParams])
 
   // ── Загрузка ──
   const loadProfile = async (authToken: string) => {
@@ -894,7 +922,10 @@ export default function ProfilePage() {
                       </button>
                     </div>
                   ) : (
-                    <button className={styles.connectBtn} onClick={() => { setLinkGame('twitch'); setLinkId(''); setLinkError('') }}>
+                    <button
+                      className={styles.connectBtn}
+                      onClick={() => token && (window.location.href = `${API_URL}/api/auth/twitch?token=${encodeURIComponent(token)}`)}
+                    >
                       Привязать
                     </button>
                   )}

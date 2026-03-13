@@ -8,6 +8,7 @@ import { getImageUrl } from '../../lib/imageUtils'
 import styles from './NewsModal.module.css'
 
 interface TeamMember {
+  id: number
   discord_id: number
   discord_username: string
   real_name?: string
@@ -74,7 +75,7 @@ export function TeamModal({ isOpen, onClose, onSave, editingMember }: TeamModalP
     try {
       const token = localStorage.getItem('admin_token')
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/team/${editingMember.discord_id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/team/${editingMember.id}`,
         {
           method: 'PUT',
           headers: {
@@ -82,7 +83,6 @@ export function TeamModal({ isOpen, onClose, onSave, editingMember }: TeamModalP
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            discord_id: editingMember.discord_id,
             real_name: formData.real_name || null,
             bio: formData.bio || null,
             team_role: formData.team_role || null,

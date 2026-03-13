@@ -9,7 +9,7 @@ import signal
 from .config import settings
 from .database import database, get_db
 from .db_init import init_db
-from .routes import users, auth, discord_oauth, content, websocket, discord, profile, migration, game_preferences, admin, achievements, events, game_stats
+from .routes import users, auth, discord_oauth, twitch_oauth, content, websocket, discord, profile, migration, game_preferences, admin, achievements, events, game_stats
 from .rate_limit import setup_rate_limiting
 
 # Настройка логирования
@@ -170,6 +170,7 @@ async def add_cache_control_header(request, call_next):
 app.include_router(users.router, prefix="/api", tags=["users"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(discord_oauth.router, prefix="/api", tags=["discord"])
+app.include_router(twitch_oauth.router, prefix="/api", tags=["twitch"])
 app.include_router(discord.router, tags=["discord"])  # Discord presence API
 app.include_router(content.router, prefix="/api", tags=["content"])
 app.include_router(profile.router, prefix="/api", tags=["profile"])

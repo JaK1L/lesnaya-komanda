@@ -828,6 +828,7 @@ class TeamMemberUpdate(BaseModel):
 
 
 class TeamMemberResponse(BaseModel):
+    id: int
     discord_id: Optional[int] = None
     discord_username: Optional[str] = None
     real_name: Optional[str] = None
@@ -851,7 +852,8 @@ async def get_team_members(
     """Получить список всех членов команды (для админки)"""
     rows = await db.fetch(
         """
-        SELECT 
+        SELECT
+            id,
             discord_id,
             discord_username,
             real_name,
@@ -873,25 +875,23 @@ async def get_team_members(
     return [TeamMemberResponse(**dict(row)) for row in rows]
 
 
-@router.put("/team/{discord_id}")
+@router.put("/team/{user_id}")
 async def update_team_member(
-    discord_id: int,
+    user_id: int,
     data: TeamMemberUpdate,
     db: asyncpg.Connection = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
     """Обновить информацию о члене команды"""
-    
-    # Проверяем существует ли пользователь
+
     user_exists = await db.fetchval(
-        "SELECT EXISTS(SELECT 1 FROM users WHERE discord_id = $1)",
-        discord_id
+        "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)",
+        user_id
     )
-    
+
     if not user_exists:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    # Обновляем данные
+
     await db.execute(
         """
         UPDATE users SET
@@ -903,7 +903,7 @@ async def update_team_member(
             youtube_url = $6,
             is_team_member = $7,
             team_order = $8
-        WHERE discord_id = $9
+        WHERE id = $9
         """,
         data.real_name,
         data.bio,
@@ -913,30 +913,30 @@ async def update_team_member(
         data.youtube_url,
         data.is_team_member,
         data.team_order,
-        discord_id
+        user_id
     )
-    
+
     return {"status": "success", "message": "Team member updated"}
 
 
-@router.delete("/team/{discord_id}")
+@router.delete("/team/{user_id}")
 async def remove_team_member(
-    discord_id: int,
+    user_id: int,
     db: asyncpg.Connection = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
     """Убрать пользователя из команды"""
-    
+
     await db.execute(
         """
         UPDATE users SET
             is_team_member = false,
             team_order = 0
-        WHERE discord_id = $1
+        WHERE id = $1
         """,
-        discord_id
+        user_id
     )
-    
+
     return {"status": "success", "message": "User removed from team"}
 
 
@@ -949,7 +949,8 @@ async def search_users(
     """Поиск пользователей для добавления в команду"""
     rows = await db.fetch(
         """
-        SELECT 
+        SELECT
+            id,
             discord_id,
             discord_username,
             avatar_url,
