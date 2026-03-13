@@ -14,12 +14,14 @@ interface Tournament {
   description: string | null
   game: string | null
   prize: string | null
+  role_reward: string | null
   challonge_url: string | null
   start_date: string | null
   status: 'upcoming' | 'active' | 'completed'
   winner: string | null
   image_url: string | null
   type: '1v1' | '5v5'
+  max_participants: number | null
 }
 
 const EMPTY: Omit<Tournament, 'id'> = {
@@ -27,12 +29,14 @@ const EMPTY: Omit<Tournament, 'id'> = {
   description: '',
   game: '',
   prize: '',
+  role_reward: '',
   challonge_url: '',
   start_date: '',
   status: 'upcoming',
   winner: '',
   image_url: '',
   type: '1v1',
+  max_participants: null,
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -57,14 +61,26 @@ function RegViewer({ tournamentId, token, onClose }: { tournamentId: number; tok
   const [regs, setRegs] = useState<Registration[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const loadRegs = () => {
+    setLoading(true)
     fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/registrations`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
       .then(data => { setRegs(data); setLoading(false) })
       .catch(() => setLoading(false))
-  }, [tournamentId, token])
+  }
+
+  useEffect(() => { loadRegs() }, [tournamentId, token])
+
+  const handleDelete = async (regId: number) => {
+    if (!confirm('Удалить заявку?')) return
+    await fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/registrations/${regId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    loadRegs()
+  }
 
   return (
     <div className={modalStyles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
@@ -80,19 +96,28 @@ function RegViewer({ tournamentId, token, onClose }: { tournamentId: number; tok
             <p style={{ color: '#888' }}>Заявок пока нет</p>
           ) : regs.map(r => (
             <div key={r.id} style={{ padding: '10px 0', borderBottom: '1px solid #333', fontSize: 13 }}>
-              {r.tournament_type === '1v1' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ color: '#fff', fontWeight: 600 }}>{r.nickname}</span>
-                  {r.discord && <span style={{ color: '#888' }}>Discord: {r.discord}</span>}
-                  {r.steam && <span style={{ color: '#888' }}>Steam: {r.steam}</span>}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ color: '#fff', fontWeight: 600 }}>Команда: {r.team_name}</span>
-                  {r.players && <span style={{ color: '#aaa' }}>Игроки: {r.players.join(', ')}</span>}
-                  {r.contact && <span style={{ color: '#888' }}>Контакт: {r.contact}</span>}
-                </div>
-              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                {r.tournament_type === '1v1' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ color: '#fff', fontWeight: 600 }}>{r.nickname}</span>
+                    {r.discord && <span style={{ color: '#888' }}>Discord: {r.discord}</span>}
+                    {r.steam && <span style={{ color: '#888' }}>Steam: {r.steam}</span>}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ color: '#fff', fontWeight: 600 }}>Команда: {r.team_name}</span>
+                    {r.players && <span style={{ color: '#aaa' }}>Игроки: {r.players.join(', ')}</span>}
+                    {r.contact && <span style={{ color: '#888' }}>Контакт: {r.contact}</span>}
+                  </div>
+                )}
+                <button
+                  onClick={() => handleDelete(r.id)}
+                  style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}
+                  title="Удалить заявку"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
               <span style={{ color: '#555', fontSize: 11 }}>
                 {new Date(r.registered_at).toLocaleString('ru-RU')}
               </span>
@@ -148,12 +173,14 @@ export default function AdminTournamentsPage() {
       description: item.description ?? '',
       game: item.game ?? '',
       prize: item.prize ?? '',
+      role_reward: item.role_reward ?? '',
       challonge_url: item.challonge_url ?? '',
       start_date: item.start_date ? item.start_date.slice(0, 16) : '',
       status: item.status,
       winner: item.winner ?? '',
       image_url: item.image_url ?? '',
       type: item.type ?? '1v1',
+      max_participants: item.max_participants ?? null,
     })
     setError('')
     setShowModal(true)
@@ -170,6 +197,7 @@ export default function AdminTournamentsPage() {
       description: form.description || null,
       game: form.game || null,
       prize: form.prize || null,
+      role_reward: form.role_reward || null,
       challonge_url: form.challonge_url || null,
       winner: form.winner || null,
       image_url: form.image_url || null,
@@ -304,6 +332,30 @@ export default function AdminTournamentsPage() {
                     value={form.prize ?? ''}
                     onChange={e => setForm(f => ({ ...f, prize: e.target.value }))}
                     placeholder="1000 ₽, скин..."
+                  />
+                </label>
+              </div>
+
+              <div className={modalStyles.row}>
+                <label className={modalStyles.label}>
+                  Роль (награда)
+                  <input
+                    className={modalStyles.input}
+                    value={form.role_reward ?? ''}
+                    onChange={e => setForm(f => ({ ...f, role_reward: e.target.value }))}
+                    placeholder="Чемпион турнира..."
+                  />
+                </label>
+
+                <label className={modalStyles.label}>
+                  Макс. участников
+                  <input
+                    className={modalStyles.input}
+                    type="number"
+                    min={1}
+                    value={form.max_participants ?? ''}
+                    onChange={e => setForm(f => ({ ...f, max_participants: e.target.value ? Number(e.target.value) : null }))}
+                    placeholder="32"
                   />
                 </label>
               </div>

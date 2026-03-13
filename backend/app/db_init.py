@@ -567,7 +567,9 @@ async def _migrate_tournaments(conn):
         await conn.execute("""
             ALTER TABLE tournaments
             ADD COLUMN IF NOT EXISTS image_url TEXT,
-            ADD COLUMN IF NOT EXISTS type VARCHAR(10) DEFAULT '1v1'
+            ADD COLUMN IF NOT EXISTS type VARCHAR(10) DEFAULT '1v1',
+            ADD COLUMN IF NOT EXISTS max_participants INT,
+            ADD COLUMN IF NOT EXISTS role_reward TEXT
         """)
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS tournament_registrations (

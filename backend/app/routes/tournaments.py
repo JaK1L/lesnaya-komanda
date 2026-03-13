@@ -20,12 +20,15 @@ class TournamentOut(BaseModel):
     description: Optional[str]
     game: Optional[str]
     prize: Optional[str]
+    role_reward: Optional[str]
     challonge_url: Optional[str]
     start_date: Optional[datetime]
     status: str
     winner: Optional[str]
     image_url: Optional[str]
     type: str
+    max_participants: Optional[int]
+    registration_count: int = 0
     created_at: datetime
 
 
@@ -47,11 +50,19 @@ async def list_tournaments(
     status: Optional[str] = None,
     db: asyncpg.Connection = Depends(get_db),
 ):
-    query = "SELECT * FROM tournaments"
+    base = """
+        SELECT t.*, COALESCE(rc.cnt, 0)::int AS registration_count
+        FROM tournaments t
+        LEFT JOIN (
+            SELECT tournament_id, COUNT(*) AS cnt
+            FROM tournament_registrations
+            GROUP BY tournament_id
+        ) rc ON rc.tournament_id = t.id
+    """
     if status:
-        rows = await db.fetch(query + " WHERE status = $1 ORDER BY start_date DESC NULLS LAST", status)
+        rows = await db.fetch(base + " WHERE t.status = $1 ORDER BY t.start_date DESC NULLS LAST", status)
     else:
-        rows = await db.fetch(query + " ORDER BY start_date DESC NULLS LAST")
+        rows = await db.fetch(base + " ORDER BY t.start_date DESC NULLS LAST")
     return [dict(r) for r in rows]
 
 

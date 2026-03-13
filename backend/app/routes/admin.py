@@ -1271,12 +1271,14 @@ class TournamentCreate(BaseModel):
     description: Optional[str] = None
     game: Optional[str] = None
     prize: Optional[str] = None
+    role_reward: Optional[str] = None
     challonge_url: Optional[str] = None
     start_date: Optional[datetime] = None
     status: str = "upcoming"  # upcoming | active | completed
     winner: Optional[str] = None
     image_url: Optional[str] = None
     type: str = "1v1"  # 1v1 | 5v5
+    max_participants: Optional[int] = None
 
 
 class TournamentOut(TournamentCreate):
@@ -1302,13 +1304,13 @@ async def admin_create_tournament(
 ):
     row = await db.fetchrow(
         """
-        INSERT INTO tournaments (title, description, game, prize, challonge_url, start_date, status, winner, image_url, type)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        INSERT INTO tournaments (title, description, game, prize, role_reward, challonge_url, start_date, status, winner, image_url, type, max_participants)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
         """,
-        payload.title, payload.description, payload.game, payload.prize,
+        payload.title, payload.description, payload.game, payload.prize, payload.role_reward,
         payload.challonge_url, payload.start_date, payload.status, payload.winner,
-        payload.image_url, payload.type,
+        payload.image_url, payload.type, payload.max_participants,
     )
     return dict(row)
 
@@ -1323,14 +1325,14 @@ async def admin_update_tournament(
     row = await db.fetchrow(
         """
         UPDATE tournaments
-        SET title=$1, description=$2, game=$3, prize=$4, challonge_url=$5,
-            start_date=$6, status=$7, winner=$8, image_url=$9, type=$10, updated_at=NOW()
-        WHERE id=$11
+        SET title=$1, description=$2, game=$3, prize=$4, role_reward=$5, challonge_url=$6,
+            start_date=$7, status=$8, winner=$9, image_url=$10, type=$11, max_participants=$12, updated_at=NOW()
+        WHERE id=$13
         RETURNING *
         """,
-        payload.title, payload.description, payload.game, payload.prize,
+        payload.title, payload.description, payload.game, payload.prize, payload.role_reward,
         payload.challonge_url, payload.start_date, payload.status, payload.winner,
-        payload.image_url, payload.type,
+        payload.image_url, payload.type, payload.max_participants,
         tournament_id,
     )
     if not row:
@@ -1368,3 +1370,19 @@ async def admin_list_registrations(
             d["players"] = json.loads(d["players"])
         result.append(d)
     return result
+
+
+@router.delete("/tournaments/{tournament_id}/registrations/{registration_id}")
+async def admin_delete_registration(
+    tournament_id: int,
+    registration_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    result = await db.execute(
+        "DELETE FROM tournament_registrations WHERE id = $1 AND tournament_id = $2",
+        registration_id, tournament_id,
+    )
+    if result == "DELETE 0":
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+    return {"status": "deleted"}

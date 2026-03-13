@@ -206,6 +206,43 @@
   filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.8));
 }
 
+.roleItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c084fc;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.5);
+}
+
+.roleItem svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.participantsItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-white-64);
+}
+
+.expandBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: var(--color-white-64);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+.expandBtn:hover { color: var(--color-white); }
+
 /* Winner */
 .winnerBanner {
   display: flex;

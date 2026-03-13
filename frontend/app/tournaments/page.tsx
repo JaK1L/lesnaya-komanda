@@ -15,12 +15,15 @@ interface Tournament {
   description: string | null
   game: string | null
   prize: string | null
+  role_reward: string | null
   challonge_url: string | null
   start_date: string | null
   status: 'upcoming' | 'active' | 'completed'
   winner: string | null
   image_url: string | null
   type: '1v1' | '5v5'
+  max_participants: number | null
+  registration_count: number
   created_at: string
 }
 
@@ -190,6 +193,7 @@ export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [filter, setFilter] = useState('')
   const [expanded, setExpanded] = useState<number | null>(null)
+  const [descExpanded, setDescExpanded] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [regTarget, setRegTarget] = useState<Tournament | null>(null)
 
@@ -265,8 +269,6 @@ export default function TournamentsPage() {
 
                   <h2 className={styles.cardTitle}>{t.title}</h2>
 
-                  {t.description && <p className={styles.cardDesc}>{t.description}</p>}
-
                   <div className={styles.cardInfo}>
                     {t.start_date && (
                       <span className={styles.infoItem}>
@@ -280,7 +282,39 @@ export default function TournamentsPage() {
                         {t.prize}
                       </span>
                     )}
+                    {t.role_reward && (
+                      <span className={styles.roleItem}>
+                        <Crown size={14} />
+                        {t.role_reward}
+                      </span>
+                    )}
+                    <span className={styles.participantsItem}>
+                      <Users size={14} />
+                      {t.registration_count}{t.max_participants ? `/${t.max_participants}` : ''} участников
+                    </span>
                   </div>
+
+                  {t.description && (
+                    <>
+                      {descExpanded.has(t.id) && (
+                        <p className={styles.cardDesc}>{t.description}</p>
+                      )}
+                      <button
+                        className={styles.expandBtn}
+                        onClick={() => setDescExpanded(prev => {
+                          const next = new Set(prev)
+                          next.has(t.id) ? next.delete(t.id) : next.add(t.id)
+                          return next
+                        })}
+                      >
+                        <ChevronDown
+                          size={14}
+                          style={{ transform: descExpanded.has(t.id) ? 'rotate(180deg)' : 'none', transition: '0.2s' }}
+                        />
+                        {descExpanded.has(t.id) ? 'Скрыть описание' : 'Показать полностью'}
+                      </button>
+                    </>
+                  )}
 
                   {t.status === 'completed' && t.winner && (
                     <div className={styles.winnerBanner}>
