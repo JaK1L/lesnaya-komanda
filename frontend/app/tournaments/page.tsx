@@ -90,6 +90,8 @@ function RegistrationModal({ tournament, onClose, apiUrl }: RegModalProps) {
       if (players.some(p => !p.trim())) { setError('Заполни никнеймы всех 5 игроков'); return }
       if (!contact.trim()) { setError('Укажи контакт капитана'); return }
     }
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) { setError('Необходимо войти на сайт'); return }
     setSubmitting(true)
     try {
       const endpoint = isSolo
@@ -100,9 +102,10 @@ function RegistrationModal({ tournament, onClose, apiUrl }: RegModalProps) {
         : { team_name: teamName, players, contact }
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       })
+      if (res.status === 409) { setError('Ты уже зарегистрирован на этот турнир'); return }
       if (!res.ok) { setError('Ошибка при отправке, попробуй позже'); return }
       setSuccess(true)
     } catch {
@@ -272,7 +275,7 @@ export default function TournamentsPage() {
                       </span>
                     )}
                     {t.prize && (
-                      <span className={styles.infoItem}>
+                      <span className={styles.prizeItem}>
                         <Trophy size={14} />
                         {t.prize}
                       </span>
@@ -289,10 +292,15 @@ export default function TournamentsPage() {
                     </div>
                   )}
 
-                  {t.status !== 'completed' && (
+                  {t.status !== 'completed' && token && (
                     <button className={styles.registerBtn} onClick={() => setRegTarget(t)}>
                       Зарегистрироваться
                     </button>
+                  )}
+                  {t.status !== 'completed' && !token && (
+                    <p style={{ fontSize: 13, color: 'var(--color-white-64)', marginTop: 6 }}>
+                      Войдите на сайт, чтобы зарегистрироваться
+                    </p>
                   )}
                 </div>
 

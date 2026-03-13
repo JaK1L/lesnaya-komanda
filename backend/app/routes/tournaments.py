@@ -9,6 +9,7 @@ import json
 from pydantic import BaseModel
 
 from ..database import get_db
+from ..auth import get_current_user, User
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
@@ -65,31 +66,29 @@ async def get_tournament(
     return dict(row)
 
 
-@router.post("/{tournament_id}/register", status_code=201)
-async def register_for_tournament(
-    tournament_id: int,
-    db: asyncpg.Connection = Depends(get_db),
-):
-    # This endpoint is called with JSON body parsed in the route below
-    raise HTTPException(status_code=405, detail="Use typed endpoints")
-
-
 @router.post("/{tournament_id}/register/solo", status_code=201)
 async def register_solo(
     tournament_id: int,
     payload: RegisterSolo,
     db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    t = await db.fetchrow("SELECT id, type FROM tournaments WHERE id = $1", tournament_id)
+    t = await db.fetchrow("SELECT id FROM tournaments WHERE id = $1", tournament_id)
     if not t:
         raise HTTPException(status_code=404, detail="Турнир не найден")
+    existing = await db.fetchrow(
+        "SELECT id FROM tournament_registrations WHERE tournament_id = $1 AND user_id = $2",
+        tournament_id, current_user.id,
+    )
+    if existing:
+        raise HTTPException(status_code=409, detail="Ты уже зарегистрирован на этот турнир")
     await db.execute(
         """
         INSERT INTO tournament_registrations
             (tournament_id, tournament_type, nickname, discord, steam, user_id)
         VALUES ($1, '1v1', $2, $3, $4, $5)
         """,
-        tournament_id, payload.nickname, payload.discord, payload.steam, payload.user_id,
+        tournament_id, payload.nickname, payload.discord, payload.steam, current_user.id,
     )
     return {"status": "registered"}
 
@@ -99,16 +98,23 @@ async def register_team(
     tournament_id: int,
     payload: RegisterTeam,
     db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    t = await db.fetchrow("SELECT id, type FROM tournaments WHERE id = $1", tournament_id)
+    t = await db.fetchrow("SELECT id FROM tournaments WHERE id = $1", tournament_id)
     if not t:
         raise HTTPException(status_code=404, detail="Турнир не найден")
+    existing = await db.fetchrow(
+        "SELECT id FROM tournament_registrations WHERE tournament_id = $1 AND user_id = $2",
+        tournament_id, current_user.id,
+    )
+    if existing:
+        raise HTTPException(status_code=409, detail="Ты уже зарегистрировал команду на этот турнир")
     await db.execute(
         """
         INSERT INTO tournament_registrations
-            (tournament_id, tournament_type, team_name, players, contact)
-        VALUES ($1, '5v5', $2, $3::jsonb, $4)
+            (tournament_id, tournament_type, team_name, players, contact, user_id)
+        VALUES ($1, '5v5', $2, $3::jsonb, $4, $5)
         """,
-        tournament_id, payload.team_name, json.dumps(payload.players), payload.contact,
+        tournament_id, payload.team_name, json.dumps(payload.players), payload.contact, current_user.id,
     )
     return {"status": "registered"}
