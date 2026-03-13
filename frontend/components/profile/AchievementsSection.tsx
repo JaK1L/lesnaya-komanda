@@ -48,6 +48,7 @@ export function AchievementsSection({ discordId }: { discordId: number }) {
   const [stats, setStats] = useState<AchievementStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [showAll, setShowAll] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
     loadAchievements()
@@ -56,20 +57,21 @@ export function AchievementsSection({ discordId }: { discordId: number }) {
   const loadAchievements = async () => {
     try {
       setLoading(true)
-      
-      // Load user achievements
-      const achievementsResponse = await axios.get(
-        `${API_URL}/api/achievements/user/${discordId}`
-      )
-      setAchievements(achievementsResponse.data)
+      setFetchError(null)
 
-      // Load stats
-      const statsResponse = await axios.get(
-        `${API_URL}/api/achievements/user/${discordId}/stats`
-      )
+      const [achievementsResponse, statsResponse] = await Promise.all([
+        axios.get(`${API_URL}/api/achievements/user/${discordId}`),
+        axios.get(`${API_URL}/api/achievements/user/${discordId}/stats`),
+      ])
+      setAchievements(achievementsResponse.data)
       setStats(statsResponse.data)
     } catch (err) {
       console.error('Error loading achievements:', err)
+      if (axios.isAxiosError(err)) {
+        setFetchError(err.response?.data?.detail || `Ошибка ${err.response?.status || 'сети'}`)
+      } else {
+        setFetchError('Не удалось загрузить достижения')
+      }
     } finally {
       setLoading(false)
     }
@@ -80,6 +82,22 @@ export function AchievementsSection({ discordId }: { discordId: number }) {
       <div className={styles.container}>
         <h3 className={styles.title}>🏆 ДОСТИЖЕНИЯ</h3>
         <div className={styles.loading}>Загрузка...</div>
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className={styles.container}>
+        <h3 className={styles.title}>🏆 ДОСТИЖЕНИЯ</h3>
+        <div className={styles.empty}>
+          <div className={styles.emptyIcon}>⚠️</div>
+          <div>Ошибка загрузки достижений</div>
+          <div className={styles.emptyHint}>{fetchError}</div>
+          <button onClick={loadAchievements} style={{ marginTop: '0.75rem', padding: '0.4rem 1rem', background: 'var(--color-purple)', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}>
+            Повторить
+          </button>
+        </div>
       </div>
     )
   }

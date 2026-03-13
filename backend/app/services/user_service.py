@@ -18,7 +18,7 @@ class UserService:
                 COUNT(DISTINCT a.id) as achievements_count,
                 COUNT(DISTINCT gp.id) as games_count
             FROM users u
-            LEFT JOIN achievements a ON u.id = a.user_id
+            LEFT JOIN user_achievements a ON u.id = a.user_id
             LEFT JOIN game_profiles gp ON u.id = gp.user_id
             WHERE u.is_hidden = false OR u.is_hidden IS NULL
             GROUP BY u.id

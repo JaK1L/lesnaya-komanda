@@ -287,7 +287,10 @@ async def _migrate_missing_columns(conn):
             ADD COLUMN IF NOT EXISTS tiktok_url VARCHAR(200),
             ADD COLUMN IF NOT EXISTS youtube_url VARCHAR(200),
             ADD COLUMN IF NOT EXISTS is_team_member BOOLEAN DEFAULT false,
-            ADD COLUMN IF NOT EXISTS team_order INTEGER DEFAULT 0
+            ADD COLUMN IF NOT EXISTS team_order INTEGER DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false,
+            ADD COLUMN IF NOT EXISTS user_tag VARCHAR(10),
+            ADD COLUMN IF NOT EXISTS game_preferences JSONB DEFAULT '[]'
         """)
 
         # Колонки таблицы news
@@ -310,14 +313,17 @@ async def _migrate_missing_columns(conn):
 
 
 async def _migrate_achievements(conn):
-    exists = await conn.fetchval("""
+    # Всегда гарантируем наличие ОБЕИХ таблиц
+    types_exists = await conn.fetchval("""
         SELECT EXISTS (
             SELECT 1 FROM information_schema.tables WHERE table_name = 'achievement_types'
         )
     """)
-    if exists:
-        return
-
+    ua_exists = await conn.fetchval("""
+        SELECT EXISTS (
+            SELECT 1 FROM information_schema.tables WHERE table_name = 'user_achievements'
+        )
+    """)
     logger.info("Applying achievements migration...")
     try:
         await conn.execute('''
