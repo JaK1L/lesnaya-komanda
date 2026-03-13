@@ -288,9 +288,6 @@ export default function ProfilePage() {
   const xpPercent  = Math.min(100, Math.round((currentXp / XP_PER_LEVEL) * 100))
   const displayName = profile.site_nickname || profile.discord_username
 
-  const joinedStr = profile.joined_at
-    ? new Date(profile.joined_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
-    : '—'
 
   return (
     <PageErrorBoundary pageName="Профиль">
