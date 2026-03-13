@@ -26,6 +26,7 @@ async def init_db():
             await _migrate_xp_system(conn)
             await _migrate_missing_columns(conn)
             await _migrate_showcase(conn)
+            await _migrate_tournaments(conn)
 
             users_count = await conn.fetchval("SELECT COUNT(*) FROM users")
             games_count = await conn.fetchval("SELECT COUNT(*) FROM game_profiles")
@@ -541,3 +542,26 @@ async def _migrate_showcase(conn):
         logger.info("Showcase migration applied")
     except Exception as e:
         logger.error(f"Showcase migration failed: {e}", exc_info=True)
+
+
+async def _migrate_tournaments(conn):
+    """Создаёт таблицу турниров."""
+    try:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS tournaments (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                game VARCHAR(100),
+                prize TEXT,
+                challonge_url TEXT,
+                start_date TIMESTAMP,
+                status VARCHAR(50) DEFAULT 'upcoming',
+                winner TEXT,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        logger.info("Tournaments table ready")
+    except Exception as e:
+        logger.error(f"Tournaments migration failed: {e}", exc_info=True)

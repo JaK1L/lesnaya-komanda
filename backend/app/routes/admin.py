@@ -1262,3 +1262,85 @@ async def get_user_roles(
         user_id
     )
     return [dict(r) for r in rows]
+
+
+# ── Tournaments ──────────────────────────────────────────────────────────────
+
+class TournamentCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    game: Optional[str] = None
+    prize: Optional[str] = None
+    challonge_url: Optional[str] = None
+    start_date: Optional[datetime] = None
+    status: str = "upcoming"  # upcoming | active | completed
+    winner: Optional[str] = None
+
+
+class TournamentOut(TournamentCreate):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+@router.get("/tournaments", response_model=List[TournamentOut])
+async def admin_list_tournaments(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    rows = await db.fetch("SELECT * FROM tournaments ORDER BY created_at DESC")
+    return [dict(r) for r in rows]
+
+
+@router.post("/tournaments", response_model=TournamentOut, status_code=201)
+async def admin_create_tournament(
+    payload: TournamentCreate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    row = await db.fetchrow(
+        """
+        INSERT INTO tournaments (title, description, game, prize, challonge_url, start_date, status, winner)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *
+        """,
+        payload.title, payload.description, payload.game, payload.prize,
+        payload.challonge_url, payload.start_date, payload.status, payload.winner,
+    )
+    return dict(row)
+
+
+@router.put("/tournaments/{tournament_id}", response_model=TournamentOut)
+async def admin_update_tournament(
+    tournament_id: int,
+    payload: TournamentCreate,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    row = await db.fetchrow(
+        """
+        UPDATE tournaments
+        SET title=$1, description=$2, game=$3, prize=$4, challonge_url=$5,
+            start_date=$6, status=$7, winner=$8, updated_at=NOW()
+        WHERE id=$9
+        RETURNING *
+        """,
+        payload.title, payload.description, payload.game, payload.prize,
+        payload.challonge_url, payload.start_date, payload.status, payload.winner,
+        tournament_id,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Турнир не найден")
+    return dict(row)
+
+
+@router.delete("/tournaments/{tournament_id}")
+async def admin_delete_tournament(
+    tournament_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user=Depends(get_current_admin_user),
+):
+    result = await db.execute("DELETE FROM tournaments WHERE id = $1", tournament_id)
+    if result == "DELETE 0":
+        raise HTTPException(status_code=404, detail="Турнир не найден")
+    return {"status": "deleted"}

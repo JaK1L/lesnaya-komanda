@@ -174,6 +174,9 @@ export default function AdminPage() {
           <button onClick={() => router.push('/admin/events')} className={styles.navButton}>
             📅 События
           </button>
+          <button onClick={() => router.push('/admin/tournaments')} className={styles.navButton}>
+            🏆 Турниры
+          </button>
           <button onClick={() => router.push('/admin/feed')} className={styles.navButton}>
             📝 Лента
           </button>
