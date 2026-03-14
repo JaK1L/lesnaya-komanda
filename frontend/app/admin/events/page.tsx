@@ -17,6 +17,8 @@ interface Event {
   participants: number[]
   status: string
   expires_at: string | null
+  button_url: string | null
+  button_label: string | null
 }
 
 export default function AdminEventsPage() {
