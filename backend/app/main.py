@@ -124,8 +124,10 @@ app = FastAPI(
     ],
 )
 
-# Настройка CORS
+# Настройка CORS — FRONTEND_URL всегда добавляется в список
 cors_origins = list(settings.ALLOWED_ORIGINS)
+if settings.FRONTEND_URL and settings.FRONTEND_URL not in cors_origins:
+    cors_origins.append(settings.FRONTEND_URL)
 logger.info(f"🌐 CORS origins: {cors_origins}")
 logger.info(f"🌐 DEBUG mode: {settings.DEBUG}")
 
