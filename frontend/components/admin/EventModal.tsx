@@ -117,7 +117,9 @@ export function EventModal({ isOpen, onClose, onSave, editingEvent }: EventModal
       
       const payload = {
         ...formData,
-        expires_at: formData.expires_at || null
+        expires_at: formData.expires_at || null,
+        button_url: formData.button_url || null,
+        button_label: formData.button_label || null,
       }
       
       const response = await fetch(url, {
