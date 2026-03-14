@@ -24,15 +24,22 @@ interface Streamer {
   thumbnail_url: string | null
 }
 
+interface ContactSettings {
+  discord_url: string | null
+  telegram_url: string | null
+}
+
 export default function StreamsPage() {
   const [streamers, setStreamers] = useState<Streamer[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
+  const [contact, setContact] = useState<ContactSettings>({ discord_url: null, telegram_url: null })
 
   useEffect(() => {
     setToken(localStorage.getItem(TOKEN_KEY))
     fetchStreamers()
+    axios.get<ContactSettings>(`${API_URL}/api/settings/contact`).then(r => setContact(r.data)).catch(() => {})
   }, [])
 
   const fetchStreamers = async () => {
@@ -157,16 +164,20 @@ export default function StreamsPage() {
         <section className={styles.cta}>
           <h2 className={styles.ctaTitle}>Хочешь стать стримером команды?</h2>
           <p className={styles.ctaText}>
-            Если ты активный участник сообщества и хочешь стримить от имени Лесной Команды, напиши нам в Discord
+            Если ты активный участник сообщества и хочешь стримить от имени Лесной Команды — напиши нам
           </p>
-          <a 
-            href="https://discord.gg/YgX4RQZ" 
-            className={styles.ctaButton}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Написать в Discord
-          </a>
+          <div className={styles.ctaButtons}>
+            {contact.discord_url && (
+              <a href={contact.discord_url} className={styles.ctaButton} target="_blank" rel="noopener noreferrer">
+                Написать в Discord
+              </a>
+            )}
+            {contact.telegram_url && (
+              <a href={contact.telegram_url} className={`${styles.ctaButton} ${styles.ctaButtonSecondary}`} target="_blank" rel="noopener noreferrer">
+                Написать в Telegram
+              </a>
+            )}
+          </div>
         </section>
         
         <Footer />

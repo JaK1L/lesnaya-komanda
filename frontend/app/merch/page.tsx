@@ -22,21 +22,28 @@ interface MerchItem {
   sizes: string | null
 }
 
+interface ContactSettings {
+  discord_url: string | null
+  telegram_url: string | null
+}
+
 export default function MerchPage() {
   const [items, setItems] = useState<MerchItem[]>([])
   const [loading, setLoading] = useState(true)
   const [token, setToken] = useState<string | null>(null)
+  const [contact, setContact] = useState<ContactSettings>({ discord_url: null, telegram_url: null })
 
   useEffect(() => {
     setToken(localStorage.getItem(TOKEN_KEY))
     fetchMerch()
+    axios.get<ContactSettings>(`${API_URL}/api/settings/contact`).then(r => setContact(r.data)).catch(() => {})
   }, [])
 
   const fetchMerch = async () => {
     try {
       setLoading(true)
       const res = await axios.get<MerchItem[]>(`${API_URL}/api/merch`)
-      setItems(res.data.filter(i => i.in_stock))
+      setItems(res.data)
     } catch { } finally { setLoading(false) }
   }
 
@@ -80,15 +87,17 @@ export default function MerchPage() {
                   {item.sizes && <p className={styles.sizes}>Размеры: {item.sizes}</p>}
                   <div className={styles.cardFooter}>
                     <span className={styles.price}>{item.price} ₽</span>
-                    <a
-                      href="https://discord.gg/YgX4RQZ"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.buyBtn}
-                    >
-                      <ShoppingBag size={14} />
-                      Заказать
-                    </a>
+                    {(contact.telegram_url || contact.discord_url) && (
+                      <a
+                        href={(contact.telegram_url || contact.discord_url)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.buyBtn}
+                      >
+                        <ShoppingBag size={14} />
+                        Заказать
+                      </a>
+                    )}
                   </div>
                   {item.stock_quantity !== undefined && item.stock_quantity < 10 && (
                     <div className={styles.stockWarning}>Осталось: {item.stock_quantity} шт.</div>
@@ -102,16 +111,20 @@ export default function MerchPage() {
         <div className={styles.cta}>
           <h2 className={styles.ctaTitle}>Как заказать?</h2>
           <p className={styles.ctaText}>
-            Напиши нам в Discord — поможем с размером и доставкой по всей России
+            Напиши нам — поможем с размером и доставкой по всей России
           </p>
-          <a
-            href="https://discord.gg/YgX4RQZ"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.ctaBtn}
-          >
-            Написать в Discord
-          </a>
+          <div className={styles.ctaBtns}>
+            {contact.telegram_url && (
+              <a href={contact.telegram_url} target="_blank" rel="noopener noreferrer" className={styles.ctaBtn}>
+                Написать в Telegram
+              </a>
+            )}
+            {contact.discord_url && (
+              <a href={contact.discord_url} target="_blank" rel="noopener noreferrer" className={`${styles.ctaBtn} ${styles.ctaBtnSecondary}`}>
+                Написать в Discord
+              </a>
+            )}
+          </div>
         </div>
       </div>
       <Footer />

@@ -228,6 +228,13 @@
   line-height: 1.6;
 }
 
+.ctaBtns {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .ctaBtn {
   display: inline-block;
   padding: 12px 28px;
@@ -241,6 +248,14 @@
 }
 
 .ctaBtn:hover { background: #3a7fc9; }
+
+.ctaBtnSecondary {
+  background: transparent;
+  border: 2px solid #4f9fff;
+  color: #4f9fff;
+}
+
+.ctaBtnSecondary:hover { background: rgba(79,159,255,0.1); }
 
 @media (max-width: 768px) {
   .title { font-size: 32px; }

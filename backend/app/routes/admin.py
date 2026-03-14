@@ -473,6 +473,7 @@ async def update_feed_item(
 
 class CommonSettings(BaseModel):
     discord_join_url: str
+    telegram_url: Optional[str] = None
     maintenance_enabled: bool = False
     maintenance_message: Optional[str] = None
 
@@ -702,6 +703,7 @@ async def get_admin_common_settings(
         
     return CommonSettings(
         discord_join_url=data.get("discord_join_url", "https://discord.gg/YgX4RQZ"),
+        telegram_url=data.get("telegram_url"),
         maintenance_enabled=bool(data.get("maintenance_enabled", False)),
         maintenance_message=data.get("maintenance_message"),
     )
@@ -721,6 +723,7 @@ async def update_common_settings(
         """,
         {
             "discord_join_url": payload.discord_join_url,
+            "telegram_url": payload.telegram_url,
             "maintenance_enabled": payload.maintenance_enabled,
             "maintenance_message": payload.maintenance_message,
         },

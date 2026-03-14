@@ -155,6 +155,25 @@
   transform: translateY(-2px);
 }
 
+.ctaButtons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ctaButtonSecondary {
+  background: transparent;
+  border-color: rgba(255,255,255,0.2);
+  color: var(--color-white-64);
+}
+
+.ctaButtonSecondary:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.35);
+  color: var(--color-white);
+}
+
 /* Loading and Error States */
 .loading {
   display: flex;

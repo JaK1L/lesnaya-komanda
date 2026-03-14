@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Newspaper, Calendar, Trophy, FileText, Users, User,
-  Award, Monitor, Shield, ShoppingBag, Settings,
+  Award, Monitor, Shield, ShoppingBag, Settings, Image,
 } from 'lucide-react'
 import { PageErrorBoundary } from '../../components/PageErrorBoundary'
 import styles from './page.module.css'
@@ -201,6 +201,9 @@ export default function AdminPage() {
           </button>
           <button onClick={() => router.push('/admin/merch')} className={styles.navButton}>
             <ShoppingBag size={16} /> Магазин
+          </button>
+          <button onClick={() => router.push('/admin/media')} className={styles.navButton}>
+            <Image size={16} /> Медиа
           </button>
           <button onClick={() => router.push('/admin/settings')} className={styles.navButton}>
             <Settings size={16} /> Настройки

@@ -6,6 +6,7 @@ import styles from '../news/page.module.css'
 
 interface Settings {
   discord_join_url: string
+  telegram_url: string | null
   maintenance_enabled: boolean
   maintenance_message: string | null
 }
@@ -16,6 +17,7 @@ export default function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [settings, setSettings] = useState<Settings>({
     discord_join_url: '',
+    telegram_url: null,
     maintenance_enabled: false,
     maintenance_message: null,
   })
@@ -104,7 +106,21 @@ export default function AdminSettingsPage() {
               required
             />
             <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-              Эта ссылка используется на всем сайте для приглашения в Discord
+              Используется на странице мерча и стримов
+            </small>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="telegram_url">Ссылка на Telegram</label>
+            <input
+              id="telegram_url"
+              type="url"
+              value={settings.telegram_url || ''}
+              onChange={(e) => setSettings({ ...settings, telegram_url: e.target.value || null })}
+              placeholder="https://t.me/lesnayakomanda"
+            />
+            <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+              Кнопка для заказов в мерче и связи на странице стримов
             </small>
           </div>
 

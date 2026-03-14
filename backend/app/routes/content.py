@@ -15,6 +15,26 @@ from ..services.achievements_auto import check_comments, check_likes
 router = APIRouter()
 
 
+class ContactSettings(BaseModel):
+    discord_url: Optional[str] = None
+    telegram_url: Optional[str] = None
+
+
+@router.get("/settings/contact", response_model=ContactSettings)
+async def get_contact_settings(db: asyncpg.Connection = Depends(get_db)):
+    row = await db.fetchrow("SELECT value FROM site_settings WHERE key = 'common'")
+    if not row:
+        return ContactSettings(discord_url="https://discord.gg/YgX4RQZ", telegram_url=None)
+    data = row["value"]
+    if isinstance(data, str):
+        import json
+        data = json.loads(data)
+    return ContactSettings(
+        discord_url=data.get("discord_join_url", "https://discord.gg/YgX4RQZ"),
+        telegram_url=data.get("telegram_url"),
+    )
+
+
 class EventPublic(BaseModel):
     id: int
     title: str
