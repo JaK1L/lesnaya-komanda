@@ -9,7 +9,7 @@ import asyncpg
 from ..database import get_db
 from ..schemas import ProfileResponse, ProfileUpdate
 from ..services.profile_service import ProfileService
-from ..auth import get_current_user, User
+from ..auth import get_current_user, get_optional_current_user, User
 
 router = APIRouter()
 
@@ -17,7 +17,8 @@ router = APIRouter()
 @router.get("/profile/public/{discord_id}")
 async def get_public_profile(
     discord_id: int,
-    db: asyncpg.Connection = Depends(get_db)
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_optional_current_user),
 ):
     """
     Get public profile by Discord ID
@@ -29,7 +30,8 @@ async def get_public_profile(
         # Fetch user profile
         row = await db.fetchrow(
             """
-            SELECT 
+            SELECT
+                id,
                 discord_id,
                 site_nickname,
                 discord_username,
@@ -42,22 +44,24 @@ async def get_public_profile(
                 level,
                 current_xp,
                 total_xp,
-                points
+                points,
+                twitch_username
             FROM users
             WHERE discord_id = $1
             """,
             discord_id
         )
-        
+
         if not row:
             raise HTTPException(status_code=404, detail="Profile not found")
-        
-        # Check if profile is hidden
-        if row['is_hidden']:
+
+        # Check if profile is hidden (owner can always view their own)
+        is_owner = current_user is not None and current_user.id == row['id']
+        if row['is_hidden'] and not is_owner:
             raise HTTPException(status_code=403, detail="This profile is hidden")
-        
+
         # Tournament stats
-        user_id = await db.fetchval("SELECT id FROM users WHERE discord_id = $1", discord_id)
+        user_id = row['id']
         tourney_stats = {"played": 0, "wins": 0}
         if user_id:
             played = await db.fetchval(
@@ -87,8 +91,9 @@ async def get_public_profile(
             "total_xp": row.get('total_xp', 0),
             "points": row.get('points', 0),
             "tourney_stats": tourney_stats,
+            "twitch_username": row.get('twitch_username'),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -97,6 +102,29 @@ async def get_public_profile(
             status_code=500,
             detail=f"Error fetching profile: {str(e)}"
         )
+
+
+@router.get("/profile/public/{discord_id}/media")
+async def get_user_media(
+    discord_id: int,
+    offset: int = 0,
+    limit: int = 20,
+    db: asyncpg.Connection = Depends(get_db),
+):
+    """Get media uploaded by a user (public)."""
+    rows = await db.fetch(
+        """
+        SELECT m.id, m.user_id, m.title, m.description, m.media_type, m.file_url, m.created_at,
+               COALESCE(u.site_nickname, u.discord_username) AS username, u.avatar_url
+        FROM media_items m
+        JOIN users u ON u.id = m.user_id
+        WHERE u.discord_id = $1
+        ORDER BY m.created_at DESC
+        LIMIT $2 OFFSET $3
+        """,
+        discord_id, limit, offset,
+    )
+    return [dict(r) for r in rows]
 
 
 @router.get("/profile/debug")

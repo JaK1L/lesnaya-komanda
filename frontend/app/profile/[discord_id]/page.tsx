@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import axios from 'axios'
-import { UserPlus, Trophy, Star, Calendar, Copy, Check, ChevronLeft } from 'lucide-react'
+import { UserPlus, Trophy, Star, Calendar, Copy, Check, ChevronLeft, Edit2, X, Camera, Twitch, Image as ImageIcon, Award } from 'lucide-react'
 import { Navigation } from '../../../components/layout/Navigation'
 import { Footer } from '../../../components/layout/Footer'
 import { getImageUrl } from '../../../lib/imageUtils'
@@ -25,6 +25,27 @@ interface PublicProfile {
   total_xp: number
   joined_at: string | null
   tourney_stats: { played: number; wins: number }
+  twitch_username: string | null
+  is_hidden: boolean
+}
+
+interface MediaItem {
+  id: number
+  title: string | null
+  description: string | null
+  media_type: string
+  file_url: string
+  created_at: string
+}
+
+interface Achievement {
+  id: number
+  name: string
+  description: string
+  icon: string
+  category: string
+  points: number
+  completed_at: string
 }
 
 function getMyDiscordId(token: string | null): string | null {
@@ -42,20 +63,36 @@ export default function PublicProfilePage() {
   const [copied, setCopied] = useState(false)
   const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'friends'>('none')
   const [friendLoading, setFriendLoading] = useState(false)
+  const [tab, setTab] = useState<'media' | 'achievements'>('media')
+  const [media, setMedia] = useState<MediaItem[]>([])
+  const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [tabLoaded, setTabLoaded] = useState<Record<string, boolean>>({})
+
+  // Edit mode
+  const [editOpen, setEditOpen] = useState(false)
+  const [editNick, setEditNick] = useState('')
+  const [editBio, setEditBio] = useState('')
+  const [editHidden, setEditHidden] = useState(false)
+  const [editSaving, setEditSaving] = useState(false)
+  const [twitchInput, setTwitchInput] = useState('')
+  const [twitchSaving, setTwitchSaving] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const t = localStorage.getItem(TOKEN_KEY)
     setToken(t)
-    loadProfile()
+    loadProfile(t)
     if (t) loadFriendStatus(t)
   }, [discord_id])
 
-  const loadProfile = async () => {
+  const loadProfile = async (t?: string | null) => {
     try {
-      const res = await axios.get<PublicProfile>(`${API_URL}/api/profile/public/${discord_id}`)
+      const headers = t ? { Authorization: `Bearer ${t}` } : {}
+      const res = await axios.get<PublicProfile>(`${API_URL}/api/profile/public/${discord_id}`, { headers })
       setProfile(res.data)
     } catch (err: any) {
-      setError(err.response?.status === 404 ? 'Профиль не найден' : err.response?.status === 403 ? 'Профиль скрыт' : 'Ошибка загрузки')
+      const s = err.response?.status
+      setError(s === 404 ? 'Профиль не найден' : s === 403 ? 'Профиль скрыт' : 'Ошибка загрузки')
     } finally {
       setLoading(false)
     }
@@ -63,30 +100,96 @@ export default function PublicProfilePage() {
 
   const loadFriendStatus = async (t: string) => {
     try {
-      const res = await axios.get(`${API_URL}/api/friends/status/${discord_id}`, {
-        headers: { Authorization: `Bearer ${t}` }
-      })
+      const res = await axios.get(`${API_URL}/api/friends/status/${discord_id}`, { headers: { Authorization: `Bearer ${t}` } })
       setFriendStatus(res.data.status)
-    } catch { /* ignore */ }
+    } catch { }
   }
+
+  const loadMedia = async () => {
+    if (tabLoaded.media) return
+    try {
+      const res = await axios.get<MediaItem[]>(`${API_URL}/api/profile/public/${discord_id}/media`)
+      setMedia(res.data)
+      setTabLoaded(p => ({ ...p, media: true }))
+    } catch { }
+  }
+
+  const loadAchievements = async () => {
+    if (tabLoaded.achievements) return
+    try {
+      const res = await axios.get<Achievement[]>(`${API_URL}/api/achievements/user/${discord_id}?completed_only=true`)
+      setAchievements(res.data)
+      setTabLoaded(p => ({ ...p, achievements: true }))
+    } catch { }
+  }
+
+  useEffect(() => {
+    if (tab === 'media') loadMedia()
+    else loadAchievements()
+  }, [tab, discord_id])
 
   const sendFriendRequest = async () => {
     if (!token) return
     setFriendLoading(true)
     try {
-      await axios.post(`${API_URL}/api/friends/request/${discord_id}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      await axios.post(`${API_URL}/api/friends/request/${discord_id}`, {}, { headers: { Authorization: `Bearer ${token}` } })
       setFriendStatus('pending')
-    } catch { /* ignore */ } finally {
-      setFriendLoading(false)
-    }
+    } catch { } finally { setFriendLoading(false) }
   }
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const openEdit = () => {
+    if (!profile) return
+    setEditNick(profile.site_nickname ?? '')
+    setEditBio(profile.bio ?? '')
+    setEditHidden(profile.is_hidden ?? false)
+    setTwitchInput(profile.twitch_username ?? '')
+    setEditOpen(true)
+  }
+
+  const saveProfile = async () => {
+    if (!token) return
+    setEditSaving(true)
+    try {
+      const res = await axios.put<PublicProfile>(`${API_URL}/api/profile`, {
+        site_nickname: editNick || null,
+        bio: editBio || null,
+        is_hidden: editHidden,
+      }, { headers: { Authorization: `Bearer ${token}` } })
+      setProfile(p => p ? { ...p, ...res.data } : p)
+      setEditOpen(false)
+    } catch { } finally { setEditSaving(false) }
+  }
+
+  const uploadAvatar = async (file: File) => {
+    if (!token) return
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await axios.post<{ avatar_url: string }>(`${API_URL}/api/profile/avatar`, fd, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+      })
+      setProfile(p => p ? { ...p, avatar_url: res.data.avatar_url } : p)
+    } catch { }
+  }
+
+  const saveTwitch = async () => {
+    if (!token) return
+    setTwitchSaving(true)
+    try {
+      if (twitchInput.trim()) {
+        await axios.post(`${API_URL}/api/profile/twitch?twitch_username=${encodeURIComponent(twitchInput.trim())}`, {}, { headers: { Authorization: `Bearer ${token}` } })
+        setProfile(p => p ? { ...p, twitch_username: twitchInput.trim() } : p)
+      } else {
+        await axios.delete(`${API_URL}/api/profile/twitch`, { headers: { Authorization: `Bearer ${token}` } })
+        setProfile(p => p ? { ...p, twitch_username: null } : p)
+      }
+    } catch { } finally { setTwitchSaving(false) }
   }
 
   const myDiscordId = getMyDiscordId(token)
@@ -121,10 +224,8 @@ export default function PublicProfilePage() {
       <div className={styles.page}>
 
         <div className={styles.profileCard}>
-          {/* Banner */}
           <div className={styles.banner} />
 
-          {/* Avatar + Actions */}
           <div className={styles.avatarRow}>
             <div className={styles.avatarWrap}>
               {profile.avatar_url ? (
@@ -132,10 +233,18 @@ export default function PublicProfilePage() {
               ) : (
                 <div className={styles.avatarPlaceholder}>{displayName[0]?.toUpperCase()}</div>
               )}
+              {isOwnProfile && (
+                <>
+                  <button className={styles.avatarEditBtn} onClick={() => avatarInputRef.current?.click()}><Camera size={14} /></button>
+                  <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) uploadAvatar(e.target.files[0]) }} />
+                </>
+              )}
             </div>
 
             <div className={styles.avatarActions}>
-              {!isOwnProfile && token && (
+              {isOwnProfile ? (
+                <button className={styles.editBtn} onClick={openEdit}><Edit2 size={14} /> Редактировать</button>
+              ) : token && (
                 <button
                   className={`${styles.friendBtn} ${friendStatus !== 'none' ? styles.friendBtnDisabled : ''}`}
                   onClick={sendFriendRequest}
@@ -152,64 +261,127 @@ export default function PublicProfilePage() {
             </div>
           </div>
 
-          {/* Profile Info */}
           <div className={styles.profileInfo}>
             <div className={styles.nameRow}>
               <h1 className={styles.name}>{displayName}</h1>
               <span className={styles.levelBadge}><Star size={11} /> {profile.level}</span>
             </div>
-
             <div className={styles.handleRow}>
               @{profile.discord_username}
               {profile.forest_rank && <span className={styles.rank}> · {profile.forest_rank}</span>}
+              {profile.twitch_username && (
+                <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.twitchLink}>
+                  <Twitch size={12} /> {profile.twitch_username}
+                </a>
+              )}
             </div>
-
             <div className={styles.statsInline}>
               <span className={styles.statItem}><Trophy size={12} /> Турниров: {profile.tourney_stats?.played ?? 0}</span>
               <span className={styles.statItem}><Star size={12} /> Побед: {profile.tourney_stats?.wins ?? 0}</span>
               <span className={styles.statItem}>Рейтинг: {profile.rating}</span>
               {joinDate && <span className={styles.statItem}><Calendar size={12} /> с {joinDate}</span>}
             </div>
-
             {profile.bio && <p className={styles.bio}>{profile.bio}</p>}
           </div>
         </div>
 
-        {/* XP bar */}
         <div className={styles.xpCard}>
           <div className={styles.xpHeader}>
             <span>Опыт · Уровень {profile.level}</span>
             <span>{profile.current_xp} / {profile.level * 100} XP</span>
           </div>
-          <div className={styles.xpBar}>
-            <div className={styles.xpFill} style={{ width: `${xpPercent}%` }} />
-          </div>
+          <div className={styles.xpBar}><div className={styles.xpFill} style={{ width: `${xpPercent}%` }} /></div>
         </div>
 
-        {/* Stats */}
         <div className={styles.statsGrid}>
-          <div className={styles.statCard}>
-            <Star size={18} className={styles.statIcon} />
-            <div className={styles.statValue}>{profile.level}</div>
-            <div className={styles.statLabel}>Уровень</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statValue}>{profile.rating}</div>
-            <div className={styles.statLabel}>Рейтинг</div>
-          </div>
-          <div className={styles.statCard}>
-            <Trophy size={18} className={styles.statIcon} />
-            <div className={styles.statValue}>{profile.tourney_stats?.played ?? 0}</div>
-            <div className={styles.statLabel}>Турниров</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statValue}>{profile.tourney_stats?.wins ?? 0}</div>
-            <div className={styles.statLabel}>Побед</div>
-          </div>
+          <div className={styles.statCard}><Star size={18} className={styles.statIcon} /><div className={styles.statValue}>{profile.level}</div><div className={styles.statLabel}>Уровень</div></div>
+          <div className={styles.statCard}><div className={styles.statValue}>{profile.rating}</div><div className={styles.statLabel}>Рейтинг</div></div>
+          <div className={styles.statCard}><Trophy size={18} className={styles.statIcon} /><div className={styles.statValue}>{profile.tourney_stats?.played ?? 0}</div><div className={styles.statLabel}>Турниров</div></div>
+          <div className={styles.statCard}><div className={styles.statValue}>{profile.tourney_stats?.wins ?? 0}</div><div className={styles.statLabel}>Побед</div></div>
         </div>
+
+        {/* Tabs */}
+        <div className={styles.tabs}>
+          <button className={`${styles.tab} ${tab === 'media' ? styles.tabActive : ''}`} onClick={() => setTab('media')}><ImageIcon size={14} /> Медиа</button>
+          <button className={`${styles.tab} ${tab === 'achievements' ? styles.tabActive : ''}`} onClick={() => setTab('achievements')}><Award size={14} /> Достижения</button>
+        </div>
+
+        {tab === 'media' && (
+          <div className={styles.mediaGrid}>
+            {media.length === 0
+              ? <p className={styles.emptyText}>Нет загруженных медиа</p>
+              : media.map(m => (
+                <div key={m.id} className={styles.mediaCard}>
+                  {m.media_type === 'image' ? (
+                    <img src={getImageUrl(m.file_url) || ''} alt={m.title ?? ''} className={styles.mediaThumb} />
+                  ) : (
+                    <video src={getImageUrl(m.file_url) || ''} className={styles.mediaThumb} muted />
+                  )}
+                  {m.title && <p className={styles.mediaTitle}>{m.title}</p>}
+                </div>
+              ))
+            }
+          </div>
+        )}
+
+        {tab === 'achievements' && (
+          <div className={styles.achievGrid}>
+            {achievements.length === 0
+              ? <p className={styles.emptyText}>Нет достижений</p>
+              : achievements.map(a => (
+                <div key={a.id} className={styles.achievCard}>
+                  <div className={styles.achievIcon}>{a.icon}</div>
+                  <div className={styles.achievInfo}>
+                    <div className={styles.achievName}>{a.name}</div>
+                    <div className={styles.achievDesc}>{a.description}</div>
+                  </div>
+                  <div className={styles.achievPoints}>+{a.points}</div>
+                </div>
+              ))
+            }
+          </div>
+        )}
 
       </div>
+
+      {/* Edit Modal */}
+      {editOpen && (
+        <div className={styles.modalOverlay} onClick={() => setEditOpen(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <span>Редактировать профиль</span>
+              <button className={styles.modalClose} onClick={() => setEditOpen(false)}><X size={18} /></button>
+            </div>
+
+            <label className={styles.fieldLabel}>Никнейм</label>
+            <input className={styles.fieldInput} value={editNick} onChange={e => setEditNick(e.target.value)} placeholder={profile.discord_username} maxLength={32} />
+
+            <label className={styles.fieldLabel}>О себе</label>
+            <textarea className={styles.fieldTextarea} value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Расскажи о себе..." maxLength={300} rows={4} />
+
+            <label className={styles.fieldLabel}>Twitch</label>
+            <div className={styles.twitchRow}>
+              <input className={styles.fieldInput} value={twitchInput} onChange={e => setTwitchInput(e.target.value)} placeholder="twitch_username" />
+              <button className={styles.twitchSaveBtn} onClick={saveTwitch} disabled={twitchSaving}>
+                {profile.twitch_username && !twitchInput.trim() ? 'Отвязать' : 'Сохранить'}
+              </button>
+            </div>
+
+            <label className={styles.hiddenRow}>
+              <input type="checkbox" checked={editHidden} onChange={e => setEditHidden(e.target.checked)} />
+              Скрыть профиль
+            </label>
+
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelBtn} onClick={() => setEditOpen(false)}>Отмена</button>
+              <button className={styles.saveBtn} onClick={saveProfile} disabled={editSaving}>Сохранить</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </>
   )
 }
+
