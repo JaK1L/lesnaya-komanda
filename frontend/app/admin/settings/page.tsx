@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Settings, ChevronLeft, Save, AlertTriangle, CheckCircle, XCircle, Link, Send, Wrench, Info } from 'lucide-react'
+import { Settings, ChevronLeft, Save, AlertTriangle, CheckCircle, XCircle, Link, Wrench, Info } from 'lucide-react'
 import styles from './page.module.css'
 
 interface SiteSettings {
