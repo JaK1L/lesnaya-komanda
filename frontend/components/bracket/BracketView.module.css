@@ -156,3 +156,24 @@
   text-align: center;
   font-size: 14px;
 }
+
+/* ── Champion card ─────────────────────────────────────────── */
+.championCard {
+  width: 160px;
+  min-height: 64px;
+  border: 2px solid #4f9fff;
+  border-radius: 8px;
+  background: rgba(79, 159, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.championName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4f9fff;
+  word-break: break-word;
+}

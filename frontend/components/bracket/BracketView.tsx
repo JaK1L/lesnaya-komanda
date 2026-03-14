@@ -97,6 +97,10 @@ export default function BracketView({ matches, section = 'winners', onSelectWinn
   const rounds = getRounds(matches, section)
   if (!rounds.length) return <div className={styles.empty}>Сетка не сформирована</div>
 
+  const finalMatch = rounds[rounds.length - 1]?.[0]
+  const champion = finalMatch?.winner_name ?? null
+  const finalUnit = getUnit(rounds.length)
+
   return (
     <div className={styles.bracket}>
       {rounds.map((roundMatches, ri) => {
@@ -117,7 +121,6 @@ export default function BracketView({ matches, section = 'winners', onSelectWinn
               {roundMatches.map((m, mi) => (
                 <div key={m.id} className={styles.matchCell} style={{ height: unit }}>
                   <div className={styles.matchInner}>
-                    {/* Left connector lines (from previous round) */}
                     {r > 1 && (
                       <div className={styles.leftConn}>
                         <div className={styles.leftConnHoriz} />
@@ -133,7 +136,6 @@ export default function BracketView({ matches, section = 'winners', onSelectWinn
                       {...(onSelectWinner ? { onSelectWinner } : {})}
                       {...(onDropPlayer ? { onDropPlayer } : {})}
                     />
-                    {/* Right connector lines (to next round) */}
                     {!isLastRound && (
                       <div className={styles.rightConn}>
                         <div className={styles.rightConnHoriz} />
@@ -143,6 +145,12 @@ export default function BracketView({ matches, section = 'winners', onSelectWinn
                         }} />
                       </div>
                     )}
+                    {/* Winner connector (only for final match) */}
+                    {isLastRound && (
+                      <div className={styles.rightConn}>
+                        <div className={styles.rightConnHoriz} />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -150,6 +158,18 @@ export default function BracketView({ matches, section = 'winners', onSelectWinn
           </div>
         )
       })}
+
+      {/* Champion column */}
+      <div className={styles.roundCol}>
+        <div className={styles.roundLabel}>Победитель</div>
+        <div className={styles.matchesCol}>
+          <div className={styles.matchCell} style={{ height: finalUnit }}>
+            <div className={styles.championCard}>
+              <span className={styles.championName}>{champion ?? 'TBD'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
