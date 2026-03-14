@@ -345,13 +345,11 @@ export default function TournamentsPage() {
                   )}
                 </div>
 
-                {(t.status === 'active' || t.status === 'completed') && (
-                  <div className={styles.bracketSection}>
-                    <button className={styles.bracketBtn} onClick={() => openBracket(t)}>
-                      <Network size={15} /> Смотреть сетку
-                    </button>
-                  </div>
-                )}
+                <div className={styles.bracketSection}>
+                  <button className={styles.bracketBtn} onClick={() => openBracket(t)}>
+                    <Network size={15} /> Смотреть сетку
+                  </button>
+                </div>
               </article>
             ))
           )}
@@ -378,7 +376,21 @@ export default function TournamentsPage() {
               ) : bracketMatches.length === 0 ? (
                 <div style={{ padding: '3rem', textAlign: 'center', color: '#888' }}>Сетка ещё не сформирована организаторами</div>
               ) : (
-                <BracketView matches={bracketMatches} section="winners" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 32, padding: 16 }}>
+                  {(['winners', 'losers', 'grand_final'] as const)
+                    .filter(s => bracketMatches.some(m => m.section === s))
+                    .map(section => (
+                      <div key={section}>
+                        {bracketMatches.some(m => m.section === 'losers' || m.section === 'grand_final') && (
+                          <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            {{ winners: 'Победители', losers: 'Проигравшие', grand_final: 'Гранд-финал' }[section]}
+                          </div>
+                        )}
+                        <BracketView matches={bracketMatches} section={section} />
+                      </div>
+                    ))
+                  }
+                </div>
               )}
             </div>
           </div>
