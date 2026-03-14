@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Calendar, Trophy, Crown, ChevronDown, X, Users, Network } from 'lucide-react'
-import Link from 'next/link'
+import BracketView, { BracketMatch } from '../../components/bracket/BracketView'
 import { Navigation } from '../../components/layout'
 import { Footer } from '../../components/layout'
 import styles from './page.module.css'
@@ -187,10 +187,26 @@ export default function TournamentsPage() {
   const [descExpanded, setDescExpanded] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [regTarget, setRegTarget] = useState<Tournament | null>(null)
+  const [bracketTarget, setBracketTarget] = useState<Tournament | null>(null)
+  const [bracketMatches, setBracketMatches] = useState<BracketMatch[]>([])
+  const [bracketLoading, setBracketLoading] = useState(false)
 
   useEffect(() => {
     setToken(localStorage.getItem(TOKEN_KEY))
   }, [])
+
+  const openBracket = async (t: Tournament) => {
+    setBracketTarget(t)
+    setBracketLoading(true)
+    setBracketMatches([])
+    try {
+      const res = await fetch(`${API_URL}/api/tournaments/${t.id}/bracket`)
+      const data = await res.json()
+      setBracketMatches(Array.isArray(data) ? data : [])
+    } catch { /* ignore */ } finally {
+      setBracketLoading(false)
+    }
+  }
 
   const fetchTournaments = useCallback(async () => {
     setLoading(true)
@@ -331,9 +347,9 @@ export default function TournamentsPage() {
 
                 {(t.status === 'active' || t.status === 'completed') && (
                   <div className={styles.bracketSection}>
-                    <Link href={`/tournaments/${t.id}/bracket`} className={styles.bracketBtn}>
+                    <button className={styles.bracketBtn} onClick={() => openBracket(t)}>
                       <Network size={15} /> Смотреть сетку
-                    </Link>
+                    </button>
                   </div>
                 )}
               </article>
@@ -342,6 +358,32 @@ export default function TournamentsPage() {
         </div>
       </main>
       <Footer />
+
+      {/* Bracket modal */}
+      {bracketTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={() => setBracketTarget(null)}>
+          <div style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 900, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e0e0e0' }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111' }}>
+                <Network size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8 }} />
+                {bracketTarget.title} — Сетка
+              </h3>
+              <button onClick={() => setBracketTarget(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}><X size={18} /></button>
+            </div>
+            <div style={{ overflow: 'auto', flex: 1 }}>
+              {bracketLoading ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#888' }}>Загрузка...</div>
+              ) : bracketMatches.length === 0 ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#888' }}>Сетка ещё не сформирована организаторами</div>
+              ) : (
+                <BracketView matches={bracketMatches} section="winners" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {regTarget && (
         <RegistrationModal

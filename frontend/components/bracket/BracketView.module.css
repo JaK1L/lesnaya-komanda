@@ -1,0 +1,158 @@
+.bracket {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding: 16px 24px;
+  gap: 0;
+  min-width: max-content;
+  background: #f0f2f5;
+}
+
+.roundCol {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.roundLabel {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  padding-bottom: 8px;
+  width: 196px;
+}
+
+.matchesCol {
+  display: flex;
+  flex-direction: column;
+}
+
+.matchCell {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.matchInner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+}
+
+/* ── Match card ─────────────────────────────────────────────── */
+.matchCard {
+  width: 160px;
+  flex-shrink: 0;
+  border: 1px solid #c8ccd0;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.divider {
+  height: 1px;
+  background: #d8dde3;
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  height: 32px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #222;
+  background: #ffffff;
+  gap: 4px;
+  user-select: none;
+  transition: background 0.1s;
+}
+
+.slot.empty {
+  color: #bbb;
+  font-style: italic;
+}
+
+.slot.winner {
+  background: #d4edda;
+  color: #155724;
+  font-weight: 700;
+}
+
+.slot.loser {
+  background: #f8d7da;
+  color: #721c24;
+  opacity: 0.75;
+}
+
+.slotName {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slotScore {
+  font-weight: 700;
+  font-size: 13px;
+  min-width: 16px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Connector lines ───────────────────────────────────────── */
+.leftConn {
+  width: 16px;
+  height: 100%;
+  position: relative;
+  flex-shrink: 0;
+}
+.leftConnHoriz {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #aaa;
+}
+.leftConnVert {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  background: #aaa;
+}
+
+.rightConn {
+  width: 20px;
+  height: 100%;
+  position: relative;
+  flex-shrink: 0;
+}
+.rightConnHoriz {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #aaa;
+}
+.rightConnVert {
+  position: absolute;
+  right: 0;
+  width: 1px;
+  background: #aaa;
+}
+
+.empty {
+  color: #888;
+  padding: 2rem;
+  text-align: center;
+  font-size: 14px;
+}
