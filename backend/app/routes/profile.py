@@ -36,7 +36,6 @@ async def get_public_profile(
                 site_nickname,
                 discord_username,
                 avatar_url,
-                banner_url,
                 bio,
                 is_hidden,
                 forest_rank,
@@ -63,12 +62,21 @@ async def get_public_profile(
 
         user_id = row['id']
 
-        # Roles
-        roles_rows = await db.fetch(
-            "SELECT r.id, r.name, r.color FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = $1 ORDER BY r.name",
-            user_id
-        )
-        roles = [{"id": r["id"], "name": r["name"], "color": r.get("color", "#9147ff")} for r in roles_rows]
+        # banner_url — optional column, may not exist yet
+        try:
+            banner_url = await db.fetchval("SELECT banner_url FROM users WHERE id = $1", user_id)
+        except Exception:
+            banner_url = None
+
+        # Roles — tables may not exist yet
+        try:
+            roles_rows = await db.fetch(
+                "SELECT r.id, r.name, r.color FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = $1 ORDER BY r.name",
+                user_id
+            )
+            roles = [{"id": r["id"], "name": r["name"], "color": r.get("color", "#9147ff")} for r in roles_rows]
+        except Exception:
+            roles = []
 
         # Tournament stats
         tourney_stats = {"played": 0, "wins": 0}
@@ -90,7 +98,7 @@ async def get_public_profile(
             "site_nickname": row['site_nickname'],
             "discord_username": row['discord_username'],
             "avatar_url": row['avatar_url'],
-            "banner_url": row.get('banner_url'),
+            "banner_url": banner_url,
             "bio": row['bio'],
             "is_hidden": row['is_hidden'],
             "forest_rank": row['forest_rank'],
