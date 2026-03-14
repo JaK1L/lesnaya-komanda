@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
-import { Upload, X, Image as ImageIcon, Film, Link } from 'lucide-react'
+import { Upload, X, Image as ImageIcon, Film, Link, Pencil, Trash2 } from 'lucide-react'
 import { Navigation } from '../../components/layout/Navigation'
 import { Footer } from '../../components/layout/Footer'
 import { uploadImage } from '../../lib/imageUpload'
@@ -109,6 +109,12 @@ export default function MediaPage() {
   const [saving, setSaving] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // edit state
+  const [editing, setEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
+
   const myUserId = token ? (() => {
     try { return JSON.parse(atob(token.split('.')[1])).user_id } catch { return null }
   })() : null
@@ -181,6 +187,28 @@ export default function MediaPage() {
     fetchMedia()
   }
 
+  const startEdit = (item: MediaItem) => {
+    setEditTitle(item.title)
+    setEditDesc(item.description || '')
+    setEditing(true)
+  }
+
+  const handleEditSave = async () => {
+    if (!selected || !token || !editTitle.trim()) return
+    setEditSaving(true)
+    try {
+      const res = await axios.patch<MediaItem>(
+        `${API_URL}/api/media/${selected.id}`,
+        { title: editTitle.trim(), description: editDesc || null },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      setItems(prev => prev.map(i => i.id === selected.id ? res.data : i))
+      setSelected(res.data)
+      setEditing(false)
+    } catch { alert('Ошибка сохранения') }
+    finally { setEditSaving(false) }
+  }
+
   const canSave = tab === 'image'
     ? !!imgFile && !!formTitle.trim()
     : !!videoPreview && !!formTitle.trim()
@@ -230,9 +258,9 @@ export default function MediaPage() {
 
       {/* Lightbox */}
       {selected && (
-        <div className={styles.overlay} onClick={() => setSelected(null)}>
+        <div className={styles.overlay} onClick={() => { setSelected(null); setEditing(false) }}>
           <div className={styles.lightbox} onClick={e => e.stopPropagation()}>
-            <button className={styles.closeBtn} onClick={() => setSelected(null)}><X size={20} /></button>
+            <button className={styles.closeBtn} onClick={() => { setSelected(null); setEditing(false) }}><X size={20} /></button>
             {selected.media_type === 'image' ? (
               <img src={selected.file_url.startsWith('http') ? selected.file_url : `${API_URL}${selected.file_url}`} alt={selected.title} className={styles.lightboxImg} />
             ) : (() => {
@@ -253,11 +281,40 @@ export default function MediaPage() {
               )
             })()}
             <div className={styles.lightboxMeta}>
-              <h3>{selected.title}</h3>
-              {selected.description && <p>{selected.description}</p>}
-              <span className={styles.lightboxUser}>@{selected.username}</span>
-              {myUserId === selected.user_id && (
-                <button className={styles.deleteBtn} onClick={() => handleDelete(selected)}>Удалить</button>
+              {editing ? (
+                <>
+                  <input
+                    className={styles.editInput}
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    placeholder="Название"
+                  />
+                  <textarea
+                    className={styles.editInput}
+                    value={editDesc}
+                    onChange={e => setEditDesc(e.target.value)}
+                    placeholder="Описание"
+                    rows={2}
+                  />
+                  <div className={styles.editActions}>
+                    <button className={styles.editSaveBtn} onClick={handleEditSave} disabled={editSaving || !editTitle.trim()}>
+                      {editSaving ? 'Сохранение...' : 'Сохранить'}
+                    </button>
+                    <button className={styles.editCancelBtn} onClick={() => setEditing(false)}>Отмена</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3>{selected.title}</h3>
+                  {selected.description && <p>{selected.description}</p>}
+                  <span className={styles.lightboxUser}>@{selected.username}</span>
+                  {myUserId === selected.user_id && (
+                    <div className={styles.itemActions}>
+                      <button className={styles.editBtn} onClick={() => startEdit(selected)}><Pencil size={14} /> Изменить</button>
+                      <button className={styles.deleteBtn} onClick={() => handleDelete(selected)}><Trash2 size={14} /> Удалить</button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

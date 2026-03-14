@@ -152,6 +152,47 @@ async def upload_media(
     )
 
 
+# ── Edit ─────────────────────────────────────────────────────────────────────
+
+class MediaUpdate(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+
+@router.patch("/media/{item_id}", response_model=MediaItemOut)
+async def update_media(
+    item_id: int,
+    payload: MediaUpdate,
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    row = await db.fetchrow("SELECT user_id FROM media_items WHERE id = $1", item_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Not found")
+    if row["user_id"] != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    if not payload.title.strip():
+        raise HTTPException(status_code=400, detail="title is required")
+
+    updated = await db.fetchrow(
+        """UPDATE media_items SET title = $1, description = $2
+           WHERE id = $3
+           RETURNING id, user_id, title, description, media_type, file_url, created_at""",
+        payload.title.strip(), payload.description, item_id,
+    )
+    username = await db.fetchval("SELECT COALESCE(display_name, discord_username, email) FROM users WHERE id = $1", updated["user_id"])
+    return MediaItemOut(
+        id=updated["id"],
+        user_id=updated["user_id"],
+        username=username or "unknown",
+        title=updated["title"],
+        description=updated["description"],
+        media_type=updated["media_type"],
+        file_url=updated["file_url"],
+        created_at=updated["created_at"].isoformat(),
+    )
+
+
 # ── Delete ───────────────────────────────────────────────────────────────────
 
 @router.delete("/media/{item_id}")

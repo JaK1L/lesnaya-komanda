@@ -236,9 +236,30 @@
 
 .lightboxUser { font-size: 0.85rem; color: var(--color-accent); }
 
-.deleteBtn {
-  align-self: flex-start;
+.itemActions {
+  display: flex;
+  gap: 8px;
   margin-top: 8px;
+}
+
+.editBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: #2a3a4a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.editBtn:hover { background: #3a4f62; }
+
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   padding: 6px 14px;
   background: #c0392b;
   color: #fff;
@@ -248,6 +269,48 @@
   cursor: pointer;
 }
 .deleteBtn:hover { background: #a93226; }
+
+.editInput {
+  width: 100%;
+  padding: 8px 12px;
+  background: #0f1218;
+  border: 1px solid #2a2f36;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.editInput:focus { outline: none; border-color: #4f9fff; }
+
+.editActions {
+  display: flex;
+  gap: 8px;
+}
+
+.editSaveBtn {
+  padding: 7px 16px;
+  background: #4f9fff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.editSaveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.editSaveBtn:not(:disabled):hover { background: #3a7fc9; }
+
+.editCancelBtn {
+  padding: 7px 16px;
+  background: transparent;
+  color: #8899aa;
+  border: 1px solid #2a2f36;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.editCancelBtn:hover { color: #fff; border-color: #4f9fff; }
 
 /* Lightbox embed */
 .lightboxEmbed {
