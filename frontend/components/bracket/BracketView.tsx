@@ -95,11 +95,10 @@ function MatchCard({
 }
 
 // SVG connectors drawn between two adjacent columns
-function ConnectorSvg({ fromCount, toCount, fromUnit, toUnit }: {
+function ConnectorSvg({ fromCount, toCount, fromUnit }: {
   fromCount: number
   toCount: number
   fromUnit: number
-  toUnit: number
 }) {
   const svgH = fromUnit * fromCount
   const stroke = '#3a4452'
@@ -173,8 +172,7 @@ export default function BracketView({ matches, section = 'winners', onSelectWinn
         const r = ri + 1
         const unit = getUnit(r)
         const isLastRound = ri === rounds.length - 1
-        const nextUnit = getUnit(r + 1)
-        const totalRounds = rounds.length
+const totalRounds = rounds.length
 
         const label =
           isLastRound && totalRounds > 1 ? 'Финал'
@@ -211,7 +209,6 @@ export default function BracketView({ matches, section = 'winners', onSelectWinn
                   fromCount={roundMatches.length}
                   toCount={Math.ceil(roundMatches.length / 2)}
                   fromUnit={unit}
-                  toUnit={nextUnit}
                 />
               </div>
             )}
