@@ -24,26 +24,23 @@ const NAV_ITEMS = [
   { label: 'Мерч', href: '/merch' },
 ]
 
-function getDiscordIdFromToken(): string | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const t = localStorage.getItem('lesnaya_token')
-    if (!t) return null
-    return String(JSON.parse(atob(t.split('.')[1])).discord_id ?? '')
-  } catch { return null }
-}
-
 export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loginModalOpen, setLoginModalOpen] = useState(false)
-  const [discordId, setDiscordId] = useState<string | null>(null)
   const navRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const router = useRouter()
 
-  useEffect(() => {
-    if (isAuthenticated) setDiscordId(getDiscordIdFromToken())
-  }, [isAuthenticated])
+  const handleProfileClick = () => {
+    try {
+      const t = localStorage.getItem('lesnaya_token')
+      if (t) {
+        const id = JSON.parse(atob(t.split('.')[1])).discord_id
+        if (id) { router.push(`/profile/${id}`); return }
+      }
+    } catch { /* ignore */ }
+    router.push('/profile')
+  }
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen)
@@ -126,9 +123,9 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
           <div className={styles.headerBtns}>
             {isAuthenticated ? (
               <>
-                <Link href={discordId ? `/profile/${discordId}` : '/profile'} className={`${styles.btn} ${styles.linkButton}`}>
+                <button onClick={handleProfileClick} className={`${styles.btn} ${styles.linkButton}`}>
                   Профиль
-                </Link>
+                </button>
                 <button onClick={onLogout} className={`${styles.btn} ${styles.loginButton}`}>
                   Выйти
                 </button>
