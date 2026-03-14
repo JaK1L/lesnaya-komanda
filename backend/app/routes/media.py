@@ -33,6 +33,13 @@ class MediaItemOut(BaseModel):
     created_at: datetime
 
 
+class MediaUrlCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    media_type: str  # image | youtube | twitch | tiktok
+    file_url: str    # final URL (ImgBB for images, original for videos)
+
+
 # ── Public list ─────────────────────────────────────────────────────────────
 
 @router.get("/media", response_model=List[MediaItemOut])
@@ -56,6 +63,37 @@ async def list_media(
         limit, offset,
     )
     return [MediaItemOut(**dict(r)) for r in rows]
+
+
+# ── Add by URL (images via ImgBB, videos by link) ────────────────────────────
+
+@router.post("/media/add-url", response_model=MediaItemOut)
+async def add_media_url(
+    payload: MediaUrlCreate,
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    allowed_types = ("image", "youtube", "twitch", "tiktok")
+    if payload.media_type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"media_type must be one of {allowed_types}")
+    if not payload.title.strip():
+        raise HTTPException(status_code=400, detail="title is required")
+    if not payload.file_url.strip():
+        raise HTTPException(status_code=400, detail="file_url is required")
+
+    row = await db.fetchrow(
+        """
+        INSERT INTO media_items (user_id, title, description, media_type, file_url)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, user_id, title, description, media_type, file_url, created_at
+        """,
+        current_user.id, payload.title.strip(), payload.description, payload.media_type, payload.file_url.strip(),
+    )
+    user_row = await db.fetchrow(
+        "SELECT COALESCE(site_nickname, discord_username) AS username, avatar_url FROM users WHERE id = $1",
+        current_user.id,
+    )
+    return MediaItemOut(**dict(row), username=user_row["username"], avatar_url=user_row["avatar_url"])
 
 
 # ── Upload ───────────────────────────────────────────────────────────────────

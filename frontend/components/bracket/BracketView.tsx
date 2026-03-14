@@ -24,11 +24,14 @@ interface Props {
   adminMode?: boolean
 }
 
-const MATCH_H = 64   // px per match card
-const BASE_GAP = 12  // px gap between round-1 matches
+const CARD_W = 168   // match card width
+const CARD_H = 68    // match card height (2 slots × 32 + 4 divider)
+const GAP_R1 = 16    // gap between round-1 cards
+const CONN_W = 32    // horizontal connector width per side
+const COL_W = CARD_W + CONN_W * 2  // total column width including connectors
 
 function getUnit(round: number) {
-  return (MATCH_H + BASE_GAP) * Math.pow(2, round - 1)
+  return (CARD_H + GAP_R1) * Math.pow(2, round - 1)
 }
 
 function getRounds(matches: BracketMatch[], section: string): BracketMatch[][] {
@@ -93,13 +96,81 @@ function MatchCard({
   )
 }
 
+// SVG connectors drawn between two adjacent columns
+function ConnectorSvg({ fromCount, toCount, fromUnit, toUnit }: {
+  fromCount: number
+  toCount: number
+  fromUnit: number
+  toUnit: number
+}) {
+  const svgH = fromUnit * fromCount
+  const stroke = '#3a4452'
+  const lines: React.ReactNode[] = []
+
+  for (let i = 0; i < toCount; i++) {
+    // center-y of the output (next round) match
+    const outCY = toUnit * i + toUnit / 2
+
+    // two input matches feeding this output
+    const topIdx = i * 2
+    const botIdx = i * 2 + 1
+    const topCY = fromUnit * topIdx + fromUnit / 2
+    const botCY = fromUnit * botIdx + fromUnit / 2
+    const midY = (topCY + botCY) / 2
+
+    // from top match → right, down to mid, across to output
+    lines.push(
+      <polyline
+        key={`t${i}`}
+        points={`0,${topCY} ${CONN_W},${topCY} ${CONN_W},${midY}`}
+        fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+      />
+    )
+    // from bot match → right, up to mid
+    lines.push(
+      <polyline
+        key={`b${i}`}
+        points={`0,${botCY} ${CONN_W},${botCY} ${CONN_W},${midY}`}
+        fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+      />
+    )
+    // vertical cap dot at midY
+    lines.push(
+      <line key={`v${i}`} x1={CONN_W} y1={midY} x2={CONN_W * 2} y2={midY}
+        stroke={stroke} strokeWidth="1.5" strokeLinecap="round" />
+    )
+  }
+
+  return (
+    <svg
+      width={CONN_W * 2}
+      height={svgH}
+      style={{ flexShrink: 0, display: 'block' }}
+      overflow="visible"
+    >
+      {lines}
+    </svg>
+  )
+}
+
+// Connector from final match to champion card
+function FinalConnector({ unit }: { unit: number }) {
+  const cy = unit / 2
+  return (
+    <svg width={CONN_W} height={unit} style={{ flexShrink: 0, display: 'block' }} overflow="visible">
+      <line x1={0} y1={cy} x2={CONN_W} y2={cy}
+        stroke="#3a4452" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export default function BracketView({ matches, section = 'winners', onSelectWinner, onDropPlayer, adminMode }: Props) {
   const rounds = getRounds(matches, section)
   if (!rounds.length) return <div className={styles.empty}>Сетка не сформирована</div>
 
   const finalMatch = rounds[rounds.length - 1]?.[0]
   const champion = finalMatch?.winner_name ?? null
-  const finalUnit = getUnit(rounds.length)
+  const lastUnit = getUnit(rounds.length)
 
   return (
     <div className={styles.bracket}>
@@ -107,66 +178,58 @@ export default function BracketView({ matches, section = 'winners', onSelectWinn
         const r = ri + 1
         const unit = getUnit(r)
         const isLastRound = ri === rounds.length - 1
+        const nextUnit = getUnit(r + 1)
         const totalRounds = rounds.length
 
-        const roundLabel =
+        const label =
           isLastRound && totalRounds > 1 ? 'Финал'
           : r === totalRounds - 1 && totalRounds > 2 ? 'Полуфинал'
           : `Раунд ${r}`
 
         return (
-          <div key={r} className={styles.roundCol}>
-            <div className={styles.roundLabel}>{roundLabel}</div>
-            <div className={styles.matchesCol}>
-              {roundMatches.map((m, mi) => (
-                <div key={m.id} className={styles.matchCell} style={{ height: unit }}>
-                  <div className={styles.matchInner}>
-                    {r > 1 && (
-                      <div className={styles.leftConn}>
-                        <div className={styles.leftConnHoriz} />
-                        <div className={styles.leftConnVert} style={{
-                          top: mi % 2 === 0 ? '50%' : 0,
-                          bottom: mi % 2 === 0 ? 0 : '50%',
-                        }} />
-                      </div>
-                    )}
+          <div key={r} style={{ display: 'flex', alignItems: 'flex-start' }}>
+            {/* Column */}
+            <div className={styles.roundCol}>
+              <div className={styles.roundLabel}>{label}</div>
+              <div className={styles.matchesCol}>
+                {roundMatches.map(m => (
+                  <div key={m.id} style={{ height: unit, display: 'flex', alignItems: 'center' }}>
                     <MatchCard
                       match={m}
                       {...(adminMode ? { adminMode: true } : {})}
                       {...(onSelectWinner ? { onSelectWinner } : {})}
                       {...(onDropPlayer ? { onDropPlayer } : {})}
                     />
-                    {!isLastRound && (
-                      <div className={styles.rightConn}>
-                        <div className={styles.rightConnHoriz} />
-                        <div className={styles.rightConnVert} style={{
-                          top: mi % 2 === 0 ? '50%' : 0,
-                          bottom: mi % 2 === 0 ? 0 : '50%',
-                        }} />
-                      </div>
-                    )}
-                    {/* Winner connector (only for final match) */}
-                    {isLastRound && (
-                      <div className={styles.rightConn}>
-                        <div className={styles.rightConnHoriz} />
-                      </div>
-                    )}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+
+            {/* Connector to next round OR to champion */}
+            {isLastRound ? (
+              <div style={{ marginTop: 28 }}>
+                <FinalConnector unit={lastUnit} />
+              </div>
+            ) : (
+              <div style={{ marginTop: 28 }}>
+                <ConnectorSvg
+                  fromCount={roundMatches.length}
+                  toCount={Math.ceil(roundMatches.length / 2)}
+                  fromUnit={unit}
+                  toUnit={nextUnit}
+                />
+              </div>
+            )}
           </div>
         )
       })}
 
-      {/* Champion column */}
+      {/* Champion */}
       <div className={styles.roundCol}>
         <div className={styles.roundLabel}>Победитель</div>
-        <div className={styles.matchesCol}>
-          <div className={styles.matchCell} style={{ height: finalUnit }}>
-            <div className={styles.championCard}>
-              <span className={styles.championName}>{champion ?? 'TBD'}</span>
-            </div>
+        <div style={{ height: lastUnit, display: 'flex', alignItems: 'center' }}>
+          <div className={styles.championCard}>
+            <span className={styles.championName}>{champion ?? 'TBD'}</span>
           </div>
         </div>
       </div>
