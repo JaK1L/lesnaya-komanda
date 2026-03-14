@@ -52,6 +52,42 @@
   margin-left: 0.25rem;
 }
 
+/* Inputs inside FormField */
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  padding: 0.75rem;
+  background: #1a1e24;
+  border: 1px solid #2a2f36;
+  border-radius: 8px;
+  color: #e0e6ee;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: #4f9fff;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #3a4452;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.field select option {
+  background: #1a1e24;
+}
+
 /* Input with error state */
 .field:has(.error) input,
 .field:has(.error) textarea,
