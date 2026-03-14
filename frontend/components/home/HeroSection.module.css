@@ -272,6 +272,22 @@
   color: var(--color-white-64);
 }
 
+.eventActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  background: #4f9fff;
+  color: #fff;
+  border-radius: 0;
+  text-decoration: none;
+  letter-spacing: 0.03em;
+  transition: background 0.2s;
+}
+.eventActionBtn:hover { background: #3a7fc9; }
+
 .eventTgLink {
   display: inline-flex;
   align-items: center;

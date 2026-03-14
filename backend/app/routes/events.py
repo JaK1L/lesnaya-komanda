@@ -72,7 +72,7 @@ async def list_events(
     params = []
     
     if upcoming_only:
-        conditions.append("(e.event_date > NOW() OR e.event_date IS NULL)")
+        conditions.append("(date_trunc('day', e.event_date) >= date_trunc('day', NOW()) OR e.event_date IS NULL)")
     
     # Скрываем истекшие события
     conditions.append("(e.expires_at IS NULL OR e.expires_at > NOW())")

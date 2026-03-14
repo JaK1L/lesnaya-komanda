@@ -17,6 +17,8 @@ interface Event {
   registered_count: number
   can_register: boolean
   telegram_url: string | null
+  button_url: string | null
+  button_label: string | null
 }
 
 export function HeroSection() {
@@ -165,6 +167,11 @@ export function HeroSection() {
                       </div>
                       <div className={styles.eventCardActions}>
                         <span className={styles.eventCount}>{ev.registered_count} чел.</span>
+                        {ev.button_url && ev.button_label && (
+                          <a href={ev.button_url} target="_blank" rel="noopener noreferrer" className={styles.eventActionBtn}>
+                            {ev.button_label}
+                          </a>
+                        )}
                         {ev.telegram_url && (
                           <a href={ev.telegram_url} target="_blank" rel="noopener noreferrer" className={styles.eventTgLink}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
