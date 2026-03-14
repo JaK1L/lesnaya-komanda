@@ -1,158 +1,249 @@
+.container {
+  min-height: calc(100vh - 72px);
+  padding: var(--page-padding-y) var(--page-padding-x);
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
 .hero {
-  text-align: center;
-  padding: 4rem 0;
-  margin-bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .title {
-  font-family: 'Unbounded', sans-serif;
-  font-size: 3rem;
+  font-size: 48px;
   font-weight: 900;
-  margin-bottom: 1rem;
-  color: var(--accent);
+  color: var(--color-white);
+  margin: 0;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
-  font-size: 1.25rem;
-  color: #888;
-  max-width: 600px;
-  margin: 0 auto;
+  font-size: 18px;
+  color: var(--color-white-64);
+  margin: 0;
 }
 
-.section {
-  margin-bottom: 4rem;
+/* Loading */
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 4rem;
 }
 
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #2a2f36;
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Empty */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 5rem 2rem;
+  color: var(--color-white-64);
+  text-align: center;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-white);
+}
+
+.empty span {
+  font-size: 14px;
+}
+
+/* Grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
 }
 
+/* Card */
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--gray-light);
+  background: #1a1e24;
+  border: 1px solid #2a2f36;
   border-radius: 12px;
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  border-color: #3a4452;
 }
 
-.cardImage {
+.cardImg {
+  position: relative;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  background: #0f1218;
+}
+
+.cardImg img {
   width: 100%;
-  height: 300px;
+  height: 100%;
   object-fit: cover;
-  background: #f5f5f5;
+  transition: transform 0.3s;
 }
 
-.cardContent {
-  padding: 1.5rem;
+.card:hover .cardImg img {
+  transform: scale(1.04);
+}
+
+.imgPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3a4452;
+}
+
+.badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(79, 159, 255, 0.15);
+  border: 1px solid rgba(79, 159, 255, 0.3);
+  color: #4f9fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.cardBody {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .cardTitle {
-  font-size: 1.25rem;
+  margin: 0;
+  font-size: 16px;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  color: var(--color-white);
 }
 
-.cardDescription {
-  color: #888;
-  font-size: 0.95rem;
-  margin-bottom: 1rem;
+.cardDesc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-white-64);
   line-height: 1.5;
+}
+
+.sizes {
+  margin: 0;
+  font-size: 12px;
+  color: #8899aa;
 }
 
 .cardFooter {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding-top: 1rem;
-  border-top: 1px solid var(--gray-light);
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #2a2f36;
 }
 
 .price {
-  font-size: 1.5rem;
+  font-size: 22px;
+  font-weight: 900;
+  color: #4f9fff;
+}
+
+.buyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #4f9fff;
+  color: #fff;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--accent);
+  text-decoration: none;
+  border-radius: 0;
+  transition: background 0.15s;
+  white-space: nowrap;
 }
 
-.sizes {
-  font-size: 0.85rem;
-  color: #888;
-}
+.buyBtn:hover { background: #3a7fc9; }
 
-.loading,
-.error,
-.empty {
+.stockWarning {
+  font-size: 12px;
+  color: #ff9800;
+  background: rgba(255, 152, 0, 0.08);
+  border: 1px solid rgba(255, 152, 0, 0.25);
+  border-radius: 4px;
+  padding: 4px 10px;
   text-align: center;
-  padding: 4rem 2rem;
-  font-size: 1.25rem;
-  color: #888;
 }
 
-.error {
-  color: #e53935;
-}
-
+/* CTA */
 .cta {
-  text-align: center;
-  padding: 4rem 0;
-  margin-top: 4rem;
-}
-
-.ctaCard {
-  background: var(--card-bg);
-  border: 1px solid var(--gray-light);
+  background: #1a1e24;
+  border: 1px solid #2a2f36;
   border-radius: 12px;
-  padding: 3rem;
-  max-width: 600px;
-  margin: 0 auto;
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
 }
 
 .ctaTitle {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--color-white);
 }
 
 .ctaText {
-  color: #888;
-  margin-bottom: 2rem;
+  margin: 0;
+  font-size: 15px;
+  color: var(--color-white-64);
+  max-width: 480px;
   line-height: 1.6;
 }
 
-.ctaButton {
+.ctaBtn {
   display: inline-block;
-  padding: 1rem 2rem;
-  background: var(--accent);
-  color: white;
+  padding: 12px 28px;
+  background: #4f9fff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
   text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: opacity 0.2s;
+  border-radius: 0;
+  transition: background 0.15s;
 }
 
-.ctaButton:hover {
-  opacity: 0.9;
-}
+.ctaBtn:hover { background: #3a7fc9; }
 
 @media (max-width: 768px) {
-  .title {
-    font-size: 2rem;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  .hero {
-    padding: 2rem 0;
-  }
+  .title { font-size: 32px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .cta { padding: 28px 20px; }
 }

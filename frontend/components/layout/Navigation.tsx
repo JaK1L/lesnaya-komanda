@@ -21,7 +21,7 @@ const NAV_ITEMS = [
   { label: 'Медиа', href: '/media' },
   { label: 'О нас', href: '/about' },
   { label: 'Соц. сети', href: '/social' },
-  { label: 'Магазин', href: '/shop' },
+  { label: 'Мерч', href: '/merch' },
 ]
 
 export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {

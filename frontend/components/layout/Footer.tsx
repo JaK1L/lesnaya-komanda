@@ -26,7 +26,7 @@ const SOCIAL_LINKS = [
 const FOOTER_LINKS = [
   { label: 'О нас',     href: '/#about' },
   { label: 'Стримы',    href: '/#streams' },
-  { label: 'Магазин',   href: '/#shop' },
+  { label: 'Мерч',      href: '/merch' },
   { label: 'Политика',  href: '/privacy' },
 ]
 

@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { Navigation, Footer } from '../../components/layout'
+import { Package, ShoppingBag, Gift } from 'lucide-react'
+import { Navigation } from '../../components/layout/Navigation'
+import { Footer } from '../../components/layout/Footer'
 import styles from './page.module.css'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const TOKEN_KEY = 'lesnaya_token'
 
 interface MerchItem {
   id: number
@@ -14,136 +17,104 @@ interface MerchItem {
   price: number
   image_url: string | null
   category: string | null
+  in_stock: boolean
+  stock_quantity?: number
   sizes: string | null
 }
 
 export default function MerchPage() {
   const [items, setItems] = useState<MerchItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
+    setToken(localStorage.getItem(TOKEN_KEY))
     fetchMerch()
   }, [])
 
   const fetchMerch = async () => {
     try {
       setLoading(true)
-      setError(null)
-      const response = await axios.get<MerchItem[]>(`${API_URL}/api/merch`)
-      setItems(response.data)
-    } catch (err) {
-      console.error('Error fetching merch:', err)
-      setError('Не удалось загрузить товары')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
-    return (
-      <>
-        <Navigation
-          apiUrl={API_URL}
-          isAuthenticated={false}
-          onLogout={() => {}}
-        />
-        <main className="container">
-          <div className={styles.loading}>Загрузка товаров...</div>
-          <Footer />
-        </main>
-      </>
-    )
-  }
-
-  if (error) {
-    return (
-      <>
-        <Navigation
-          apiUrl={API_URL}
-          isAuthenticated={false}
-          onLogout={() => {}}
-        />
-        <main className="container">
-          <div className={styles.error}>{error}</div>
-          <Footer />
-        </main>
-      </>
-    )
+      const res = await axios.get<MerchItem[]>(`${API_URL}/api/merch`)
+      setItems(res.data.filter(i => i.in_stock))
+    } catch { } finally { setLoading(false) }
   }
 
   return (
     <>
       <Navigation
+        isAuthenticated={!!token}
+        onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }}
         apiUrl={API_URL}
-        isAuthenticated={false}
-        onLogout={() => {}}
       />
-      
-      <main className="container">
+      <div className={styles.container}>
         <div className={styles.hero}>
-          <h1 className={styles.title}>МАГАЗИН</h1>
-          <p className={styles.subtitle}>
-            Официальный мерч Лесной Команды. Поддержи команду стильно!
-          </p>
+          <h1 className={styles.title}>МЕРЧ ЛЕСНОЙ КОМАНДЫ</h1>
+          <p className={styles.subtitle}>Поддержи команду — выгляди как лесной боец</p>
         </div>
 
-        {items.length === 0 ? (
+        {loading ? (
+          <div className={styles.loading}><div className={styles.spinner} /></div>
+        ) : items.length === 0 ? (
           <div className={styles.empty}>
-            <p>Товаров пока нет</p>
-            <p style={{ fontSize: '1rem', marginTop: '1rem' }}>
-              Скоро здесь появится крутой мерч!
-            </p>
+            <Gift size={52} strokeWidth={1.5} />
+            <p>Товары скоро появятся</p>
+            <span>Мы работаем над запуском магазина. Следите за обновлениями!</span>
           </div>
         ) : (
-          <section className={styles.section}>
-            <div className={styles.grid}>
-              {items.map((item) => (
-                <div key={item.id} className={styles.card}>
-                  {item.image_url && (
-                    <img 
-                      src={item.image_url} 
-                      alt={item.name}
-                      className={styles.cardImage}
-                    />
+          <div className={styles.grid}>
+            {items.map(item => (
+              <div key={item.id} className={styles.card}>
+                <div className={styles.cardImg}>
+                  {item.image_url
+                    ? <img src={item.image_url} alt={item.name} />
+                    : <div className={styles.imgPlaceholder}><Package size={40} strokeWidth={1.5} /></div>
+                  }
+                  {item.category && (
+                    <span className={styles.badge}>{item.category}</span>
                   )}
-                  <div className={styles.cardContent}>
-                    <h3 className={styles.cardTitle}>{item.name}</h3>
-                    {item.description && (
-                      <p className={styles.cardDescription}>{item.description}</p>
-                    )}
-                    <div className={styles.cardFooter}>
-                      <span className={styles.price}>{item.price.toFixed(2)} ₽</span>
-                      {item.sizes && (
-                        <span className={styles.sizes}>Размеры: {item.sizes}</span>
-                      )}
-                    </div>
-                  </div>
                 </div>
-              ))}
-            </div>
-          </section>
+                <div className={styles.cardBody}>
+                  <h3 className={styles.cardTitle}>{item.name}</h3>
+                  {item.description && <p className={styles.cardDesc}>{item.description}</p>}
+                  {item.sizes && <p className={styles.sizes}>Размеры: {item.sizes}</p>}
+                  <div className={styles.cardFooter}>
+                    <span className={styles.price}>{item.price} ₽</span>
+                    <a
+                      href="https://discord.gg/YgX4RQZ"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.buyBtn}
+                    >
+                      <ShoppingBag size={14} />
+                      Заказать
+                    </a>
+                  </div>
+                  {item.stock_quantity !== undefined && item.stock_quantity < 10 && (
+                    <div className={styles.stockWarning}>Осталось: {item.stock_quantity} шт.</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
-        <section className={styles.cta}>
-          <div className={styles.ctaCard}>
-            <h2 className={styles.ctaTitle}>Как заказать?</h2>
-            <p className={styles.ctaText}>
-              Для заказа товаров напиши нам в Discord. Мы поможем с выбором размера и оформлением заказа!
-            </p>
-            <a 
-              href="https://discord.gg/YgX4RQZ" 
-              className={styles.ctaButton}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Написать в Discord
-            </a>
-          </div>
-        </section>
-        
-        <Footer />
-      </main>
+        <div className={styles.cta}>
+          <h2 className={styles.ctaTitle}>Как заказать?</h2>
+          <p className={styles.ctaText}>
+            Напиши нам в Discord — поможем с размером и доставкой по всей России
+          </p>
+          <a
+            href="https://discord.gg/YgX4RQZ"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.ctaBtn}
+          >
+            Написать в Discord
+          </a>
+        </div>
+      </div>
+      <Footer />
     </>
   )
 }
