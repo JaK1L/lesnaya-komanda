@@ -73,7 +73,7 @@ function detectMediaType(url: string): string {
 
 function MediaThumb({ item }: { item: MediaItem }) {
   if (item.media_type === 'image') {
-    return <img src={item.file_url} alt={item.title} />
+    return <img src={item.file_url.startsWith('http') ? item.file_url : `${API_URL}${item.file_url}`} alt={item.title} />
   }
   const info = getVideoEmbed(item.file_url)
   if (info?.thumb) {
@@ -234,7 +234,7 @@ export default function MediaPage() {
           <div className={styles.lightbox} onClick={e => e.stopPropagation()}>
             <button className={styles.closeBtn} onClick={() => setSelected(null)}><X size={20} /></button>
             {selected.media_type === 'image' ? (
-              <img src={selected.file_url} alt={selected.title} className={styles.lightboxImg} />
+              <img src={selected.file_url.startsWith('http') ? selected.file_url : `${API_URL}${selected.file_url}`} alt={selected.title} className={styles.lightboxImg} />
             ) : (() => {
               const info = getVideoEmbed(selected.file_url)
               return info ? (

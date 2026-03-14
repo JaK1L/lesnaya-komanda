@@ -163,7 +163,7 @@ async def delete_media(
     row = await db.fetchrow("SELECT user_id, file_url FROM media_items WHERE id = $1", item_id)
     if not row:
         raise HTTPException(status_code=404, detail="Not found")
-    if row["user_id"] != current_user.id and not current_user.is_admin:
+    if row["user_id"] != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Forbidden")
 
     # Delete file

@@ -73,7 +73,7 @@ export default function AdminMediaPage() {
             <div key={item.id} className={styles.card}>
               <div className={styles.thumb}>
                 {item.media_type === 'image'
-                  ? <img src={item.file_url} alt={item.title} />
+                  ? <img src={item.file_url.startsWith('http') ? item.file_url : `${API_URL}${item.file_url}`} alt={item.title} />
                   : <div className={styles.videoThumb}><Film size={28} /></div>
                 }
                 <span className={styles.badge}>
