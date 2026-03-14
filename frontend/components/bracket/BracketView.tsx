@@ -28,7 +28,6 @@ const CARD_W = 168   // match card width
 const CARD_H = 68    // match card height (2 slots × 32 + 4 divider)
 const GAP_R1 = 16    // gap between round-1 cards
 const CONN_W = 32    // horizontal connector width per side
-const COL_W = CARD_W + CONN_W * 2  // total column width including connectors
 
 function getUnit(round: number) {
   return (CARD_H + GAP_R1) * Math.pow(2, round - 1)
