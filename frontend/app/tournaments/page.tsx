@@ -361,14 +361,14 @@ export default function TournamentsPage() {
       {bracketTarget && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={() => setBracketTarget(null)}>
-          <div style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 900, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+          <div style={{ background: '#1a1e24', borderRadius: 12, width: '100%', maxWidth: 900, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '1px solid #2a2f36' }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e0e0e0' }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #2a2f36' }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#fff' }}>
                 <Network size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8 }} />
                 {bracketTarget.title} — Сетка
               </h3>
-              <button onClick={() => setBracketTarget(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}><X size={18} /></button>
+              <button onClick={() => setBracketTarget(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8899aa' }}><X size={18} /></button>
             </div>
             <div style={{ overflow: 'auto', flex: 1 }}>
               {bracketLoading ? (
