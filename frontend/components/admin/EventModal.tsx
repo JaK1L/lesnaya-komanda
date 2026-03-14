@@ -14,6 +14,8 @@ interface EventFormData {
   telegram_url: string
   status: string
   expires_at: string
+  button_url: string
+  button_label: string
 }
 
 interface Event {
@@ -25,6 +27,8 @@ interface Event {
   telegram_url: string | null
   status: string
   expires_at: string | null
+  button_url: string | null
+  button_label: string | null
 }
 
 interface EventModalProps {
@@ -43,6 +47,8 @@ export function EventModal({ isOpen, onClose, onSave, editingEvent }: EventModal
     telegram_url: '',
     status: 'Планируется',
     expires_at: '',
+    button_url: '',
+    button_label: '',
   })
 
   const { errors, validateForm, clearErrors } = useFormValidation()
@@ -75,6 +81,8 @@ export function EventModal({ isOpen, onClose, onSave, editingEvent }: EventModal
         telegram_url: editingEvent.telegram_url || '',
         status: editingEvent.status,
         expires_at: expiresDate,
+        button_url: editingEvent.button_url || '',
+        button_label: editingEvent.button_label || '',
       })
     } else {
       setFormData({
@@ -85,6 +93,8 @@ export function EventModal({ isOpen, onClose, onSave, editingEvent }: EventModal
         telegram_url: '',
         status: 'Планируется',
         expires_at: '',
+        button_url: '',
+        button_label: '',
       })
     }
     clearErrors()
@@ -214,6 +224,33 @@ export function EventModal({ isOpen, onClose, onSave, editingEvent }: EventModal
             />
             <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
               При клике на событие пользователь перейдет по этой ссылке
+            </small>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="button_label">Название кнопки (необязательно)</label>
+            <input
+              id="button_label"
+              type="text"
+              value={formData.button_label}
+              onChange={(e) => setFormData({ ...formData, button_label: e.target.value })}
+              placeholder="Зарегистрироваться, Подробнее..."
+              maxLength={100}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="button_url">Ссылка для кнопки (необязательно)</label>
+            <input
+              id="button_url"
+              type="url"
+              value={formData.button_url}
+              onChange={(e) => setFormData({ ...formData, button_url: e.target.value })}
+              placeholder="https://..."
+              maxLength={500}
+            />
+            <small style={{ color: '#888', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+              Кнопка отображается на карточке события на главной странице
             </small>
           </div>
 

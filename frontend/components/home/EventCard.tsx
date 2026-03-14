@@ -13,24 +13,28 @@ interface EventCardProps {
   registered_count: number
   is_registered: boolean
   can_register: boolean
+  button_url: string | null
+  button_label: string | null
   onClick: () => void
   onRegister?: (() => void) | undefined
   onUnregister?: (() => void) | undefined
   isAuthenticated: boolean
 }
 
-export function EventCard({ 
-  title, 
-  description, 
-  game, 
-  event_date, 
-  telegram_url, 
+export function EventCard({
+  title,
+  description,
+  game,
+  event_date,
+  telegram_url,
   status,
   max_participants,
   registration_enabled,
   registered_count,
   is_registered,
   can_register,
+  button_url,
+  button_label,
   onClick,
   onRegister,
   onUnregister,
@@ -103,6 +107,18 @@ export function EventCard({
             <div className={styles.telegramHint} onClick={onClick}>
               Подробнее в Telegram →
             </div>
+          )}
+
+          {button_url && button_label && (
+            <a
+              href={button_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.actionButton}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {button_label}
+            </a>
           )}
         </div>
         

@@ -40,6 +40,8 @@ class EventWithRegistration(BaseModel):
     expires_at: Optional[datetime]
     max_participants: Optional[int]
     registration_enabled: bool
+    button_url: Optional[str] = None
+    button_label: Optional[str] = None
     # Дополнительные поля
     registered_count: int
     is_registered: bool = False
@@ -60,6 +62,7 @@ async def list_events(
         SELECT 
             e.id, e.title, e.description, e.game, e.event_date, e.status,
             e.telegram_url, e.expires_at, e.max_participants, e.registration_enabled,
+            e.button_url, e.button_label,
             COUNT(er.id) FILTER (WHERE er.status = 'registered') as registered_count
         FROM events e
         LEFT JOIN event_registrations er ON e.id = er.event_id

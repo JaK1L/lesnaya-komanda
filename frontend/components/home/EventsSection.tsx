@@ -20,6 +20,8 @@ interface Event {
   registered_count: number
   is_registered: boolean
   can_register: boolean
+  button_url: string | null
+  button_label: string | null
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'

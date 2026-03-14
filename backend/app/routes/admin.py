@@ -89,6 +89,8 @@ class EventCreate(BaseModel, ContentValidationMixin):
     status: str = Field(default="Планируется", max_length=30)
     telegram_url: Optional[str] = Field(None, max_length=500)
     expires_at: Optional[datetime] = Field(None, description="Дата и время когда событие автоматически скрывается")
+    button_url: Optional[str] = Field(None, max_length=500)
+    button_label: Optional[str] = Field(None, max_length=100)
     
     @field_validator('telegram_url', mode='before')
     @classmethod
@@ -121,7 +123,7 @@ async def list_events(
     logger.info(f"Fetching events from DB...")
     rows = await db.fetch(
         """
-        SELECT id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
+        SELECT id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at, button_url, button_label
         FROM events
         ORDER BY event_date DESC NULLS LAST, id DESC
         LIMIT $1 OFFSET $2
@@ -176,9 +178,9 @@ async def create_event(
     """Создать новое событие."""
     row = await db.fetchrow(
         """
-        INSERT INTO events (title, description, game, event_date, created_by, status, telegram_url, expires_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
+        INSERT INTO events (title, description, game, event_date, created_by, status, telegram_url, expires_at, button_url, button_label)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at, button_url, button_label
         """,
         payload.title,
         payload.description,
@@ -188,6 +190,8 @@ async def create_event(
         payload.status,
         payload.telegram_url,
         payload.expires_at,
+        payload.button_url,
+        payload.button_label,
     )
     if not row:
         raise HTTPException(status_code=500, detail="Не удалось создать событие")
@@ -218,9 +222,9 @@ async def update_event(
     row = await db.fetchrow(
         """
         UPDATE events
-        SET title = $2, description = $3, game = $4, event_date = $5, status = $6, telegram_url = $7, expires_at = $8
+        SET title = $2, description = $3, game = $4, event_date = $5, status = $6, telegram_url = $7, expires_at = $8, button_url = $9, button_label = $10
         WHERE id = $1
-        RETURNING id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at
+        RETURNING id, title, description, game, event_date, created_by, participants, status, telegram_url, expires_at, button_url, button_label
         """,
         event_id,
         payload.title,
@@ -230,6 +234,8 @@ async def update_event(
         payload.status,
         payload.telegram_url,
         payload.expires_at,
+        payload.button_url,
+        payload.button_label,
     )
     if not row:
         raise HTTPException(status_code=404, detail="Событие не найдено")

@@ -106,16 +106,15 @@ export function StreamerModal({ isOpen, onClose, onSave, editingStreamer }: Stre
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          <div style={{ 
-            background: '#e3f2fd', 
-            padding: '1rem', 
-            borderRadius: '8px', 
+          <div style={{
+            background: '#1a1e24',
+            padding: '1rem',
+            borderRadius: '8px',
             marginBottom: '1.5rem',
-            border: '1px solid #90caf9'
+            border: '1px solid #2a2f36'
           }}>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#1976d2' }}>
-              💡 Просто вставьте ссылку на Twitch канал, и система автоматически получит всю информацию: 
-              имя, аватар, описание и статус стрима!
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#8899aa' }}>
+              Вставьте ссылку на Twitch канал — система автоматически получит имя, аватар и статус стрима.
             </p>
           </div>
 

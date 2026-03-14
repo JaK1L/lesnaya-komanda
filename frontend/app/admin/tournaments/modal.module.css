@@ -83,7 +83,7 @@
   transition: border-color 0.2s;
   font-family: inherit;
 }
-.input:focus, .textarea:focus, .select:focus { border-color: #7c4dff; }
+.input:focus, .textarea:focus, .select:focus { border-color: #4f9fff; }
 
 .textarea { resize: vertical; min-height: 80px; }
 
@@ -126,7 +126,7 @@
 
 .save {
   padding: 8px 20px;
-  background: #4CAF50;
+  background: #4f9fff;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -135,5 +135,5 @@
   font-weight: 600;
   transition: background 0.2s;
 }
-.save:hover { background: #45a049; }
+.save:hover { background: #3a7fc9; }
 .save:disabled { opacity: 0.6; cursor: not-allowed; }
