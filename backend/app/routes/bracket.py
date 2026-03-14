@@ -197,8 +197,8 @@ async def generate_bracket(
         )
         players = [r["name"] for r in regs if r["name"]]
 
-    if len(players) < 2:
-        raise HTTPException(400, "Нужно минимум 2 участника. Добавьте участников вручную или через регистрацию.")
+    if len(players) < 8:
+        raise HTTPException(400, "Нужно минимум 8 участников. Добавьте участников вручную или через регистрацию.")
     if len(players) > 32:
         raise HTTPException(400, "Максимум 32 участника")
 
@@ -284,6 +284,28 @@ async def update_match(
                 )
 
     return {"status": "updated"}
+
+
+class SlotAssign(BaseModel):
+    slot: int        # 1 or 2
+    player_name: str
+
+
+@router.patch("/admin/bracket/match/{match_id}/slot")
+async def assign_player_slot(
+    match_id: int,
+    body: SlotAssign,
+    db: asyncpg.Connection = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    if body.slot not in (1, 2):
+        raise HTTPException(400, "slot must be 1 or 2")
+    field = "player1_name" if body.slot == 1 else "player2_name"
+    await db.execute(
+        f"UPDATE bracket_matches SET {field}=$1 WHERE id=$2",
+        body.player_name, match_id,
+    )
+    return {"status": "ok"}
 
 
 @router.delete("/admin/tournaments/{tournament_id}/bracket")

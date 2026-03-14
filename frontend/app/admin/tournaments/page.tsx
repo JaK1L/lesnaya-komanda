@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trophy, Pencil, Trash2, Calendar, Crown, Plus, X, Users, Network } from 'lucide-react'
+import BracketView, { BracketMatch } from '../../../components/bracket/BracketView'
 import styles from '../news/page.module.css'
 import modalStyles from './modal.module.css'
 
@@ -129,31 +130,29 @@ function RegViewer({ tournamentId, token, onClose }: { tournamentId: number; tok
   )
 }
 
-interface Match {
-  id: number
-  section: string
-  round: number
-  match_index: number
-  player1_name: string | null
-  player2_name: string | null
-  winner_name: string | null
-  score1: number | null
-  score2: number | null
-  is_bye: boolean
-  status: string
-}
-
 function BracketManager({ tournamentId, token, onClose }: { tournamentId: number; token: string; onClose: () => void }) {
-  const [matches, setMatches] = useState<Match[]>([])
+  const [matches, setMatches] = useState<BracketMatch[]>([])
   const [loading, setLoading] = useState(true)
   const [bracketType, setBracketType] = useState<'single' | 'double'>('single')
   const [generating, setGenerating] = useState(false)
   const [genError, setGenError] = useState('')
   const [customPlayers, setCustomPlayers] = useState('')  // one per line
-  const [editMatch, setEditMatch] = useState<Match | null>(null)
+  const [registrations, setRegistrations] = useState<string[]>([])
+  const [editMatch, setEditMatch] = useState<BracketMatch | null>(null)
   const [score1, setScore1] = useState(0)
   const [score2, setScore2] = useState(0)
   const [winner, setWinner] = useState('')
+
+  const loadRegs = () => {
+    fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/registrations`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then((data: Registration[]) => {
+        setRegistrations(data.map(r => r.nickname || r.team_name || '').filter(Boolean))
+      })
+      .catch(() => {})
+  }
 
   const load = () => {
     setLoading(true)
@@ -161,7 +160,7 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
       .then(r => r.json()).then(d => { setMatches(Array.isArray(d) ? d : []); setLoading(false) }).catch(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [tournamentId])
+  useEffect(() => { load(); loadRegs() }, [tournamentId])
 
   const generate = async () => {
     if (!confirm(`Сформировать сетку (${bracketType === 'single' ? 'Single' : 'Double'} Elimination)? Старая сетка будет удалена.`)) return
@@ -206,77 +205,102 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
     load()
   }
 
-  const rounds = matches.reduce<Record<string, Record<number, Match[]>>>((acc, m) => {
-    if (!acc[m.section]) acc[m.section] = {}
-    if (!acc[m.section][m.round]) acc[m.section][m.round] = []
-    acc[m.section][m.round].push(m)
-    return acc
-  }, {})
+  const handleDropPlayer = async (match: BracketMatch, slot: 1 | 2, player: string) => {
+    await fetch(`${API_URL}/api/admin/bracket/match/${match.id}/slot`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ slot, player_name: player }),
+    })
+    load()
+  }
 
-  const sectionLabel: Record<string, string> = { winners: 'Победители', losers: 'Проигравшие', grand_final: 'Гранд-финал' }
+  const handleSelectWinner = (match: BracketMatch, _winner?: string) => {
+    if (match.status === 'completed') return
+    setEditMatch(match)
+    setScore1(match.score1 ?? 0)
+    setScore2(match.score2 ?? 0)
+    setWinner(match.winner_name ?? _winner ?? '')
+  }
 
   return (
     <div className={modalStyles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className={modalStyles.modal} style={{ maxWidth: 700, maxHeight: '90vh', overflow: 'auto' }}>
+      <div className={modalStyles.modal} style={{ maxWidth: '95vw', width: 1200, maxHeight: '95vh', display: 'flex', flexDirection: 'column' }}>
         <div className={modalStyles.modalHeader}>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Network size={18} /> Сетка турнира</h2>
           <button className={modalStyles.close} onClick={onClose}><X size={16} /></button>
         </div>
-        <div className={modalStyles.body}>
-          {/* Controls */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-            <select className={modalStyles.select} value={bracketType} onChange={e => setBracketType(e.target.value as 'single' | 'double')} style={{ width: 'auto' }}>
-              <option value="single">Single Elimination</option>
-              <option value="double">Double Elimination</option>
-            </select>
-            <button onClick={generate} disabled={generating} style={{ padding: '6px 14px', background: '#4f9fff', border: 'none', color: '#fff', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-              {generating ? 'Генерация...' : 'Сформировать'}
-            </button>
-            {matches.length > 0 && (
-              <button onClick={reset} style={{ padding: '6px 14px', background: '#c0392b', border: 'none', color: '#fff', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
-                Сбросить
-              </button>
-            )}
-          </div>
 
-          {/* Custom players input */}
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 12, color: '#888', marginBottom: 4 }}>
-              Участники вручную (по одному на строку). Если оставить пустым — берутся из заявок.
-            </label>
+        {/* Controls bar */}
+        <div style={{ padding: '12px 20px', borderBottom: '1px solid #2a2f36', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <select className={modalStyles.select} value={bracketType} onChange={e => setBracketType(e.target.value as 'single' | 'double')} style={{ width: 'auto' }}>
+            <option value="single">Single Elimination</option>
+            <option value="double">Double Elimination</option>
+          </select>
+          <button onClick={generate} disabled={generating} style={{ padding: '6px 14px', background: '#4f9fff', border: 'none', color: '#fff', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+            {generating ? 'Генерация...' : 'Сформировать'}
+          </button>
+          {matches.length > 0 && (
+            <button onClick={reset} style={{ padding: '6px 14px', background: '#c0392b', border: 'none', color: '#fff', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
+              Сбросить
+            </button>
+          )}
+          <div style={{ flex: 1, minWidth: 200 }}>
             <textarea
               value={customPlayers}
               onChange={e => setCustomPlayers(e.target.value)}
-              placeholder={'Игрок 1\nИгрок 2\nИгрок 3\n...'}
-              rows={4}
-              style={{ width: '100%', background: '#111', border: '1px solid #2a2f36', borderRadius: 8, color: '#fff', padding: '8px', fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }}
+              placeholder={'Участники вручную (по одному на строку)'}
+              rows={2}
+              style={{ width: '100%', background: '#111', border: '1px solid #2a2f36', borderRadius: 8, color: '#fff', padding: '6px 8px', fontSize: 12, resize: 'vertical', boxSizing: 'border-box' }}
             />
           </div>
+          {genError && <p style={{ color: '#e74c3c', fontSize: 13, margin: 0, alignSelf: 'center' }}>{genError}</p>}
+        </div>
 
-          {genError && <p style={{ color: '#e74c3c', fontSize: 13, marginBottom: 8 }}>{genError}</p>}
-          {loading && <p style={{ color: '#888' }}>Загрузка...</p>}
-          {!loading && matches.length === 0 && !genError && <p style={{ color: '#888' }}>Сетка не сформирована. Введите участников и нажмите "Сформировать".</p>}
+        {/* Two-panel body */}
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          {/* Left: participant list */}
+          <div style={{ width: 180, flexShrink: 0, borderRight: '1px solid #2a2f36', padding: '12px 10px', overflowY: 'auto', background: '#0f1218' }}>
+            <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Участники</div>
+            {registrations.length === 0 && (
+              <p style={{ fontSize: 12, color: '#555' }}>Нет заявок</p>
+            )}
+            {registrations.map((name, i) => (
+              <div
+                key={i}
+                draggable
+                onDragStart={e => e.dataTransfer.setData('player', name)}
+                style={{ padding: '6px 10px', background: '#1a1e24', border: '1px solid #2a2f36', borderRadius: 8, marginBottom: 6, fontSize: 13, color: '#fff', cursor: 'grab', userSelect: 'none' }}
+              >
+                {name}
+              </div>
+            ))}
+          </div>
 
-          {/* Matches grouped by section and round */}
-          {['winners', 'losers', 'grand_final'].filter(s => rounds[s]).map(section => (
-            <div key={section} style={{ marginBottom: 20 }}>
-              <h4 style={{ color: '#4f9fff', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 10px 0' }}>{sectionLabel[section]}</h4>
-              {Object.entries(rounds[section]).sort((a, b) => Number(a[0]) - Number(b[0])).map(([rnd, ms]) => (
-                <div key={rnd} style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, color: '#666', marginBottom: 6 }}>Раунд {rnd}</div>
-                  {ms.filter(m => !m.is_bye).map(m => (
-                    <div key={m.id} onClick={() => { if (m.status !== 'bye') { setEditMatch(m); setScore1(m.score1 ?? 0); setScore2(m.score2 ?? 0); setWinner(m.winner_name ?? '') } }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', background: m.status === 'completed' ? '#1a2a1a' : '#1a1e24', border: '1px solid #2a2f36', borderRadius: 8, marginBottom: 6, cursor: 'pointer', fontSize: 13 }}>
-                      <span style={{ flex: 1, color: m.winner_name === m.player1_name ? '#4f9fff' : '#fff' }}>{m.player1_name || 'TBD'}</span>
-                      <span style={{ color: '#555', fontSize: 11 }}>vs</span>
-                      <span style={{ flex: 1, textAlign: 'right', color: m.winner_name === m.player2_name ? '#4f9fff' : '#fff' }}>{m.player2_name || 'TBD'}</span>
-                      {m.status === 'completed' && <span style={{ fontSize: 11, color: '#4f9fff', marginLeft: 4 }}>{m.score1}:{m.score2}</span>}
+          {/* Right: bracket view */}
+          <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: '16px' }}>
+            {loading && <p style={{ color: '#888' }}>Загрузка...</p>}
+            {!loading && matches.length === 0 && (
+              <p style={{ color: '#888' }}>Сетка не сформирована. Введите участников и нажмите "Сформировать".</p>
+            )}
+            {!loading && matches.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+                {['winners', 'losers', 'grand_final'].filter(s => matches.some(m => m.section === s)).map(section => (
+                  <div key={section}>
+                    <div style={{ fontSize: 11, color: '#4f9fff', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                      {{ winners: 'Победители', losers: 'Проигравшие', grand_final: 'Гранд-финал' }[section]}
                     </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          ))}
+                    <BracketView
+                      matches={matches}
+                      section={section}
+                      adminMode
+                      onSelectWinner={handleSelectWinner}
+                      onDropPlayer={handleDropPlayer}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
