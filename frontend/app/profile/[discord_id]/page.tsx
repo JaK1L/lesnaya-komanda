@@ -110,57 +110,86 @@ export default function PublicProfilePage() {
   )
 
   const displayName = profile.site_nickname || profile.discord_username
+  const xpPercent = Math.min(100, (profile.current_xp / Math.max(1, profile.level * 100)) * 100)
+  const joinDate = profile.joined_at
+    ? new Date(profile.joined_at).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long' })
+    : null
 
   return (
     <>
       <Navigation isAuthenticated={!!token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }} apiUrl={API_URL} />
       <div className={styles.page}>
 
-        {/* Header card */}
-        <div className={styles.headerCard}>
-          <div className={styles.avatarWrap}>
-            {profile.avatar_url ? (
-              <img src={getImageUrl(profile.avatar_url) || ''} alt={displayName} className={styles.avatar} />
-            ) : (
-              <div className={styles.avatarPlaceholder}>{displayName[0]?.toUpperCase()}</div>
-            )}
-          </div>
+        <div className={styles.profileCard}>
+          {/* Banner */}
+          <div className={styles.banner} />
 
-          <div className={styles.headerInfo}>
-            <h1 className={styles.name}>{displayName}</h1>
-            {profile.site_nickname && <p className={styles.username}>@{profile.discord_username}</p>}
-            <div className={styles.rank}>{profile.forest_rank}</div>
-            {profile.bio && <p className={styles.bio}>{profile.bio}</p>}
-            {profile.joined_at && (
-              <div className={styles.joined}>
-                <Calendar size={13} />
-                В лесу с {new Date(profile.joined_at).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' })}
-              </div>
-            )}
+          {/* Avatar + Actions */}
+          <div className={styles.avatarRow}>
+            <div className={styles.avatarWrap}>
+              {profile.avatar_url ? (
+                <img src={getImageUrl(profile.avatar_url) || ''} alt={displayName} className={styles.avatar} />
+              ) : (
+                <div className={styles.avatarPlaceholder}>{displayName[0]?.toUpperCase()}</div>
+              )}
+            </div>
 
-            <div className={styles.actions}>
+            <div className={styles.avatarActions}>
               {!isOwnProfile && token && (
                 <button
                   className={`${styles.friendBtn} ${friendStatus !== 'none' ? styles.friendBtnDisabled : ''}`}
                   onClick={sendFriendRequest}
                   disabled={friendLoading || friendStatus !== 'none'}
                 >
-                  <UserPlus size={15} />
-                  {friendStatus === 'friends' ? 'Вы друзья' : friendStatus === 'pending' ? 'Заявка отправлена' : 'Добавить в друзья'}
+                  <UserPlus size={14} />
+                  {friendStatus === 'friends' ? 'Вы друзья' : friendStatus === 'pending' ? 'Заявка отправлена' : 'Добавить'}
                 </button>
               )}
-              <button className={styles.copyBtn} onClick={copyLink}>
-                {copied ? <Check size={15} /> : <Copy size={15} />}
+              <button className={styles.shareBtn} onClick={copyLink}>
+                {copied ? <Check size={14} /> : <Copy size={14} />}
                 {copied ? 'Скопировано' : 'Поделиться'}
               </button>
             </div>
+          </div>
+
+          {/* Profile Info */}
+          <div className={styles.profileInfo}>
+            <div className={styles.nameRow}>
+              <h1 className={styles.name}>{displayName}</h1>
+              <span className={styles.levelBadge}><Star size={11} /> {profile.level}</span>
+            </div>
+
+            <div className={styles.handleRow}>
+              @{profile.discord_username}
+              {profile.forest_rank && <span className={styles.rank}> · {profile.forest_rank}</span>}
+            </div>
+
+            <div className={styles.statsInline}>
+              <span className={styles.statItem}><Trophy size={12} /> Турниров: {profile.tourney_stats?.played ?? 0}</span>
+              <span className={styles.statItem}><Star size={12} /> Побед: {profile.tourney_stats?.wins ?? 0}</span>
+              <span className={styles.statItem}>Рейтинг: {profile.rating}</span>
+              {joinDate && <span className={styles.statItem}><Calendar size={12} /> с {joinDate}</span>}
+            </div>
+
+            {profile.bio && <p className={styles.bio}>{profile.bio}</p>}
+          </div>
+        </div>
+
+        {/* XP bar */}
+        <div className={styles.xpCard}>
+          <div className={styles.xpHeader}>
+            <span>Опыт · Уровень {profile.level}</span>
+            <span>{profile.current_xp} / {profile.level * 100} XP</span>
+          </div>
+          <div className={styles.xpBar}>
+            <div className={styles.xpFill} style={{ width: `${xpPercent}%` }} />
           </div>
         </div>
 
         {/* Stats */}
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
-            <Star size={20} className={styles.statIcon} />
+            <Star size={18} className={styles.statIcon} />
             <div className={styles.statValue}>{profile.level}</div>
             <div className={styles.statLabel}>Уровень</div>
           </div>
@@ -169,27 +198,13 @@ export default function PublicProfilePage() {
             <div className={styles.statLabel}>Рейтинг</div>
           </div>
           <div className={styles.statCard}>
-            <Trophy size={20} className={styles.statIcon} />
+            <Trophy size={18} className={styles.statIcon} />
             <div className={styles.statValue}>{profile.tourney_stats?.played ?? 0}</div>
-            <div className={styles.statLabel}>Турниров сыграно</div>
+            <div className={styles.statLabel}>Турниров</div>
           </div>
           <div className={styles.statCard}>
             <div className={styles.statValue}>{profile.tourney_stats?.wins ?? 0}</div>
             <div className={styles.statLabel}>Побед</div>
-          </div>
-        </div>
-
-        {/* XP bar */}
-        <div className={styles.xpCard}>
-          <div className={styles.xpHeader}>
-            <span>Опыт</span>
-            <span>{profile.current_xp} / {(profile.level) * 100} XP</span>
-          </div>
-          <div className={styles.xpBar}>
-            <div
-              className={styles.xpFill}
-              style={{ width: `${Math.min(100, (profile.current_xp / Math.max(1, profile.level * 100)) * 100)}%` }}
-            />
           </div>
         </div>
 

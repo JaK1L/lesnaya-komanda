@@ -1,13 +1,14 @@
 .page {
   min-height: calc(100vh - 72px);
-  padding: var(--page-padding-y) var(--page-padding-x);
+  padding: 2rem var(--page-padding-x) 3rem;
+  max-width: 900px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 860px;
-  margin: 0 auto;
 }
 
+/* ─── Loading / Error ─── */
 .loadingPage {
   min-height: calc(100vh - 72px);
   display: flex;
@@ -16,7 +17,7 @@
 }
 .spinner {
   width: 36px; height: 36px;
-  border: 3px solid rgba(255, 255, 255, 0.08);
+  border: 3px solid rgba(255,255,255,0.08);
   border-top-color: var(--color-purple);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -32,7 +33,6 @@
   gap: 16px;
   color: var(--color-white-64);
 }
-
 .backBtn {
   display: inline-flex;
   align-items: center;
@@ -48,167 +48,176 @@
 }
 .backBtn:hover { border-color: var(--color-purple); color: var(--color-white); }
 
-/* Header card */
-.headerCard {
+/* ─── Profile Card ─── */
+.profileCard {
   background: var(--color-white-03);
   border: 1px solid var(--color-border);
   border-radius: 16px;
-  padding: 2rem;
+  overflow: hidden;
+}
+
+/* ─── Banner ─── */
+.banner {
+  height: 180px;
+  background: linear-gradient(135deg, #1e0a47 0%, #5c2bb5 50%, #9147ff 100%);
+  position: relative;
+}
+
+/* ─── Avatar Row ─── */
+.avatarRow {
   display: flex;
-  gap: 2rem;
-  align-items: flex-start;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 1.75rem;
+  margin-top: -52px;
+  margin-bottom: 0;
 }
 
 .avatarWrap { flex-shrink: 0; }
 
 .avatar {
-  width: 120px;
-  height: 120px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--color-purple);
+  border: 4px solid var(--color-bg, #0a0c0f);
+  display: block;
 }
 
 .avatarPlaceholder {
-  width: 120px;
-  height: 120px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
-  border: 3px solid var(--color-purple);
-  background: var(--color-white-03);
+  border: 4px solid var(--color-bg, #0a0c0f);
+  background: #1a1e24;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
+  font-size: 2.5rem;
+  font-weight: 700;
   color: var(--color-purple);
 }
 
-.headerInfo {
-  flex: 1;
+.avatarActions {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+/* ─── Profile Info ─── */
+.profileInfo {
+  padding: 0.875rem 1.75rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .name {
-  font-size: 2rem;
-  font-weight: var(--font-weight-medium);
+  font-size: 1.75rem;
+  font-weight: 700;
   color: var(--color-white);
   margin: 0;
-  line-height: 1;
+  line-height: 1.1;
 }
 
-.username {
-  font-size: 14px;
+.levelBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: rgba(145,71,255,0.12);
+  border: 1px solid rgba(145,71,255,0.3);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-purple);
+}
+
+.handleRow {
+  font-size: 13px;
   color: var(--color-white-64);
-  margin: 0;
 }
 
 .rank {
-  display: inline-block;
-  padding: 4px 12px;
-  background: rgba(145, 71, 255, 0.1);
-  border: 1px solid var(--color-purple);
-  border-radius: 20px;
-  font-size: 13px;
-  color: var(--color-purple);
-  align-self: flex-start;
+  display: inline;
+  color: var(--color-white-64);
 }
+
+.statsInline {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+
+.statItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--color-white-64);
+}
+
+.statItem svg { color: var(--color-purple); opacity: 0.8; }
 
 .bio {
   font-size: 14px;
   color: var(--color-white-80);
-  margin: 0;
+  margin: 4px 0 0;
   line-height: 1.6;
 }
 
-.joined {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: var(--color-white-64);
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-  flex-wrap: wrap;
-}
-
+/* ─── Buttons ─── */
 .friendBtn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 7px 14px;
   background: var(--color-purple);
   color: #fff;
   border: none;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 .friendBtn:hover:not(:disabled) { background: #a855f7; }
-.friendBtnDisabled { background: var(--color-white-03) !important; border: 1px solid var(--color-border) !important; color: var(--color-white-64) !important; cursor: default !important; }
+.friendBtnDisabled {
+  background: var(--color-white-03) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-white-64) !important;
+  cursor: default !important;
+}
 
-.copyBtn {
+.shareBtn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 7px 14px;
   background: none;
   border: 1px solid var(--color-border);
   color: var(--color-white-64);
   border-radius: 8px;
   font-size: 13px;
+  font-family: inherit;
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
+  white-space: nowrap;
 }
-.copyBtn:hover { border-color: var(--color-purple); color: var(--color-white); }
+.shareBtn:hover { border-color: var(--color-purple); color: var(--color-white); }
 
-/* Stats grid */
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.statCard {
-  background: var(--color-white-03);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  transition: background 0.2s, border-color 0.2s;
-}
-.statCard:hover {
-  background: rgba(145, 71, 255, 0.04);
-  border-color: rgba(145, 71, 255, 0.2);
-}
-
-.statIcon { color: var(--color-purple); }
-
-.statValue {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--color-white);
-  line-height: 1;
-}
-
-.statLabel {
-  font-size: 11px;
-  color: var(--color-white-64);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* XP */
+/* ─── XP Card ─── */
 .xpCard {
   background: var(--color-white-03);
   border: 1px solid var(--color-border);
@@ -228,7 +237,7 @@
 
 .xpBar {
   height: 6px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255,255,255,0.07);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -238,13 +247,59 @@
   background: linear-gradient(90deg, var(--color-purple), #c379ff);
   border-radius: 3px;
   transition: width 0.5s ease;
-  box-shadow: 0 0 8px rgba(145, 71, 255, 0.5);
+  box-shadow: 0 0 8px rgba(145,71,255,0.5);
 }
 
-@media (max-width: 768px) {
-  .headerCard { flex-direction: column; align-items: center; text-align: center; }
-  .rank { align-self: center; }
-  .actions { justify-content: center; }
+/* ─── Stats Grid ─── */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.statCard {
+  background: var(--color-white-03);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.statCard:hover {
+  background: rgba(145,71,255,0.04);
+  border-color: rgba(145,71,255,0.2);
+}
+
+.statIcon { color: var(--color-purple); }
+
+.statValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-white);
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--color-white-64);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 640px) {
+  .page { padding: 1rem 1rem 2rem; }
+  .banner { height: 130px; }
+  .avatarRow { padding: 0 1rem; margin-top: -42px; }
+  .avatar, .avatarPlaceholder { width: 84px; height: 84px; }
+  .avatarPlaceholder { font-size: 2rem; }
+  .profileInfo { padding: 0.75rem 1rem 1.25rem; }
+  .name { font-size: 1.4rem; }
+  .avatarActions { flex-direction: column; gap: 6px; align-items: flex-end; }
   .statsGrid { grid-template-columns: repeat(2, 1fr); }
-  .name { font-size: 1.5rem; }
+  .statsInline { gap: 0.75rem; }
 }
