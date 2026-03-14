@@ -129,7 +129,7 @@ export default function BracketView({ matches, section = 'winners', onSelectWinn
                     )}
                     <MatchCard
                       match={m}
-                      adminMode={adminMode}
+                      adminMode={!!adminMode}
                       onSelectWinner={onSelectWinner}
                       onDropPlayer={onDropPlayer}
                     />
