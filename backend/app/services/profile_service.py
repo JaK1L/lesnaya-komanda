@@ -20,10 +20,14 @@ class ProfileService:
     ALLOWED_FORMATS = {'JPEG', 'PNG', 'GIF', 'WEBP'}
     MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB in bytes
     
+    MAX_BANNER_SIZE = 8 * 1024 * 1024  # 8MB
+
     def __init__(self, db: asyncpg.Connection):
         self.db = db
         self.upload_dir = Path(__file__).parent.parent.parent / "uploads" / "avatars"
         self.upload_dir.mkdir(parents=True, exist_ok=True)
+        self.banner_dir = Path(__file__).parent.parent.parent / "uploads" / "banners"
+        self.banner_dir.mkdir(parents=True, exist_ok=True)
     
     async def get_user_profile(self, user_id: int) -> Optional[ProfileResponse]:
         """
@@ -298,3 +302,35 @@ class ProfileService:
         except Exception as e:
             # Log error but don't raise exception
             print(f"Warning: Failed to delete old avatar for user {user_id}: {e}")
+
+    async def save_banner_file(self, user_id: int, file: UploadFile) -> str:
+        content = await file.read()
+        if len(content) > self.MAX_BANNER_SIZE:
+            raise HTTPException(status_code=400, detail="Banner must be under 8MB")
+        try:
+            image = Image.open(io.BytesIO(content))
+            if image.format not in self.ALLOWED_FORMATS:
+                raise HTTPException(status_code=400, detail=f"Banner must be {', '.join(self.ALLOWED_FORMATS)}")
+            ext = image.format.lower()
+            if ext == 'jpeg':
+                ext = 'jpg'
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid image file")
+        timestamp = int(datetime.now().timestamp())
+        filename = f"banner_{user_id}_{uuid.uuid4().hex[:8]}_{timestamp}.{ext}"
+        with open(self.banner_dir / filename, 'wb') as f:
+            f.write(content)
+        return f"/api/uploads/banners/{filename}"
+
+    async def delete_old_banner(self, user_id: int) -> None:
+        try:
+            url = await self.db.fetchval("SELECT banner_url FROM users WHERE id = $1", user_id)
+            if url and '/api/uploads/banners/' in url:
+                fname = url.split('/')[-1]
+                fp = self.banner_dir / fname
+                if fp.exists():
+                    fp.unlink()
+        except Exception as e:
+            print(f"Warning: Failed to delete old banner for user {user_id}: {e}")

@@ -36,6 +36,7 @@ async def get_public_profile(
                 site_nickname,
                 discord_username,
                 avatar_url,
+                banner_url,
                 bio,
                 is_hidden,
                 forest_rank,
@@ -81,6 +82,7 @@ async def get_public_profile(
             "site_nickname": row['site_nickname'],
             "discord_username": row['discord_username'],
             "avatar_url": row['avatar_url'],
+            "banner_url": row.get('banner_url'),
             "bio": row['bio'],
             "is_hidden": row['is_hidden'],
             "forest_rank": row['forest_rank'],
@@ -502,6 +504,30 @@ async def my_registrations(
         current_user.id,
     )
     return [dict(r) for r in rows]
+
+
+@router.post("/profile/banner")
+async def upload_banner(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    service = ProfileService(db)
+    await service.delete_old_banner(current_user.id)
+    banner_url = await service.save_banner_file(current_user.id, file)
+    await db.execute("UPDATE users SET banner_url = $1 WHERE id = $2", banner_url, current_user.id)
+    return {"banner_url": banner_url}
+
+
+@router.get("/uploads/banners/{filename}")
+async def get_banner(filename: str):
+    upload_dir = Path(__file__).parent.parent.parent / "uploads" / "banners"
+    file_path = upload_dir / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Banner not found")
+    if not str(file_path.resolve()).startswith(str(upload_dir.resolve())):
+        raise HTTPException(status_code=403, detail="Access denied")
+    return FileResponse(file_path)
 
 
 @router.get("/uploads/avatars/{filename}")

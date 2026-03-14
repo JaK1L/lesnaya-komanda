@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import axios from 'axios'
-import { UserPlus, Trophy, Star, Calendar, Copy, Check, ChevronLeft, Edit2, X, Camera, Twitch, Image as ImageIcon, Award } from 'lucide-react'
+import { UserPlus, Trophy, Star, Calendar, Copy, Check, ChevronLeft, Edit2, X, Camera, Twitch, Image as ImageIcon, Award, Activity, BarChart2, Users } from 'lucide-react'
 import { Navigation } from '../../../components/layout/Navigation'
 import { Footer } from '../../../components/layout/Footer'
 import { getImageUrl } from '../../../lib/imageUtils'
@@ -17,6 +17,7 @@ interface PublicProfile {
   site_nickname: string | null
   discord_username: string
   avatar_url: string | null
+  banner_url: string | null
   bio: string | null
   forest_rank: string
   rating: number
@@ -50,7 +51,11 @@ interface Achievement {
 
 function getMyDiscordId(token: string | null): string | null {
   if (!token) return null
-  try { return String(JSON.parse(atob(token.split('.')[1])).discord_id ?? '') } catch { return null }
+  try {
+    const p = JSON.parse(atob(token.split('.')[1]))
+    const id = p.discord_id ?? p.sub
+    return id ? String(id) : null
+  } catch { return null }
 }
 
 export default function PublicProfilePage() {
@@ -63,7 +68,7 @@ export default function PublicProfilePage() {
   const [copied, setCopied] = useState(false)
   const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'friends'>('none')
   const [friendLoading, setFriendLoading] = useState(false)
-  const [tab, setTab] = useState<'media' | 'achievements'>('media')
+  const [tab, setTab] = useState<'media' | 'stats' | 'tournaments' | 'activity' | 'achievements'>('media')
   const [media, setMedia] = useState<MediaItem[]>([])
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [tabLoaded, setTabLoaded] = useState<Record<string, boolean>>({})
@@ -77,6 +82,7 @@ export default function PublicProfilePage() {
   const [twitchInput, setTwitchInput] = useState('')
   const [twitchSaving, setTwitchSaving] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const t = localStorage.getItem(TOKEN_KEY)
@@ -166,6 +172,18 @@ export default function PublicProfilePage() {
     } catch { } finally { setEditSaving(false) }
   }
 
+  const uploadBanner = async (file: File) => {
+    if (!token) return
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await axios.post<{ banner_url: string }>(`${API_URL}/api/profile/banner`, fd, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+      })
+      setProfile(p => p ? { ...p, banner_url: res.data.banner_url } : p)
+    } catch { }
+  }
+
   const uploadAvatar = async (file: File) => {
     if (!token) return
     const fd = new FormData()
@@ -223,8 +241,20 @@ export default function PublicProfilePage() {
       <Navigation isAuthenticated={!!token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }} apiUrl={API_URL} />
       <div className={styles.page}>
 
+        {/* Profile Header Card */}
         <div className={styles.profileCard}>
-          <div className={styles.banner} />
+          {/* Banner */}
+          <div
+            className={styles.banner}
+            style={profile.banner_url ? { backgroundImage: `url(${getImageUrl(profile.banner_url)})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+          >
+            {isOwnProfile && (
+              <>
+                <button className={styles.bannerEditBtn} onClick={() => bannerInputRef.current?.click()}><Camera size={14} /> Сменить баннер</button>
+                <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) uploadBanner(e.target.files[0]) }} />
+              </>
+            )}
+          </div>
 
           <div className={styles.avatarRow}>
             <div className={styles.avatarWrap}>
@@ -285,62 +315,106 @@ export default function PublicProfilePage() {
           </div>
         </div>
 
-        <div className={styles.xpCard}>
-          <div className={styles.xpHeader}>
-            <span>Опыт · Уровень {profile.level}</span>
-            <span>{profile.current_xp} / {profile.level * 100} XP</span>
+        {/* Two-column layout */}
+        <div className={styles.columns}>
+
+          {/* LEFT: tabs + content */}
+          <div className={styles.mainCol}>
+            <div className={styles.tabs}>
+              <button className={`${styles.tab} ${tab === 'media' ? styles.tabActive : ''}`} onClick={() => setTab('media')}><ImageIcon size={14} /> Медиа</button>
+              <button className={`${styles.tab} ${tab === 'stats' ? styles.tabActive : ''}`} onClick={() => setTab('stats')}><BarChart2 size={14} /> Статистика</button>
+              <button className={`${styles.tab} ${tab === 'tournaments' ? styles.tabActive : ''}`} onClick={() => setTab('tournaments')}><Trophy size={14} /> Турниры</button>
+              <button className={`${styles.tab} ${tab === 'activity' ? styles.tabActive : ''}`} onClick={() => setTab('activity')}><Activity size={14} /> Активность</button>
+              <button className={`${styles.tab} ${tab === 'achievements' ? styles.tabActive : ''}`} onClick={() => setTab('achievements')}><Award size={14} /> Достижения</button>
+            </div>
+
+            {tab === 'media' && (
+              <div className={styles.mediaGrid}>
+                {media.length === 0
+                  ? <p className={styles.emptyText}>Нет загруженных медиа</p>
+                  : media.map(m => (
+                    <div key={m.id} className={styles.mediaCard}>
+                      {m.media_type === 'image'
+                        ? <img src={getImageUrl(m.file_url) || ''} alt={m.title ?? ''} className={styles.mediaThumb} />
+                        : <video src={getImageUrl(m.file_url) || ''} className={styles.mediaThumb} muted />}
+                      {m.title && <p className={styles.mediaTitle}>{m.title}</p>}
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {tab === 'stats' && (
+              <div className={styles.statsPanel}>
+                <div className={styles.statRow}><span>Уровень</span><strong>{profile.level}</strong></div>
+                <div className={styles.statRow}><span>Рейтинг</span><strong>{profile.rating}</strong></div>
+                <div className={styles.statRow}><span>Турниров</span><strong>{profile.tourney_stats?.played ?? 0}</strong></div>
+                <div className={styles.statRow}><span>Побед</span><strong>{profile.tourney_stats?.wins ?? 0}</strong></div>
+                <div className={styles.statRow}><span>Опыт</span><strong>{profile.current_xp} / {profile.level * 100} XP</strong></div>
+                <div className={styles.xpBar}><div className={styles.xpFill} style={{ width: `${xpPercent}%` }} /></div>
+              </div>
+            )}
+
+            {tab === 'tournaments' && (
+              <p className={styles.emptyText}>Турниры скоро появятся</p>
+            )}
+
+            {tab === 'activity' && (
+              <p className={styles.emptyText}>Активность скоро появится</p>
+            )}
+
+            {tab === 'achievements' && (
+              <div className={styles.achievGrid}>
+                {achievements.length === 0
+                  ? <p className={styles.emptyText}>Нет достижений</p>
+                  : achievements.map(a => (
+                    <div key={a.id} className={styles.achievCard}>
+                      <div className={styles.achievIcon}>{a.icon}</div>
+                      <div className={styles.achievInfo}>
+                        <div className={styles.achievName}>{a.name}</div>
+                        <div className={styles.achievDesc}>{a.description}</div>
+                      </div>
+                      <div className={styles.achievPoints}>+{a.points}</div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
-          <div className={styles.xpBar}><div className={styles.xpFill} style={{ width: `${xpPercent}%` }} /></div>
-        </div>
 
-        <div className={styles.statsGrid}>
-          <div className={styles.statCard}><Star size={18} className={styles.statIcon} /><div className={styles.statValue}>{profile.level}</div><div className={styles.statLabel}>Уровень</div></div>
-          <div className={styles.statCard}><div className={styles.statValue}>{profile.rating}</div><div className={styles.statLabel}>Рейтинг</div></div>
-          <div className={styles.statCard}><Trophy size={18} className={styles.statIcon} /><div className={styles.statValue}>{profile.tourney_stats?.played ?? 0}</div><div className={styles.statLabel}>Турниров</div></div>
-          <div className={styles.statCard}><div className={styles.statValue}>{profile.tourney_stats?.wins ?? 0}</div><div className={styles.statLabel}>Побед</div></div>
-        </div>
+          {/* RIGHT: sidebar */}
+          <div className={styles.sidebar}>
 
-        {/* Tabs */}
-        <div className={styles.tabs}>
-          <button className={`${styles.tab} ${tab === 'media' ? styles.tabActive : ''}`} onClick={() => setTab('media')}><ImageIcon size={14} /> Медиа</button>
-          <button className={`${styles.tab} ${tab === 'achievements' ? styles.tabActive : ''}`} onClick={() => setTab('achievements')}><Award size={14} /> Достижения</button>
-        </div>
+            {/* Friends block */}
+            <div className={styles.sideCard}>
+              <div className={styles.sideCardHeader}><Users size={14} /> Друзья</div>
+              <p className={styles.sideCardEmpty}>Список друзей скоро</p>
+            </div>
 
-        {tab === 'media' && (
-          <div className={styles.mediaGrid}>
-            {media.length === 0
-              ? <p className={styles.emptyText}>Нет загруженных медиа</p>
-              : media.map(m => (
-                <div key={m.id} className={styles.mediaCard}>
-                  {m.media_type === 'image' ? (
-                    <img src={getImageUrl(m.file_url) || ''} alt={m.title ?? ''} className={styles.mediaThumb} />
-                  ) : (
-                    <video src={getImageUrl(m.file_url) || ''} className={styles.mediaThumb} muted />
-                  )}
-                  {m.title && <p className={styles.mediaTitle}>{m.title}</p>}
-                </div>
-              ))
-            }
-          </div>
-        )}
-
-        {tab === 'achievements' && (
-          <div className={styles.achievGrid}>
-            {achievements.length === 0
-              ? <p className={styles.emptyText}>Нет достижений</p>
-              : achievements.map(a => (
-                <div key={a.id} className={styles.achievCard}>
-                  <div className={styles.achievIcon}>{a.icon}</div>
-                  <div className={styles.achievInfo}>
-                    <div className={styles.achievName}>{a.name}</div>
-                    <div className={styles.achievDesc}>{a.description}</div>
+            {/* Achievements showcase */}
+            <div className={styles.sideCard}>
+              <div className={styles.sideCardHeader}><Award size={14} /> Достижения</div>
+              {achievements.length === 0
+                ? <p className={styles.sideCardEmpty}>Нет достижений</p>
+                : <div className={styles.achievShowcase}>
+                    {achievements.slice(0, 6).map(a => (
+                      <div key={a.id} className={styles.achievBadge} title={a.name}>{a.icon}</div>
+                    ))}
                   </div>
-                  <div className={styles.achievPoints}>+{a.points}</div>
-                </div>
-              ))
-            }
+              }
+            </div>
+
+            {/* Linked accounts */}
+            <div className={styles.sideCard}>
+              <div className={styles.sideCardHeader}>Привязанные аккаунты</div>
+              {profile.twitch_username
+                ? <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.linkedAccount}>
+                    <Twitch size={14} /> {profile.twitch_username}
+                  </a>
+                : <p className={styles.sideCardEmpty}>{isOwnProfile ? 'Привяжи аккаунты в редактировании' : 'Нет привязанных аккаунтов'}</p>
+              }
+            </div>
+
           </div>
-        )}
+        </div>
 
       </div>
 
