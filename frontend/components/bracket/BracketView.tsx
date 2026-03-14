@@ -129,9 +129,9 @@ export default function BracketView({ matches, section = 'winners', onSelectWinn
                     )}
                     <MatchCard
                       match={m}
-                      adminMode={!!adminMode}
-                      onSelectWinner={onSelectWinner}
-                      onDropPlayer={onDropPlayer}
+                      {...(adminMode ? { adminMode: true } : {})}
+                      {...(onSelectWinner ? { onSelectWinner } : {})}
+                      {...(onDropPlayer ? { onDropPlayer } : {})}
                     />
                     {/* Right connector lines (to next round) */}
                     {!isLastRound && (
