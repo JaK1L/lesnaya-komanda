@@ -6,6 +6,7 @@ from typing import List, Optional
 from datetime import datetime
 
 import asyncpg
+import json
 from pydantic import BaseModel, Field, field_validator
 
 from ..database import get_db
@@ -715,18 +716,19 @@ async def update_common_settings(
     db: asyncpg.Connection = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
+    value_json = json.dumps({
+        "discord_join_url": payload.discord_join_url,
+        "telegram_url": payload.telegram_url,
+        "maintenance_enabled": payload.maintenance_enabled,
+        "maintenance_message": payload.maintenance_message,
+    })
     await db.execute(
         """
         INSERT INTO site_settings (key, value)
-        VALUES ('common', $1)
+        VALUES ('common', $1::jsonb)
         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
         """,
-        {
-            "discord_join_url": payload.discord_join_url,
-            "telegram_url": payload.telegram_url,
-            "maintenance_enabled": payload.maintenance_enabled,
-            "maintenance_message": payload.maintenance_message,
-        },
+        value_json,
     )
     return payload
 

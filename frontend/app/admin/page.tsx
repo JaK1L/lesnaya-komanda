@@ -121,7 +121,7 @@ export default function AdminPage() {
       <PageErrorBoundary pageName="Админ-панель (Вход)">
         <div className={styles.container}>
           <div className={styles.loginBox}>
-            <h1>🌲 Админ-панель</h1>
+            <h1>Админ-панель</h1>
             <p>Лесная Команда</p>
             
             <form onSubmit={handleLogin} className={styles.loginForm}>
@@ -165,7 +165,7 @@ export default function AdminPage() {
     <PageErrorBoundary pageName="Админ-панель">
       <div className={styles.container}>
         <header className={styles.header}>
-          <h1>🌲 Админ-панель</h1>
+          <h1><Settings size={18} /> Админ-панель</h1>
           <button onClick={handleLogout} className={styles.logoutButton}>
             Выйти
           </button>
