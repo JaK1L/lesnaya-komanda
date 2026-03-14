@@ -15,7 +15,22 @@
       "Bash(xargs grep:*)",
       "Bash(grep -n \"GET.*users\\\\|/api/users\" backend/app/routes/*.py)",
       "Bash(sed -n '249,260p' frontend/app/profile/page.module.css)",
-      "Bash(sed -n '524,640p' frontend/app/profile/page.module.css)"
+      "Bash(sed -n '524,640p' frontend/app/profile/page.module.css)",
+      "Bash(grep -rn \"def.*merch\\\\|/merch\" /c/Users/jak1l/Desktop/lesnaya-komanda/backend/app/routes/*.py)",
+      "Bash(find /c/Users/jak1l/Desktop/lesnaya-komanda/frontend -type f -name *.ts -o -name *.tsx -o -name *.js -o -name *.json)",
+      "Bash(find /c/Users/jak1l/Desktop/lesnaya-komanda/frontend -type f \\\\\\(-name *.ts -o -name *.tsx -o -name *.js -o -name *.json \\\\\\) ! -path */.next/*)",
+      "Bash(grep -r from.*pages /c/Users/jak1l/Desktop/lesnaya-komanda/frontend/app --include=*.tsx)",
+      "Bash(ls -la /c/Users/jak1l/Desktop/lesnaya-komanda/backend/*.py)",
+      "Bash(grep -l \"^import\\\\|^from\" /c/Users/jak1l/Desktop/lesnaya-komanda/backend/test_*.py /c/Users/jak1l/Desktop/lesnaya-komanda/backend/check_*.py)",
+      "Bash(grep -r \"test_achievement_model\\\\|test_achievements_api\\\\|check_achievements\" /c/Users/jak1l/Desktop/lesnaya-komanda --include=*.py --include=*.md --include=*.txt --include=*.yaml --include=*.yml)",
+      "Bash(grep -r \"apply_achievements_migration\\\\|apply_button_fields\\\\|apply_event_registrations\" /c/Users/jak1l/Desktop/lesnaya-komanda --include=*.py)",
+      "Bash(grep -r from.*components/ui/Button /c/Users/jak1l/Desktop/lesnaya-komanda/frontend --include=*.tsx --include=*.ts)",
+      "Bash(ls -d */)",
+      "Bash(ls backend/*.py)",
+      "Bash(grep -r from.*ui/Card'' frontend/components frontend/app --include=*.tsx -l)",
+      "Bash(grep -r from.*ui/OptimizedImage'' frontend/components frontend/app --include=*.tsx -l)",
+      "Bash(rm -rf KIROGENIY/ docs/)",
+      "Bash(rm -f frontend/components/ui/Button.tsx frontend/components/ui/Card.tsx frontend/components/ui/OptimizedImage.tsx)"
     ]
   }
 }
