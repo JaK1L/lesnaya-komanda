@@ -61,8 +61,16 @@ async def get_public_profile(
         if row['is_hidden'] and not is_owner:
             raise HTTPException(status_code=403, detail="This profile is hidden")
 
-        # Tournament stats
         user_id = row['id']
+
+        # Roles
+        roles_rows = await db.fetch(
+            "SELECT r.id, r.name, r.color FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = $1 ORDER BY r.name",
+            user_id
+        )
+        roles = [{"id": r["id"], "name": r["name"], "color": r.get("color", "#9147ff")} for r in roles_rows]
+
+        # Tournament stats
         tourney_stats = {"played": 0, "wins": 0}
         if user_id:
             played = await db.fetchval(
@@ -94,6 +102,7 @@ async def get_public_profile(
             "points": row.get('points', 0),
             "tourney_stats": tourney_stats,
             "twitch_username": row.get('twitch_username'),
+            "roles": roles,
         }
 
     except HTTPException:

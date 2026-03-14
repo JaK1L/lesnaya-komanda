@@ -98,6 +98,22 @@ async def link_game_account(
     return {"message": "Аккаунт привязан"}
 
 
+@router.get("/public/{discord_id}/accounts")
+async def get_public_game_accounts(
+    discord_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+):
+    """Получить привязанные игровые аккаунты пользователя по Discord ID (публично)"""
+    user_id = await db.fetchval("SELECT id FROM users WHERE discord_id = $1", discord_id)
+    if not user_id:
+        return []
+    rows = await db.fetch(
+        "SELECT game, account_id, account_tag, region, linked_at FROM game_accounts WHERE user_id = $1 ORDER BY linked_at DESC",
+        user_id
+    )
+    return [dict(row) for row in rows]
+
+
 @router.get("/my-accounts")
 async def get_my_game_accounts(
     db: asyncpg.Connection = Depends(get_db),

@@ -12,6 +12,19 @@ import styles from './profile.module.css'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const TOKEN_KEY = 'lesnaya_token'
 
+interface Role {
+  id: number
+  name: string
+  color: string
+}
+
+interface GameAccount {
+  game: string
+  account_id: string
+  account_tag: string | null
+  region: string | null
+}
+
 interface PublicProfile {
   discord_id: number
   site_nickname: string | null
@@ -28,6 +41,7 @@ interface PublicProfile {
   tourney_stats: { played: number; wins: number }
   twitch_username: string | null
   is_hidden: boolean
+  roles: Role[]
 }
 
 interface MediaItem {
@@ -73,6 +87,10 @@ export default function PublicProfilePage() {
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [tabLoaded, setTabLoaded] = useState<Record<string, boolean>>({})
 
+  const [gameAccounts, setGameAccounts] = useState<GameAccount[]>([])
+  const [pinnedIds, setPinnedIds] = useState<number[]>([])
+  const [achievPickerOpen, setAchievPickerOpen] = useState(false)
+
   // Edit mode
   const [editOpen, setEditOpen] = useState(false)
   const [editNick, setEditNick] = useState('')
@@ -88,7 +106,13 @@ export default function PublicProfilePage() {
     const t = localStorage.getItem(TOKEN_KEY)
     setToken(t)
     loadProfile(t)
+    loadGameAccounts()
     if (t) loadFriendStatus(t)
+    // Load pinned from localStorage
+    try {
+      const saved = localStorage.getItem(`pinned_ach_${discord_id}`)
+      if (saved) setPinnedIds(JSON.parse(saved))
+    } catch {}
   }, [discord_id])
 
   const loadProfile = async (t?: string | null) => {
@@ -129,10 +153,23 @@ export default function PublicProfilePage() {
     } catch { }
   }
 
+  const loadGameAccounts = async () => {
+    try {
+      const res = await axios.get<GameAccount[]>(`${API_URL}/api/game-stats/public/${discord_id}/accounts`)
+      setGameAccounts(res.data)
+    } catch { }
+  }
+
   useEffect(() => {
     if (tab === 'media') loadMedia()
     else loadAchievements()
   }, [tab, discord_id])
+
+  const togglePin = (id: number) => {
+    const next = pinnedIds.includes(id) ? pinnedIds.filter(x => x !== id) : [...pinnedIds, id].slice(0, 6)
+    setPinnedIds(next)
+    localStorage.setItem(`pinned_ach_${discord_id}`, JSON.stringify(next))
+  }
 
   const sendFriendRequest = async () => {
     if (!token) return
@@ -312,6 +349,13 @@ export default function PublicProfilePage() {
               {joinDate && <span className={styles.statItem}><Calendar size={12} /> с {joinDate}</span>}
             </div>
             {profile.bio && <p className={styles.bio}>{profile.bio}</p>}
+            {profile.roles && profile.roles.length > 0 && (
+              <div className={styles.rolesRow}>
+                {profile.roles.map(r => (
+                  <span key={r.id} className={styles.roleBadge} style={{ borderColor: r.color, color: r.color }}>{r.name}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -328,56 +372,74 @@ export default function PublicProfilePage() {
               <button className={`${styles.tab} ${tab === 'achievements' ? styles.tabActive : ''}`} onClick={() => setTab('achievements')}><Award size={14} /> Достижения</button>
             </div>
 
-            {tab === 'media' && (
-              <div className={styles.mediaGrid}>
-                {media.length === 0
-                  ? <p className={styles.emptyText}>Нет загруженных медиа</p>
-                  : media.map(m => (
-                    <div key={m.id} className={styles.mediaCard}>
-                      {m.media_type === 'image'
-                        ? <img src={getImageUrl(m.file_url) || ''} alt={m.title ?? ''} className={styles.mediaThumb} />
-                        : <video src={getImageUrl(m.file_url) || ''} className={styles.mediaThumb} muted />}
-                      {m.title && <p className={styles.mediaTitle}>{m.title}</p>}
-                    </div>
-                  ))}
-              </div>
-            )}
-
-            {tab === 'stats' && (
-              <div className={styles.statsPanel}>
-                <div className={styles.statRow}><span>Уровень</span><strong>{profile.level}</strong></div>
-                <div className={styles.statRow}><span>Рейтинг</span><strong>{profile.rating}</strong></div>
-                <div className={styles.statRow}><span>Турниров</span><strong>{profile.tourney_stats?.played ?? 0}</strong></div>
-                <div className={styles.statRow}><span>Побед</span><strong>{profile.tourney_stats?.wins ?? 0}</strong></div>
-                <div className={styles.statRow}><span>Опыт</span><strong>{profile.current_xp} / {profile.level * 100} XP</strong></div>
-                <div className={styles.xpBar}><div className={styles.xpFill} style={{ width: `${xpPercent}%` }} /></div>
-              </div>
-            )}
-
-            {tab === 'tournaments' && (
-              <p className={styles.emptyText}>Турниры скоро появятся</p>
-            )}
-
-            {tab === 'activity' && (
-              <p className={styles.emptyText}>Активность скоро появится</p>
-            )}
-
-            {tab === 'achievements' && (
-              <div className={styles.achievGrid}>
-                {achievements.length === 0
-                  ? <p className={styles.emptyText}>Нет достижений</p>
-                  : achievements.map(a => (
-                    <div key={a.id} className={styles.achievCard}>
-                      <div className={styles.achievIcon}>{a.icon}</div>
-                      <div className={styles.achievInfo}>
-                        <div className={styles.achievName}>{a.name}</div>
-                        <div className={styles.achievDesc}>{a.description}</div>
+            <div className={styles.tabContent}>
+              {tab === 'media' && (
+                <div className={styles.mediaGrid}>
+                  {media.length === 0
+                    ? <p className={styles.emptyText}>Нет загруженных медиа</p>
+                    : media.map(m => (
+                      <div key={m.id} className={styles.mediaCard}>
+                        {m.media_type === 'image'
+                          ? <img src={getImageUrl(m.file_url) || ''} alt={m.title ?? ''} className={styles.mediaThumb} />
+                          : <video src={getImageUrl(m.file_url) || ''} className={styles.mediaThumb} muted />}
+                        {m.title && <p className={styles.mediaTitle}>{m.title}</p>}
                       </div>
-                      <div className={styles.achievPoints}>+{a.points}</div>
-                    </div>
-                  ))}
-              </div>
-            )}
+                    ))}
+                </div>
+              )}
+
+              {tab === 'stats' && (
+                <div className={styles.statsPanel}>
+                  <h3 className={styles.statsSectionTitle}>Статистика сайта</h3>
+                  <div className={styles.statRow}><span>Уровень</span><strong>{profile.level}</strong></div>
+                  <div className={styles.statRow}><span>Рейтинг</span><strong>{profile.rating}</strong></div>
+                  <div className={styles.statRow}><span>Турниров сыграно</span><strong>{profile.tourney_stats?.played ?? 0}</strong></div>
+                  <div className={styles.statRow}><span>Турниров выиграно</span><strong>{profile.tourney_stats?.wins ?? 0}</strong></div>
+                  <div className={styles.statRow}><span>Опыт</span><strong>{profile.current_xp} / {profile.level * 100} XP</strong></div>
+                  <div className={styles.xpBarInline}><div className={styles.xpFill} style={{ width: `${xpPercent}%` }} /></div>
+
+                  {gameAccounts.length > 0 && (
+                    <>
+                      <h3 className={styles.statsSectionTitle} style={{ marginTop: '16px' }}>Привязанные игры</h3>
+                      {gameAccounts.map(g => (
+                        <div key={g.game} className={styles.gameAccountRow}>
+                          <span className={styles.gameLabel}>{g.game === 'steam' ? 'Steam' : g.game === 'dota2' ? 'Dota 2' : g.game === 'valorant' ? 'Valorant' : g.game}</span>
+                          <span className={styles.gameId}>{g.account_tag ? `${g.account_id}#${g.account_tag}` : g.account_id}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  {gameAccounts.length === 0 && (
+                    <p className={styles.emptyText} style={{ marginTop: '12px' }}>Нет привязанных игровых аккаунтов</p>
+                  )}
+                </div>
+              )}
+
+              {tab === 'tournaments' && (
+                <p className={styles.emptyText}>Турниры скоро появятся</p>
+              )}
+
+              {tab === 'activity' && (
+                <p className={styles.emptyText}>Активность скоро появится</p>
+              )}
+
+              {tab === 'achievements' && (
+                <div className={styles.achievGrid}>
+                  {achievements.length === 0
+                    ? <p className={styles.emptyText}>Нет достижений</p>
+                    : achievements.map(a => (
+                      <div key={a.id} className={styles.achievCard}>
+                        <div className={styles.achievIcon}>{a.icon}</div>
+                        <div className={styles.achievInfo}>
+                          <div className={styles.achievName}>{a.name}</div>
+                          <div className={styles.achievDesc}>{a.description}</div>
+                        </div>
+                        <div className={styles.achievPoints}>+{a.points}</div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* RIGHT: sidebar */}
@@ -391,11 +453,19 @@ export default function PublicProfilePage() {
 
             {/* Achievements showcase */}
             <div className={styles.sideCard}>
-              <div className={styles.sideCardHeader}><Award size={14} /> Достижения</div>
+              <div className={styles.sideCardHeader}>
+                <span className={styles.sideCardHeaderLeft}><Award size={14} /> Достижения</span>
+                {isOwnProfile && achievements.length > 0 && (
+                  <button className={styles.sideCardEditBtn} onClick={() => { loadAchievements(); setAchievPickerOpen(true) }} title="Выбрать отображаемые"><Edit2 size={13} /></button>
+                )}
+              </div>
               {achievements.length === 0
                 ? <p className={styles.sideCardEmpty}>Нет достижений</p>
                 : <div className={styles.achievShowcase}>
-                    {achievements.slice(0, 6).map(a => (
+                    {(pinnedIds.length > 0
+                      ? achievements.filter(a => pinnedIds.includes(a.id))
+                      : achievements.slice(0, 6)
+                    ).map(a => (
                       <div key={a.id} className={styles.achievBadge} title={a.name}>{a.icon}</div>
                     ))}
                   </div>
@@ -405,12 +475,20 @@ export default function PublicProfilePage() {
             {/* Linked accounts */}
             <div className={styles.sideCard}>
               <div className={styles.sideCardHeader}>Привязанные аккаунты</div>
-              {profile.twitch_username
-                ? <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.linkedAccount}>
-                    <Twitch size={14} /> {profile.twitch_username}
-                  </a>
-                : <p className={styles.sideCardEmpty}>{isOwnProfile ? 'Привяжи аккаунты в редактировании' : 'Нет привязанных аккаунтов'}</p>
-              }
+              {profile.twitch_username && (
+                <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.linkedAccount}>
+                  <Twitch size={14} /> {profile.twitch_username}
+                </a>
+              )}
+              {gameAccounts.map(g => (
+                <div key={g.game} className={styles.linkedAccount}>
+                  <span className={styles.gameChip}>{g.game === 'steam' ? '🎮' : g.game === 'dota2' ? '⚔️' : g.game === 'valorant' ? '🔫' : '🕹️'}</span>
+                  <span>{g.account_tag ? `${g.account_id}#${g.account_tag}` : g.account_id}</span>
+                </div>
+              ))}
+              {!profile.twitch_username && gameAccounts.length === 0 && (
+                <p className={styles.sideCardEmpty}>{isOwnProfile ? 'Привяжи аккаунты в редактировании' : 'Нет привязанных аккаунтов'}</p>
+              )}
             </div>
 
           </div>
@@ -449,6 +527,32 @@ export default function PublicProfilePage() {
             <div className={styles.modalFooter}>
               <button className={styles.cancelBtn} onClick={() => setEditOpen(false)}>Отмена</button>
               <button className={styles.saveBtn} onClick={saveProfile} disabled={editSaving}>Сохранить</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Achievement Picker Modal */}
+      {achievPickerOpen && (
+        <div className={styles.modalOverlay} onClick={() => setAchievPickerOpen(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <span>Выбери достижения для показа (до 6)</span>
+              <button className={styles.modalClose} onClick={() => setAchievPickerOpen(false)}><X size={18} /></button>
+            </div>
+            <div className={styles.achievPickerGrid}>
+              {achievements.map(a => (
+                <button
+                  key={a.id}
+                  className={`${styles.achievPickerItem} ${pinnedIds.includes(a.id) ? styles.achievPickerSelected : ''}`}
+                  onClick={() => togglePin(a.id)}
+                  title={a.name}
+                >
+                  <span className={styles.achievIcon}>{a.icon}</span>
+                  <span className={styles.achievPickerName}>{a.name}</span>
+                  {pinnedIds.includes(a.id) && <Check size={12} className={styles.achievPickerCheck} />}
+                </button>
+              ))}
             </div>
           </div>
         </div>
