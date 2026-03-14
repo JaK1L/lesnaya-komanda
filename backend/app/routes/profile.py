@@ -80,7 +80,7 @@ async def get_public_profile(
 
         # Tournament stats
         tourney_stats = {"played": 0, "wins": 0}
-        if user_id:
+        try:
             played = await db.fetchval(
                 "SELECT COUNT(*) FROM tournament_registrations WHERE user_id = $1", user_id
             ) or 0
@@ -92,6 +92,8 @@ async def get_public_profile(
                 user_id
             ) or 0
             tourney_stats = {"played": int(played), "wins": int(wins)}
+        except Exception:
+            pass
 
         return {
             "discord_id": row['discord_id'],
@@ -116,7 +118,8 @@ async def get_public_profile(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[ERROR] Error fetching public profile: {str(e)}")
+        import traceback
+        print(f"[ERROR] get_public_profile({discord_id}): {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching profile: {str(e)}"
