@@ -24,7 +24,6 @@ interface Props {
   adminMode?: boolean
 }
 
-const CARD_W = 168   // match card width
 const CARD_H = 68    // match card height (2 slots × 32 + 4 divider)
 const GAP_R1 = 16    // gap between round-1 cards
 const CONN_W = 32    // horizontal connector width per side
@@ -107,9 +106,6 @@ function ConnectorSvg({ fromCount, toCount, fromUnit, toUnit }: {
   const lines: React.ReactNode[] = []
 
   for (let i = 0; i < toCount; i++) {
-    // center-y of the output (next round) match
-    const outCY = toUnit * i + toUnit / 2
-
     // two input matches feeding this output
     const topIdx = i * 2
     const botIdx = i * 2 + 1
