@@ -100,8 +100,6 @@ export default function MediaPage() {
   // image upload
   const [imgFile, setImgFile] = useState<File | null>(null)
   const [imgPreview, setImgPreview] = useState<string | null>(null)
-  const [imgUploading] = useState(false)
-
   // video by url
   const [videoUrl, setVideoUrl] = useState('')
   const [videoPreview, setVideoPreview] = useState<ReturnType<typeof getVideoEmbed>>(null)
