@@ -35,7 +35,8 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
     try {
       const t = localStorage.getItem('lesnaya_token')
       if (t) {
-        const id = JSON.parse(atob(t.split('.')[1])).discord_id
+        const payload = JSON.parse(atob(t.split('.')[1]))
+        const id = payload.discord_id ?? payload.sub
         if (id) { router.push(`/profile/${id}`); return }
       }
     } catch { /* ignore */ }
