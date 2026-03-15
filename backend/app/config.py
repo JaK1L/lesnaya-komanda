@@ -1,6 +1,7 @@
 """
 Конфигурация приложения
 """
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator, ValidationError
 from typing import Optional, Union
@@ -68,8 +69,13 @@ class Settings(BaseSettings):
         return v
     
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(
+            ".env",
+            "backend/.env",
+            str(Path(__file__).resolve().parents[2] / ".env"),
+        ),
         env_file_encoding="utf-8",
+        extra="ignore",
     )
 
 
