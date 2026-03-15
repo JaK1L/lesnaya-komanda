@@ -163,10 +163,10 @@ export default function PublicProfilePage() {
       setShowcase([])
       setShowcaseIds([])
     })
-    if (token) {
+    if (token && !isOwnProfile) {
       void axios.get(`${API_URL}/api/friends/status/${encodedProfileIdentifier}`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => setFriendStatus(r.data.status)).catch(() => setFriendStatus('none'))
     }
-  }, [profile, token, encodedProfileIdentifier])
+  }, [profile, token, encodedProfileIdentifier, isOwnProfile])
 
   useEffect(() => {
     if (!profile) return
@@ -276,7 +276,7 @@ export default function PublicProfilePage() {
   }
 
   async function sendFriendRequest() {
-    if (!token) return
+    if (!token || isOwnProfile) return
     setFriendLoading(true)
     try {
       const res = await axios.post<{ status: 'sent' | 'accepted' }>(`${API_URL}/api/friends/request/${encodedProfileIdentifier}`, {}, { headers: { Authorization: `Bearer ${token}` } })
@@ -326,16 +326,14 @@ export default function PublicProfilePage() {
         {toast && <div className={`${styles.statusMessage} ${toast.type === 'success' ? styles.statusSuccess : styles.statusError}`}>{toast.text}</div>}
 
         <section className={styles.hero}>
-          <div className={styles.banner} style={profile.banner_url ? { backgroundImage: `linear-gradient(180deg, rgba(13, 18, 30, 0.18), rgba(13, 18, 30, 0.82)), url(${getImageUrl(profile.banner_url)})` } : undefined}>
+          <div className={styles.banner} style={profile.banner_url ? { backgroundImage: `linear-gradient(180deg, rgba(12, 8, 22, 0.28), rgba(12, 8, 22, 0.84)), url(${getImageUrl(profile.banner_url)})` } : undefined}>
             <div className={styles.bannerGlow} />
-            {isOwnProfile && <><button className={styles.bannerEditBtn} onClick={() => bannerInputRef.current?.click()} disabled={uploading === 'banner'}><Camera size={14} />{uploading === 'banner' ? 'Загрузка баннера...' : 'Загрузить баннер'}</button><input ref={bannerInputRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && void updateFile('banner', e.target.files[0])} /></>}
           </div>
 
           <div className={styles.heroBody}>
             <div className={styles.identity}>
               <div className={styles.avatarWrap}>
                 {profile.avatar_url ? <img src={getImageUrl(profile.avatar_url) || ''} alt={displayName} className={styles.avatar} /> : <div className={styles.avatarPlaceholder}>{displayName.charAt(0).toUpperCase()}</div>}
-                {isOwnProfile && <><button className={styles.avatarEditBtn} onClick={() => avatarInputRef.current?.click()} disabled={uploading === 'avatar'} aria-label="Загрузить аватар"><Camera size={14} /></button><input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && void updateFile('avatar', e.target.files[0])} /></>}
               </div>
 
               <div className={styles.headingBlock}>
@@ -356,7 +354,14 @@ export default function PublicProfilePage() {
             </div>
 
             <div className={styles.actions}>
-              {isOwnProfile ? <button className={styles.primaryBtn} onClick={openEdit}><Edit2 size={14} />Редактировать профиль</button> : token ? <button className={`${styles.primaryBtn} ${friendStatus === 'friends' || friendStatus === 'pending' ? styles.primaryBtnMuted : ''}`} onClick={sendFriendRequest} disabled={friendLoading || friendStatus === 'friends' || friendStatus === 'pending'}><UserPlus size={14} />{friendStatus === 'friends' ? 'Вы уже друзья' : friendStatus === 'pending' ? 'Заявка отправлена' : friendStatus === 'incoming' ? 'Принять заявку' : 'Добавить в друзья'}</button> : null}
+              {isOwnProfile ? (
+                <button className={styles.primaryBtn} onClick={openEdit}><Edit2 size={14} />Редактировать профиль</button>
+              ) : token ? (
+                <button className={`${styles.primaryBtn} ${friendStatus === 'friends' || friendStatus === 'pending' ? styles.primaryBtnMuted : ''}`} onClick={sendFriendRequest} disabled={friendLoading || friendStatus === 'friends' || friendStatus === 'pending'}>
+                  <UserPlus size={14} />
+                  {friendStatus === 'friends' ? 'Вы уже друзья' : friendStatus === 'pending' ? 'Заявка отправлена' : friendStatus === 'incoming' ? 'Принять заявку' : 'Добавить в друзья'}
+                </button>
+              ) : null}
               <button className={styles.secondaryBtn} onClick={copyLink}>{copied ? <Check size={14} /> : <Copy size={14} />}{copied ? 'Ссылка скопирована' : 'Поделиться профилем'}</button>
             </div>
           </div>
@@ -393,7 +398,7 @@ export default function PublicProfilePage() {
         </section>
       </main>
 
-      {editOpen && <div className={styles.modalOverlay} onClick={() => setEditOpen(false)}><div className={styles.modal} onClick={(event) => event.stopPropagation()}><div className={styles.modalHeader}><span>Редактирование профиля</span><button className={styles.modalClose} onClick={() => setEditOpen(false)}><X size={18} /></button></div><label className={styles.fieldLabel}>Никнейм</label><input className={styles.fieldInput} value={editNick} onChange={(event) => setEditNick(event.target.value)} placeholder={profile.discord_username} maxLength={32} /><label className={styles.fieldLabel}>О себе</label><textarea className={styles.fieldTextarea} value={editBio} onChange={(event) => setEditBio(event.target.value)} placeholder="Коротко расскажи о себе, своей команде или любимых играх." maxLength={300} rows={5} /><label className={styles.fieldLabel}>Twitch</label><div className={styles.twitchRow}><input className={styles.fieldInput} value={twitchInput} onChange={(event) => setTwitchInput(event.target.value)} placeholder="twitch_username" /><button className={styles.twitchSaveBtn} onClick={saveTwitch} disabled={twitchSaving}>{profile.twitch_username && !twitchInput.trim() ? 'Отвязать' : 'Сохранить'}</button></div><label className={styles.checkboxRow}><input type="checkbox" checked={editHidden} onChange={(event) => setEditHidden(event.target.checked)} /><span>Скрыть профиль от других пользователей</span></label><div className={styles.modalFooter}><button className={styles.cancelBtn} onClick={() => setEditOpen(false)}>Отмена</button><button className={styles.saveBtn} onClick={saveProfile} disabled={editSaving}>{editSaving ? 'Сохранение...' : 'Сохранить'}</button></div></div></div>}
+      {editOpen && <div className={styles.modalOverlay} onClick={() => setEditOpen(false)}><div className={styles.modal} onClick={(event) => event.stopPropagation()}><div className={styles.modalHeader}><span>Редактирование профиля</span><button className={styles.modalClose} onClick={() => setEditOpen(false)}><X size={18} /></button></div><div className={styles.uploadRow}><button className={styles.uploadActionBtn} onClick={() => avatarInputRef.current?.click()} disabled={uploading === 'avatar'}><Camera size={14} />{uploading === 'avatar' ? 'Загрузка аватара...' : 'Изменить аватар'}</button><button className={styles.uploadActionBtn} onClick={() => bannerInputRef.current?.click()} disabled={uploading === 'banner'}><ImageIcon size={14} />{uploading === 'banner' ? 'Загрузка баннера...' : 'Изменить баннер'}</button><input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={(event) => event.target.files?.[0] && void updateFile('avatar', event.target.files[0])} /><input ref={bannerInputRef} type="file" accept="image/*" hidden onChange={(event) => event.target.files?.[0] && void updateFile('banner', event.target.files[0])} /></div><label className={styles.fieldLabel}>Никнейм</label><input className={styles.fieldInput} value={editNick} onChange={(event) => setEditNick(event.target.value)} placeholder={profile.discord_username} maxLength={32} /><label className={styles.fieldLabel}>О себе</label><textarea className={styles.fieldTextarea} value={editBio} onChange={(event) => setEditBio(event.target.value)} placeholder="Коротко расскажи о себе, своей команде или любимых играх." maxLength={300} rows={5} /><label className={styles.fieldLabel}>Twitch</label><div className={styles.twitchRow}><input className={styles.fieldInput} value={twitchInput} onChange={(event) => setTwitchInput(event.target.value)} placeholder="twitch_username" /><button className={styles.twitchSaveBtn} onClick={saveTwitch} disabled={twitchSaving}>{profile.twitch_username && !twitchInput.trim() ? 'Отвязать' : 'Сохранить'}</button></div><label className={styles.checkboxRow}><input type="checkbox" checked={editHidden} onChange={(event) => setEditHidden(event.target.checked)} /><span>Скрыть профиль от других пользователей</span></label><div className={styles.modalFooter}><button className={styles.cancelBtn} onClick={() => setEditOpen(false)}>Отмена</button><button className={styles.saveBtn} onClick={saveProfile} disabled={editSaving}>{editSaving ? 'Сохранение...' : 'Сохранить'}</button></div></div></div>}
 
       {achievementsOpen && <div className={styles.modalOverlay} onClick={() => setAchievementsOpen(false)}><div className={styles.modal} onClick={(event) => event.stopPropagation()}><div className={styles.modalHeader}><span>Выбери до 3 достижений для витрины</span><button className={styles.modalClose} onClick={() => setAchievementsOpen(false)}><X size={18} /></button></div><div className={styles.pickerGrid}>{achievements.map((item) => <button key={item.id} className={`${styles.pickerItem} ${showcaseIds.includes(item.id) ? styles.pickerItemSelected : ''}`} onClick={() => toggleShowcase(item.id)} title={item.name}><span className={styles.pickerIcon}>{item.icon}</span><span className={styles.pickerText}><strong>{item.name}</strong><span>{item.description}</span></span>{showcaseIds.includes(item.id) && <Check size={14} className={styles.pickerCheck} />}</button>)}</div><div className={styles.modalFooter}><button className={styles.cancelBtn} onClick={() => setAchievementsOpen(false)}>Отмена</button><button className={styles.saveBtn} onClick={saveShowcase} disabled={showcaseSaving}>{showcaseSaving ? 'Сохранение...' : 'Сохранить витрину'}</button></div></div></div>}
 
