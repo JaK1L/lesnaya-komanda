@@ -53,13 +53,16 @@ async def resolve_user_by_identifier(
     if numeric_value is None:
         return None
 
+    numeric_text = str(numeric_value)
+
     row = await db.fetchrow(
         """
         SELECT id, discord_id, user_tag, is_hidden
         FROM users
-        WHERE discord_id = $1
+        WHERE discord_id IS NOT NULL
+          AND discord_id::text = $1
         """,
-        numeric_value,
+        numeric_text,
     )
     if row:
         return row
@@ -68,7 +71,7 @@ async def resolve_user_by_identifier(
         """
         SELECT id, discord_id, user_tag, is_hidden
         FROM users
-        WHERE id = $1
+        WHERE id::text = $1
         """,
-        numeric_value,
+        numeric_text,
     )
