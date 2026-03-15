@@ -102,6 +102,7 @@ class ProfileService:
                 game_prefs = None
             
             return ProfileResponse(
+                user_id=user_id,
                 discord_id=row['discord_id'] if row['discord_id'] else None,
                 site_nickname=row['site_nickname'],
                 discord_username=row['discord_username'],

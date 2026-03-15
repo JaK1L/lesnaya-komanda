@@ -20,7 +20,7 @@ function decodePayload(token: string): JwtPayload | null {
 }
 
 function toIdentifierString(value: unknown): string | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
+  if (typeof value === 'number' && Number.isSafeInteger(value)) {
     return String(Math.trunc(value))
   }
   if (typeof value === 'string' && value.trim().length > 0) {
@@ -38,16 +38,9 @@ export function getProfileIdentifierFromToken(token: string | null): string | nu
   const payload = decodePayload(token)
   if (!payload) return null
 
-  const discordId = toIdentifierString(payload.discord_id)
-  if (discordId && isNumeric(discordId)) {
-    return discordId
-  }
-
-  if (payload.type === 'discord') {
-    const discordSub = toIdentifierString(payload.sub)
-    if (discordSub && isNumeric(discordSub)) {
-      return discordSub
-    }
+  const userTag = toIdentifierString(payload.user_tag)
+  if (userTag) {
+    return userTag
   }
 
   const userId = toIdentifierString(payload.user_id)
@@ -55,9 +48,9 @@ export function getProfileIdentifierFromToken(token: string | null): string | nu
     return userId
   }
 
-  const userTag = toIdentifierString(payload.user_tag)
-  if (userTag) {
-    return userTag
+  const discordId = toIdentifierString(payload.discord_id)
+  if (discordId && isNumeric(discordId)) {
+    return discordId
   }
 
   return null
@@ -67,11 +60,6 @@ export function getProfileIdentifierFromProfileResponse(profile: unknown): strin
   if (!profile || typeof profile !== 'object') return null
   const data = profile as Record<string, unknown>
 
-  const discordId = toIdentifierString(data.discord_id)
-  if (discordId && isNumeric(discordId)) {
-    return discordId
-  }
-
   const userTag = toIdentifierString(data.user_tag)
   if (userTag) {
     return userTag
@@ -80,6 +68,11 @@ export function getProfileIdentifierFromProfileResponse(profile: unknown): strin
   const userId = toIdentifierString(data.user_id ?? data.id)
   if (userId && isNumeric(userId)) {
     return userId
+  }
+
+  const discordId = toIdentifierString(data.discord_id)
+  if (discordId && isNumeric(discordId)) {
+    return discordId
   }
 
   return null
