@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
@@ -17,13 +17,13 @@ interface NavigationProps {
 }
 
 const NAV_ITEMS = [
-  { label: 'Наша команда', href: '/team' },
-  { label: 'Стримы', href: '#streams' },
-  { label: 'Турниры', href: '/tournaments' },
-  { label: 'Медиа', href: '/media' },
-  { label: 'О нас', href: '/about' },
-  { label: 'Соц. сети', href: '/social' },
-  { label: 'Мерч', href: '/merch' },
+  { label: 'РќР°С€Р° РєРѕРјР°РЅРґР°', href: '/team' },
+  { label: 'РЎС‚СЂРёРјС‹', href: '#streams' },
+  { label: 'РўСѓСЂРЅРёСЂС‹', href: '/tournaments' },
+  { label: 'РњРµРґРёР°', href: '/media' },
+  { label: 'Рћ РЅР°СЃ', href: '/about' },
+  { label: 'РЎРѕС†. СЃРµС‚Рё', href: '/social' },
+  { label: 'РњРµСЂС‡', href: '/merch' },
 ]
 
 export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
@@ -36,36 +36,45 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
 
   const handleProfileClick = async () => {
     try {
-      const t = localStorage.getItem('lesnaya_token')
-      let profileIdentifier = getProfileIdentifierFromToken(t)
+      const token = localStorage.getItem('lesnaya_token')
+      let profileIdentifier = getProfileIdentifierFromToken(token)
 
-      if (t) {
+      if (token) {
         try {
           const res = await axios.get(`${API_URL}/api/profile`, {
-            headers: { Authorization: `Bearer ${t}` },
+            headers: { Authorization: `Bearer ${token}` },
           })
           const canonicalIdentifier = getProfileIdentifierFromProfileResponse(res.data)
           if (canonicalIdentifier) {
             profileIdentifier = canonicalIdentifier
           }
-        } catch { /* ignore and use token fallback */ }
+        } catch {
+          // Use token fallback when canonical profile lookup fails.
+        }
       }
 
       if (profileIdentifier) {
         router.push(`/profile/${encodeURIComponent(profileIdentifier)}`)
         return
       }
-    } catch { /* ignore */ }
+    } catch {
+      // Fall back to generic profile route.
+    }
+
     router.push('/profile')
   }
 
   const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen)
+    setMobileMenuOpen(prev => !prev)
+  }
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false)
   }
 
   const handleStreamsClick = (e: React.MouseEvent) => {
     e.preventDefault()
-    setMobileMenuOpen(false)
+    closeMobileMenu()
     if (pathname === '/') {
       document.getElementById('streams')?.scrollIntoView({ behavior: 'smooth' })
     } else {
@@ -84,10 +93,11 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
         if (loginModalOpen) {
           setLoginModalOpen(false)
         } else if (mobileMenuOpen) {
-          setMobileMenuOpen(false)
+          closeMobileMenu()
         }
       }
     }
+
     document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
   }, [mobileMenuOpen, loginModalOpen])
@@ -100,157 +110,157 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   }, [mobileMenuOpen])
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(e.target as Node) && mobileMenuOpen) {
-        setMobileMenuOpen(false)
+    const handlePointerOutside = (e: PointerEvent) => {
+      if (mobileMenuOpen && navRef.current && !navRef.current.contains(e.target as Node)) {
+        closeMobileMenu()
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+
+    document.addEventListener('pointerdown', handlePointerOutside)
+    return () => document.removeEventListener('pointerdown', handlePointerOutside)
   }, [mobileMenuOpen])
 
   return (
     <>
-      <nav className={styles.nav} ref={navRef}>
-        <div className={styles.container}>
-          {/* Logo */}
-          <Link href="/" className={styles.logo}>
-            <Logo />
-          </Link>
+      <div className={styles.navWrapper} ref={navRef}>
+        <nav className={styles.nav}>
+          <div className={styles.container}>
+            <Link href="/" className={styles.logo}>
+              <Logo />
+            </Link>
 
-          {/* Desktop Navigation */}
-          <div className={styles.navLinks}>
-            {NAV_ITEMS.map((item) =>
-              item.label === 'Стримы' ? (
-                <a
-                  key="streams"
-                  href="#"
-                  className={styles.link}
-                  onClick={handleStreamsClick}
-                >
-                  {item.label}
-                </a>
+            <div className={styles.navLinks}>
+              {NAV_ITEMS.map(item =>
+                item.label === 'РЎС‚СЂРёРјС‹' ? (
+                  <a
+                    key="streams"
+                    href="#"
+                    className={styles.link}
+                    onClick={handleStreamsClick}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={styles.link}
+                    onClick={closeMobileMenu}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              )}
+            </div>
+
+            <div className={styles.headerBtns}>
+              {isAuthenticated ? (
+                <>
+                  <button onClick={handleProfileClick} className={`${styles.btn} ${styles.linkButton}`}>
+                    РџСЂРѕС„РёР»СЊ
+                  </button>
+                  <button onClick={onLogout} className={`${styles.btn} ${styles.loginButton}`}>
+                    Р’С‹Р№С‚Рё
+                  </button>
+                </>
               ) : (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={styles.link}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              )
-            )}
+                <>
+                  <Link href="/register" className={`${styles.btn} ${styles.linkButton}`}>
+                    Р РµРіРёСЃС‚СЂР°С†РёСЏ
+                  </Link>
+                  <button
+                    onClick={() => setLoginModalOpen(true)}
+                    className={`${styles.btn} ${styles.loginButton}`}
+                  >
+                    Р’РѕР№С‚Рё
+                  </button>
+                </>
+              )}
+            </div>
+
+            <button
+              className={styles.mobileMenuButton}
+              onClick={toggleMobileMenu}
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
+        </nav>
 
-          {/* Desktop Auth Buttons */}
-          <div className={styles.headerBtns}>
-            {isAuthenticated ? (
-              <>
-                <button onClick={handleProfileClick} className={`${styles.btn} ${styles.linkButton}`}>
-                  Профиль
-                </button>
-                <button onClick={onLogout} className={`${styles.btn} ${styles.loginButton}`}>
-                  Выйти
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href="/register" className={`${styles.btn} ${styles.linkButton}`}>
-                  Регистрация
-                </Link>
-                <button 
-                  onClick={() => setLoginModalOpen(true)} 
-                  className={`${styles.btn} ${styles.loginButton}`}
-                >
-                  Войти
-                </button>
-              </>
-            )}
-          </div>
+        {mobileMenuOpen && (
+          <div className={styles.mobileMenu}>
+            <div className={styles.mobileNavLinks}>
+              {NAV_ITEMS.map(item =>
+                item.label === 'РЎС‚СЂРёРјС‹' ? (
+                  <a
+                    key="mobile-streams"
+                    href="#"
+                    className={styles.mobileLink}
+                    onClick={handleStreamsClick}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={`mobile-${item.href}`}
+                    href={item.href}
+                    className={styles.mobileLink}
+                    onClick={closeMobileMenu}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              )}
+            </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            className={styles.mobileMenuButton}
-            onClick={toggleMobileMenu}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-      </nav>
-
-      {mobileMenuOpen && (
-        <div className={styles.mobileMenu}>
-          <div className={styles.mobileNavLinks}>
-            {NAV_ITEMS.map((item) =>
-              item.label === 'Стримы' ? (
-                <a
-                  key="mobile-streams"
-                  href="#"
-                  className={styles.mobileLink}
-                  onClick={handleStreamsClick}
-                >
-                  {item.label}
-                </a>
+            <div className={styles.mobileAuth}>
+              {isAuthenticated ? (
+                <>
+                  <button
+                    onClick={() => {
+                      closeMobileMenu()
+                      void handleProfileClick()
+                    }}
+                    className={`${styles.btn} ${styles.linkButton}`}
+                  >
+                    РџСЂРѕС„РёР»СЊ
+                  </button>
+                  <button
+                    onClick={() => {
+                      closeMobileMenu()
+                      onLogout()
+                    }}
+                    className={`${styles.btn} ${styles.loginButton}`}
+                  >
+                    Р’С‹Р№С‚Рё
+                  </button>
+                </>
               ) : (
-                <Link
-                  key={`mobile-${item.href}`}
-                  href={item.href}
-                  className={styles.mobileLink}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              )
-            )}
+                <>
+                  <Link
+                    href="/register"
+                    className={`${styles.btn} ${styles.linkButton}`}
+                    onClick={closeMobileMenu}
+                  >
+                    Р РµРіРёСЃС‚СЂР°С†РёСЏ
+                  </Link>
+                  <button
+                    onClick={() => {
+                      closeMobileMenu()
+                      setLoginModalOpen(true)
+                    }}
+                    className={`${styles.btn} ${styles.loginButton}`}
+                  >
+                    Р’РѕР№С‚Рё
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-
-          <div className={styles.mobileAuth}>
-            {isAuthenticated ? (
-              <>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false)
-                    handleProfileClick()
-                  }}
-                  className={`${styles.btn} ${styles.linkButton}`}
-                >
-                  Профиль
-                </button>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false)
-                    onLogout()
-                  }}
-                  className={`${styles.btn} ${styles.loginButton}`}
-                >
-                  Выйти
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/register"
-                  className={`${styles.btn} ${styles.linkButton}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Регистрация
-                </Link>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false)
-                    setLoginModalOpen(true)
-                  }}
-                  className={`${styles.btn} ${styles.loginButton}`}
-                >
-                  Войти
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <LoginModal
         isOpen={loginModalOpen}
