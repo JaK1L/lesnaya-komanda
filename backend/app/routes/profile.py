@@ -4,19 +4,42 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import FileResponse
 from pathlib import Path
+from typing import Any, Dict, Optional
 import asyncpg
 
 from ..database import get_db
 from ..schemas import ProfileResponse, ProfileUpdate
 from ..services.profile_service import ProfileService
+from ..services.user_identity import resolve_user_by_identifier
 from ..auth import get_current_user, get_optional_current_user, User
 
 router = APIRouter()
+XP_PER_LEVEL = 1000
 
 
-@router.get("/profile/public/{discord_id}")
+def _is_owner(current_user: Optional[User], owner_user_id: int) -> bool:
+    return current_user is not None and current_user.id == owner_user_id
+
+
+async def _ensure_profile_visible(
+    db: asyncpg.Connection,
+    profile_identifier: str,
+    current_user: Optional[User],
+) -> Dict[str, Any]:
+    row = await resolve_user_by_identifier(db, profile_identifier)
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    if row["is_hidden"] and not _is_owner(current_user, row["id"]):
+        raise HTTPException(status_code=403, detail="This profile is hidden")
+
+    return dict(row)
+
+
+@router.get("/profile/public/{profile_identifier}")
 async def get_public_profile(
-    discord_id: int,
+    profile_identifier: str,
     db: asyncpg.Connection = Depends(get_db),
     current_user: User = Depends(get_optional_current_user),
 ):
@@ -27,6 +50,12 @@ async def get_public_profile(
     Returns profile if user exists and hasn't hidden their profile.
     """
     try:
+        profile_meta = await resolve_user_by_identifier(db, profile_identifier)
+        if not profile_meta:
+            raise HTTPException(status_code=404, detail="Profile not found")
+
+        user_id = profile_meta["id"]
+
         # Fetch user profile
         row = await db.fetchrow(
             """
@@ -47,20 +76,17 @@ async def get_public_profile(
                 points,
                 twitch_username
             FROM users
-            WHERE discord_id = $1
+            WHERE id = $1
             """,
-            discord_id
+            user_id
         )
 
         if not row:
             raise HTTPException(status_code=404, detail="Profile not found")
 
         # Check if profile is hidden (owner can always view their own)
-        is_owner = current_user is not None and current_user.id == row['id']
-        if row['is_hidden'] and not is_owner:
+        if row['is_hidden'] and not _is_owner(current_user, row['id']):
             raise HTTPException(status_code=403, detail="This profile is hidden")
-
-        user_id = row['id']
 
         # banner_url — optional column, may not exist yet
         try:
@@ -96,6 +122,7 @@ async def get_public_profile(
             pass
 
         return {
+            "user_id": row["id"],
             "discord_id": row['discord_id'],
             "site_nickname": row['site_nickname'],
             "discord_username": row['discord_username'],
@@ -109,6 +136,7 @@ async def get_public_profile(
             "level": row.get('level', 1),
             "current_xp": row.get('current_xp', 0),
             "total_xp": row.get('total_xp', 0),
+            "xp_for_next_level": XP_PER_LEVEL,
             "points": row.get('points', 0),
             "tourney_stats": tourney_stats,
             "twitch_username": row.get('twitch_username'),
@@ -119,34 +147,151 @@ async def get_public_profile(
         raise
     except Exception as e:
         import traceback
-        print(f"[ERROR] get_public_profile({discord_id}): {str(e)}\n{traceback.format_exc()}")
+        print(f"[ERROR] get_public_profile({profile_identifier}): {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching profile: {str(e)}"
         )
 
 
-@router.get("/profile/public/{discord_id}/media")
+@router.get("/profile/public/{profile_identifier}/media")
 async def get_user_media(
-    discord_id: int,
+    profile_identifier: str,
     offset: int = 0,
     limit: int = 20,
     db: asyncpg.Connection = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     """Get media uploaded by a user (public)."""
+    profile_meta = await _ensure_profile_visible(db, profile_identifier, current_user)
+    offset = max(0, offset)
+    limit = max(1, min(limit, 100))
+
     rows = await db.fetch(
         """
         SELECT m.id, m.user_id, m.title, m.description, m.media_type, m.file_url, m.created_at,
                COALESCE(u.site_nickname, u.discord_username) AS username, u.avatar_url
         FROM media_items m
         JOIN users u ON u.id = m.user_id
-        WHERE u.discord_id = $1
+        WHERE m.user_id = $1
         ORDER BY m.created_at DESC
         LIMIT $2 OFFSET $3
         """,
-        discord_id, limit, offset,
+        profile_meta["id"], limit, offset,
     )
     return [dict(r) for r in rows]
+
+
+@router.get("/profile/public/{profile_identifier}/activity")
+async def get_public_activity(
+    profile_identifier: str,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
+    """Get public activity summary for a user profile."""
+    profile_meta = await _ensure_profile_visible(db, profile_identifier, current_user)
+    target_discord_id = profile_meta.get("discord_id")
+
+    message_count = 0
+    voice_hours = 0.0
+    recent_messages = []
+    recent_voice = []
+
+    if target_discord_id is None:
+        return {
+            "message_count": message_count,
+            "voice_hours": voice_hours,
+            "recent_messages": [],
+            "recent_voice": [],
+        }
+
+    try:
+        message_count = int(
+            await db.fetchval(
+                "SELECT COUNT(*) FROM activity_log WHERE discord_id = $1",
+                target_discord_id,
+            ) or 0
+        )
+
+        voice_seconds = float(
+            await db.fetchval(
+                """SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (left_at - joined_at))), 0)
+                   FROM voice_sessions WHERE discord_id = $1 AND left_at IS NOT NULL""",
+                target_discord_id,
+            ) or 0
+        )
+        voice_hours = round(voice_seconds / 3600, 1)
+
+        recent_messages = await db.fetch(
+            """SELECT type, channel, created_at
+               FROM activity_log
+               WHERE discord_id = $1
+               ORDER BY created_at DESC
+               LIMIT 10""",
+            target_discord_id,
+        )
+
+        recent_voice = await db.fetch(
+            """SELECT channel, joined_at, left_at
+               FROM voice_sessions
+               WHERE discord_id = $1 AND left_at IS NOT NULL
+               ORDER BY joined_at DESC
+               LIMIT 5""",
+            target_discord_id,
+        )
+    except (asyncpg.UndefinedTableError, asyncpg.UndefinedColumnError):
+        # Activity tables may be absent in some environments.
+        pass
+
+    return {
+        "message_count": message_count,
+        "voice_hours": voice_hours,
+        "recent_messages": [
+            {
+                "type": r["type"],
+                "channel": r["channel"],
+                "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+            }
+            for r in recent_messages
+        ],
+        "recent_voice": [
+            {
+                "channel": r["channel"],
+                "joined_at": r["joined_at"].isoformat() if r["joined_at"] else None,
+                "left_at": r["left_at"].isoformat() if r["left_at"] else None,
+                "duration_minutes": round(
+                    (r["left_at"] - r["joined_at"]).total_seconds() / 60
+                ) if r["left_at"] and r["joined_at"] else 0,
+            }
+            for r in recent_voice
+        ],
+    }
+
+
+@router.get("/profile/public/{profile_identifier}/registrations")
+async def get_public_registrations(
+    profile_identifier: str,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+):
+    """Get public tournament registrations for a user profile."""
+    meta = await _ensure_profile_visible(db, profile_identifier, current_user)
+
+    try:
+        rows = await db.fetch(
+            """
+            SELECT t.id, t.title, t.game, t.status, t.start_date, t.prize,
+                   tr.nickname, tr.team_name, tr.registered_at
+            FROM tournament_registrations tr
+            JOIN tournaments t ON t.id = tr.tournament_id
+            WHERE tr.user_id = $1
+            ORDER BY tr.registered_at DESC
+            """,
+            meta["id"],
+        )
+        return [dict(r) for r in rows]
+    except (asyncpg.UndefinedTableError, asyncpg.UndefinedColumnError):
+        return []
 
 
 @router.get("/profile/debug")

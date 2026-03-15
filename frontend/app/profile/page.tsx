@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { getProfileIdentifierFromToken } from '../../lib/profileIdentifier'
 
 export default function ProfileRedirect() {
   const router = useRouter()
@@ -9,10 +10,10 @@ export default function ProfileRedirect() {
   useEffect(() => {
     try {
       const t = localStorage.getItem('lesnaya_token')
-      if (t) {
-        const payload = JSON.parse(atob(t.split('.')[1]))
-        const id = payload.discord_id ?? payload.sub
-        if (id) { router.replace(`/profile/${id}`); return }
+      const profileIdentifier = getProfileIdentifierFromToken(t)
+      if (profileIdentifier) {
+        router.replace(`/profile/${encodeURIComponent(profileIdentifier)}`)
+        return
       }
     } catch { /* ignore */ }
     router.replace('/')

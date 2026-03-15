@@ -1,7 +1,7 @@
 """
 Сервис для работы с профилем пользователя
 """
-from typing import Optional
+from typing import Optional, List, Dict
 import asyncpg
 from pathlib import Path
 import uuid
@@ -28,6 +28,17 @@ class ProfileService:
         self.upload_dir.mkdir(parents=True, exist_ok=True)
         self.banner_dir = Path(__file__).parent.parent.parent / "uploads" / "banners"
         self.banner_dir.mkdir(parents=True, exist_ok=True)
+
+    async def _fetch_user_roles(self, user_id: int) -> List[Dict]:
+        """Fetch roles defensively: legacy environments may not have role tables."""
+        try:
+            roles_rows = await self.db.fetch(
+                "SELECT r.id, r.name, r.color FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = $1 ORDER BY r.name",
+                user_id
+            )
+            return [{"id": r["id"], "name": r["name"], "color": r.get("color", "#9147ff")} for r in roles_rows]
+        except (asyncpg.UndefinedTableError, asyncpg.UndefinedColumnError):
+            return []
     
     async def get_user_profile(self, user_id: int) -> Optional[ProfileResponse]:
         """
@@ -68,11 +79,7 @@ class ProfileService:
             if not row:
                 return None
 
-            roles_rows = await self.db.fetch(
-                "SELECT r.id, r.name, r.color FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = $1 ORDER BY r.name",
-                user_id
-            )
-            roles = [{"id": r["id"], "name": r["name"], "color": r["color"]} for r in roles_rows]
+            roles = await self._fetch_user_roles(user_id)
 
             # Safely extract game_preferences
             game_prefs = row['game_preferences']
@@ -186,24 +193,12 @@ class ProfileService:
             
             if not row:
                 raise HTTPException(status_code=500, detail="Failed to update profile")
-            
-            return ProfileResponse(
-                discord_id=row['discord_id'] if row['discord_id'] else None,
-                site_nickname=row['site_nickname'],
-                discord_username=row['discord_username'],
-                avatar_url=row['avatar_url'],
-                bio=row['bio'],
-                is_hidden=row['is_hidden'] or False,
-                forest_rank=row['forest_rank'],
-                rating=row['rating'],
-                joined_at=row['joined_at'],
-                is_admin=row['is_admin'] or False,
-                level=row.get('level', 0),
-                current_xp=row.get('current_xp', 0),
-                total_xp=row.get('total_xp', 0),
-                points=row.get('points', 0),
-                game_preferences=None
-            )
+
+            refreshed_profile = await self.get_user_profile(user_id)
+            if not refreshed_profile:
+                raise HTTPException(status_code=500, detail="Failed to load updated profile")
+
+            return refreshed_profile
     
     async def save_avatar_file(
         self, 

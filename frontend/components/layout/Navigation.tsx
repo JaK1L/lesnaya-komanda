@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 import { LoginModal } from '../auth/LoginModal'
 import Logo from '../Logo/Logo'
+import { getProfileIdentifierFromToken } from '../../lib/profileIdentifier'
 import styles from './Navigation.module.css'
 
 interface NavigationProps {
@@ -34,10 +35,10 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   const handleProfileClick = () => {
     try {
       const t = localStorage.getItem('lesnaya_token')
-      if (t) {
-        const payload = JSON.parse(atob(t.split('.')[1]))
-        const id = payload.discord_id ?? payload.sub
-        if (id) { router.push(`/profile/${id}`); return }
+      const profileIdentifier = getProfileIdentifierFromToken(t)
+      if (profileIdentifier) {
+        router.push(`/profile/${encodeURIComponent(profileIdentifier)}`)
+        return
       }
     } catch { /* ignore */ }
     router.push('/profile')

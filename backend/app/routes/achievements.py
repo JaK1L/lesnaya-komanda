@@ -12,6 +12,7 @@ from ..database import get_db
 from ..auth import get_current_user, get_current_admin_user
 from ..models import User
 from ..services.achievements_auto import check_rank_achievement
+from ..services.user_identity import resolve_user_by_identifier
 
 router = APIRouter(prefix="/achievements", tags=["achievements"])
 
@@ -136,19 +137,19 @@ async def get_my_achievement_stats(
     }
 
 
-@router.get("/user/{discord_id}", response_model=List[UserAchievementOut])
+@router.get("/user/{profile_identifier}", response_model=List[UserAchievementOut])
 async def get_user_achievements(
-    discord_id: int,
+    profile_identifier: str,
     completed_only: bool = False,
     db: asyncpg.Connection = Depends(get_db),
 ):
     """Получить достижения пользователя по Discord ID."""
     # Получаем user_id по discord_id
-    user = await db.fetchrow("SELECT id FROM users WHERE discord_id = $1", discord_id)
+    user = await resolve_user_by_identifier(db, profile_identifier)
     if not user:
         return []  # Возвращаем пустой список если пользователь не найден
     
-    user_id = user['id']
+    user_id = int(user["id"])
     
     query = """
         SELECT 
@@ -169,14 +170,14 @@ async def get_user_achievements(
     return [UserAchievementOut(**dict(row)) for row in rows]
 
 
-@router.get("/user/{discord_id}/stats")
+@router.get("/user/{profile_identifier}/stats")
 async def get_user_achievement_stats(
-    discord_id: int,
+    profile_identifier: str,
     db: asyncpg.Connection = Depends(get_db),
 ):
     """Получить статистику достижений пользователя по Discord ID."""
     # Получаем user_id по discord_id
-    user = await db.fetchrow("SELECT id FROM users WHERE discord_id = $1", discord_id)
+    user = await resolve_user_by_identifier(db, profile_identifier)
     if not user:
         return {
             "total_achievements": 0,
@@ -186,7 +187,7 @@ async def get_user_achievement_stats(
             "by_category": [],
         }
     
-    user_id = user['id']
+    user_id = int(user["id"])
     
     # Общая статистика
     total_achievements = await db.fetchval(
@@ -521,15 +522,15 @@ async def get_my_showcase(
     return await _get_showcase(db, current_user.id)
 
 
-@router.get("/showcase/{discord_id}")
+@router.get("/showcase/{profile_identifier}")
 async def get_showcase_by_discord(
-    discord_id: int,
+    profile_identifier: str,
     db: asyncpg.Connection = Depends(get_db),
 ):
-    user = await db.fetchrow("SELECT id FROM users WHERE discord_id = $1", discord_id)
+    user = await resolve_user_by_identifier(db, profile_identifier)
     if not user:
         return []
-    return await _get_showcase(db, user["id"])
+    return await _get_showcase(db, int(user["id"]))
 
 
 async def _get_showcase(db: asyncpg.Connection, user_id: int):
