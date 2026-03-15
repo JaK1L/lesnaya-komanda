@@ -108,6 +108,7 @@ class ProfileService:
                 discord_username=row['discord_username'],
                 user_tag=row.get('user_tag'),
                 avatar_url=row['avatar_url'],
+                banner_url=await self._fetch_banner_url(user_id),
                 bio=row['bio'],
                 is_hidden=row['is_hidden'] or False,
                 forest_rank=row['forest_rank'],
@@ -200,6 +201,16 @@ class ProfileService:
                 raise HTTPException(status_code=500, detail="Failed to load updated profile")
 
             return refreshed_profile
+
+    async def _fetch_banner_url(self, user_id: int) -> Optional[str]:
+        """Load banner defensively because legacy databases may not have the column yet."""
+        try:
+            return await self.db.fetchval(
+                "SELECT banner_url FROM users WHERE id = $1",
+                user_id,
+            )
+        except (asyncpg.UndefinedTableError, asyncpg.UndefinedColumnError):
+            return None
     
     async def save_avatar_file(
         self, 

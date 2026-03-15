@@ -62,6 +62,7 @@ async def get_public_profile(
             SELECT
                 id,
                 discord_id,
+                user_tag,
                 site_nickname,
                 discord_username,
                 avatar_url,
@@ -124,6 +125,7 @@ async def get_public_profile(
         return {
             "user_id": row["id"],
             "discord_id": row['discord_id'],
+            "user_tag": row.get('user_tag'),
             "site_nickname": row['site_nickname'],
             "discord_username": row['discord_username'],
             "avatar_url": row['avatar_url'],

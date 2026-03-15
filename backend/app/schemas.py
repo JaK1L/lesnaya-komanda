@@ -177,6 +177,7 @@ class ProfileResponse(BaseModel):
     discord_username: Optional[str] = None
     user_tag: Optional[str] = None
     avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
     bio: Optional[str] = None
     is_hidden: bool = False
     forest_rank: str

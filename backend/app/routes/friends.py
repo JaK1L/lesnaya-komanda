@@ -8,7 +8,7 @@ import asyncpg
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..auth import User, get_current_user
+from ..auth import User, get_current_user, get_optional_current_user
 from ..database import get_db
 from ..services.user_identity import resolve_user_by_identifier
 
@@ -228,6 +228,39 @@ async def list_friends(
         ORDER BY f.accepted_at DESC
         """,
         current_user.id,
+    )
+    return [FriendOut(**dict(r)) for r in rows]
+
+
+@router.get("/public/{profile_identifier}", response_model=List[FriendOut])
+async def list_public_friends(
+    profile_identifier: str,
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    target = await resolve_user_by_identifier(db, profile_identifier)
+    if not target:
+        return []
+
+    target_user_id = int(target["id"])
+    if target["is_hidden"] and (current_user is None or current_user.id != target_user_id):
+        raise HTTPException(status_code=403, detail="This profile is hidden")
+
+    rows = await db.fetch(
+        """
+        SELECT
+            u.id,
+            u.discord_id,
+            COALESCE(u.site_nickname, u.discord_username) AS username,
+            u.avatar_url,
+            u.forest_rank,
+            f.accepted_at AS since
+        FROM friendships f
+        JOIN users u ON u.id = CASE WHEN f.user_id = $1 THEN f.friend_id ELSE f.user_id END
+        WHERE (f.user_id = $1 OR f.friend_id = $1) AND f.status = 'accepted'
+        ORDER BY f.accepted_at DESC
+        """,
+        target_user_id,
     )
     return [FriendOut(**dict(r)) for r in rows]
 

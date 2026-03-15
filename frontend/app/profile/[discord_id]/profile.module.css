@@ -111,6 +111,7 @@
   font-size: 13px;
   text-decoration: none;
   transition: opacity 0.2s;
+  overflow-wrap: anywhere;
 }
 .linkedAccount:hover { opacity: 0.75; }
 
@@ -787,19 +788,90 @@
 /* ─── Responsive ─── */
 @media (max-width: 860px) {
   .columns { grid-template-columns: 1fr; }
-  .sidebar { order: -1; }
+  .sidebar { order: 0; }
   .achievShowcase { flex-direction: row; }
+  .tabContent { padding: 14px; }
 }
 @media (max-width: 640px) {
   .page { padding: 1rem 1rem 2rem; }
   .banner { height: 130px; }
-  .avatarRow { padding: 0 1rem; margin-top: -42px; }
+  .avatarRow {
+    padding: 0 1rem;
+    margin-top: -42px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
   .avatar, .avatarPlaceholder { width: 84px; height: 84px; }
   .avatarPlaceholder { font-size: 2rem; }
   .profileInfo { padding: 0.75rem 1rem 1.25rem; }
   .name { font-size: 1.4rem; }
-  .avatarActions { flex-direction: column; gap: 6px; align-items: flex-end; }
+  .avatarActions {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    padding-bottom: 0;
+  }
+  .editBtn,
+  .friendBtn,
+  .shareBtn,
+  .bannerEditBtn {
+    justify-content: center;
+    width: 100%;
+  }
+  .bannerEditBtn {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+  }
   .statsInline { gap: 0.75rem; }
+  .handleRow { line-height: 1.5; }
+  .twitchLink { margin-left: 0; margin-top: 6px; display: inline-flex; }
   .mediaGrid { grid-template-columns: repeat(2, 1fr); }
-  .modal { margin: 0 1rem; }
+  .twitchRow {
+    flex-direction: column;
+  }
+  .twitchSaveBtn {
+    width: 100%;
+  }
+  .modal {
+    margin: 0 1rem;
+    padding: 18px;
+    max-height: calc(100vh - 2rem);
+  }
+  .listCardMeta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 420px) {
+  .page {
+    padding-inline: 0.75rem;
+  }
+  .tabs {
+    margin: 0 -0.25rem;
+    border-radius: 12px 12px 0 0;
+  }
+  .tab {
+    padding: 11px 14px;
+    font-size: 12px;
+  }
+  .tabContent {
+    padding: 12px;
+  }
+  .mediaGrid {
+    grid-template-columns: 1fr;
+  }
+  .achievCard {
+    padding: 12px;
+    gap: 10px;
+  }
+  .statRow {
+    gap: 8px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
