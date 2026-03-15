@@ -100,9 +100,14 @@ export default function PublicProfilePage() {
   useEffect(() => {
     const t = localStorage.getItem(TOKEN_KEY)
     setToken(t)
+    setLoading(true)
+    setError(null)
+    setProfile(null)
+    setGameAccounts([])
+    setMedia([])
+    setAchievements([])
+    setTabLoaded({})
     loadProfile(t)
-    loadGameAccounts()
-    if (t) loadFriendStatus(t)
     // Load pinned from localStorage
     try {
       const saved = localStorage.getItem(`pinned_ach_${profileIdentifier}`)
@@ -156,9 +161,16 @@ export default function PublicProfilePage() {
   }
 
   useEffect(() => {
+    if (!profile) return
+    loadGameAccounts()
+    if (token) loadFriendStatus(token)
+  }, [profile, token, encodedProfileIdentifier])
+
+  useEffect(() => {
+    if (!profile) return
     if (tab === 'media') loadMedia()
     else loadAchievements()
-  }, [tab, encodedProfileIdentifier])
+  }, [tab, encodedProfileIdentifier, profile])
 
   const togglePin = (id: number) => {
     const next = pinnedIds.includes(id) ? pinnedIds.filter(x => x !== id) : [...pinnedIds, id].slice(0, 6)

@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
+import axios from 'axios'
 import { LoginModal } from '../auth/LoginModal'
 import Logo from '../Logo/Logo'
-import { getProfileIdentifierFromToken } from '../../lib/profileIdentifier'
+import { getProfileIdentifierFromProfileResponse, getProfileIdentifierFromToken } from '../../lib/profileIdentifier'
 import styles from './Navigation.module.css'
 
 interface NavigationProps {
@@ -26,16 +27,30 @@ const NAV_ITEMS = [
 ]
 
 export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loginModalOpen, setLoginModalOpen] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const router = useRouter()
 
-  const handleProfileClick = () => {
+  const handleProfileClick = async () => {
     try {
       const t = localStorage.getItem('lesnaya_token')
-      const profileIdentifier = getProfileIdentifierFromToken(t)
+      let profileIdentifier = getProfileIdentifierFromToken(t)
+
+      if (t) {
+        try {
+          const res = await axios.get(`${API_URL}/api/profile`, {
+            headers: { Authorization: `Bearer ${t}` },
+          })
+          const canonicalIdentifier = getProfileIdentifierFromProfileResponse(res.data)
+          if (canonicalIdentifier) {
+            profileIdentifier = canonicalIdentifier
+          }
+        } catch { /* ignore and use token fallback */ }
+      }
+
       if (profileIdentifier) {
         router.push(`/profile/${encodeURIComponent(profileIdentifier)}`)
         return

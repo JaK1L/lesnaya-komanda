@@ -60,9 +60,26 @@ export function getProfileIdentifierFromToken(token: string | null): string | nu
     return userTag
   }
 
-  const sub = toIdentifierString(payload.sub)
-  if (sub && isNumeric(sub)) {
-    return sub
+  return null
+}
+
+export function getProfileIdentifierFromProfileResponse(profile: unknown): string | null {
+  if (!profile || typeof profile !== 'object') return null
+  const data = profile as Record<string, unknown>
+
+  const discordId = toIdentifierString(data.discord_id)
+  if (discordId && isNumeric(discordId)) {
+    return discordId
+  }
+
+  const userTag = toIdentifierString(data.user_tag)
+  if (userTag) {
+    return userTag
+  }
+
+  const userId = toIdentifierString(data.user_id ?? data.id)
+  if (userId && isNumeric(userId)) {
+    return userId
   }
 
   return null
