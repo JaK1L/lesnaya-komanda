@@ -1,9 +1,28 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import axios from 'axios'
-import { Activity, Award, BarChart2, Calendar, Camera, Check, ChevronLeft, Copy, Edit2, Image as ImageIcon, Star, Trophy, Twitch, UserPlus, Users, X } from 'lucide-react'
+import {
+  Activity,
+  Award,
+  BarChart2,
+  Calendar,
+  Camera,
+  Check,
+  ChevronLeft,
+  Copy,
+  Edit2,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Shield,
+  Star,
+  Trophy,
+  Twitch,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react'
 import { Navigation } from '../../../components/layout/Navigation'
 import { Footer } from '../../../components/layout/Footer'
 import { getImageUrl } from '../../../lib/imageUtils'
@@ -13,8 +32,18 @@ import styles from './profile.module.css'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const TOKEN_KEY = 'lesnaya_token'
 
+type Tab = 'stats' | 'media' | 'tournaments' | 'activity' | 'achievements'
+type FriendStatus = 'none' | 'pending' | 'incoming' | 'friends'
+type UploadKind = 'avatar' | 'banner' | null
+
 interface Role { id: number; name: string; color: string }
-interface GameAccount { game: string; account_id: string; account_tag: string | null; region: string | null }
+interface GameAccount { game: string; account_id: string; account_tag: string | null }
+interface MediaItem { id: number; title: string | null; media_type: string; file_url: string; created_at: string }
+interface Achievement { id: number; name: string; description: string; icon: string; points: number }
+interface ActivityItem { type?: string; channel: string | null; created_at?: string | null; joined_at?: string | null; left_at?: string | null; duration_minutes?: number }
+interface ActivitySummary { message_count: number; voice_hours: number; recent_messages: ActivityItem[]; recent_voice: ActivityItem[] }
+interface TournamentRegistration { id: number; title: string; game: string | null; status: string | null; start_date: string | null; prize: string | null; nickname: string | null; team_name: string | null; registered_at: string | null }
+interface FriendItem { id: number; username: string; avatar_url: string | null; forest_rank: string }
 interface PublicProfile {
   user_id: number
   discord_id: number | null
@@ -35,182 +64,143 @@ interface PublicProfile {
   is_hidden: boolean
   roles: Role[]
 }
-interface MediaItem { id: number; title: string | null; description: string | null; media_type: string; file_url: string; created_at: string }
-interface Achievement { id: number; name: string; description: string; icon: string; category: string; points: number; earned_at?: string | null }
-interface ActivityItem { type?: string; channel: string | null; created_at?: string | null; joined_at?: string | null; left_at?: string | null; duration_minutes?: number }
-interface ActivitySummary { message_count: number; voice_hours: number; recent_messages: ActivityItem[]; recent_voice: ActivityItem[] }
-interface TournamentRegistration { id: number; title: string; game: string | null; status: string | null; start_date: string | null; prize: string | null; nickname: string | null; team_name: string | null; registered_at: string | null }
-interface FriendItem { id: number; discord_id: number | null; username: string; avatar_url: string | null; forest_rank: string; since: string }
+
+const formatDate = (value?: string | null, mode: 'date' | 'datetime' = 'date') =>
+  value ? new Date(value)[mode === 'date' ? 'toLocaleDateString' : 'toLocaleString']('ru-RU') : null
+
+const gameLabel = (game: string) => (game === 'steam' ? 'Steam' : game === 'dota2' ? 'Dota 2' : game === 'valorant' ? 'Valorant' : game)
 
 export default function PublicProfilePage() {
   const { discord_id } = useParams<{ discord_id: string }>()
   const router = useRouter()
-  const rawIdentifier = String(discord_id ?? '').trim()
-  const profileIdentifier = (() => { try { return decodeURIComponent(rawIdentifier) } catch { return rawIdentifier } })()
+  const profileIdentifier = useMemo(() => {
+    const raw = String(discord_id ?? '').trim()
+    try { return decodeURIComponent(raw) } catch { return raw }
+  }, [discord_id])
   const encodedProfileIdentifier = encodeURIComponent(profileIdentifier)
 
+  const [token, setToken] = useState<string | null>(null)
   const [profile, setProfile] = useState<PublicProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'incoming' | 'friends'>('none')
+  const [tab, setTab] = useState<Tab>('stats')
+  const [friendStatus, setFriendStatus] = useState<FriendStatus>('none')
   const [friendLoading, setFriendLoading] = useState(false)
-  const [tab, setTab] = useState<'media' | 'stats' | 'tournaments' | 'activity' | 'achievements'>('media')
+  const [uploading, setUploading] = useState<UploadKind>(null)
+  const [copied, setCopied] = useState(false)
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
   const [media, setMedia] = useState<MediaItem[]>([])
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [showcase, setShowcase] = useState<Achievement[]>([])
   const [activity, setActivity] = useState<ActivitySummary | null>(null)
   const [registrations, setRegistrations] = useState<TournamentRegistration[]>([])
-  const [gameAccounts, setGameAccounts] = useState<GameAccount[]>([])
+  const [accounts, setAccounts] = useState<GameAccount[]>([])
   const [friends, setFriends] = useState<FriendItem[]>([])
-  const [tabLoaded, setTabLoaded] = useState<Record<string, boolean>>({})
-  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [loaded, setLoaded] = useState<Record<string, boolean>>({})
+
   const [editOpen, setEditOpen] = useState(false)
+  const [achievementsOpen, setAchievementsOpen] = useState(false)
   const [editNick, setEditNick] = useState('')
   const [editBio, setEditBio] = useState('')
   const [editHidden, setEditHidden] = useState(false)
   const [editSaving, setEditSaving] = useState(false)
   const [twitchInput, setTwitchInput] = useState('')
   const [twitchSaving, setTwitchSaving] = useState(false)
-  const [achievPickerOpen, setAchievPickerOpen] = useState(false)
   const [showcaseIds, setShowcaseIds] = useState<number[]>([])
   const [showcaseSaving, setShowcaseSaving] = useState(false)
+
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
 
-  const resetPageState = () => {
+  const authIdentity = getAuthIdentityFromToken(token)
+  const isOwnProfile = Boolean(
+    (authIdentity.userId && profile?.user_id && authIdentity.userId === String(profile.user_id)) ||
+    (authIdentity.discordId && profile?.discord_id && authIdentity.discordId === String(profile.discord_id)),
+  )
+
+  const displayName = profile?.site_nickname || profile?.discord_username || 'Профиль'
+  const publicIdentifier = profile?.user_tag || profile?.discord_id || profile?.user_id || profileIdentifier
+  const sharePath = `/profile/${encodeURIComponent(String(publicIdentifier))}`
+  const shareUrl = typeof window === 'undefined' ? sharePath : `${window.location.origin}${sharePath}`
+  const xpPercent = profile ? Math.min(100, (profile.current_xp / Math.max(1, profile.level * 100)) * 100) : 0
+  const showcaseItems = showcase.length ? showcase : achievements.slice(0, 3)
+
+  const setSuccess = (text: string) => setToast({ type: 'success', text })
+  const setFailure = (text: string) => setToast({ type: 'error', text })
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem(TOKEN_KEY)
+    setToken(savedToken)
+    setLoading(true)
+    setError(null)
     setProfile(null)
+    setLoaded({})
     setMedia([])
     setAchievements([])
     setShowcase([])
     setActivity(null)
     setRegistrations([])
-    setGameAccounts([])
+    setAccounts([])
     setFriends([])
-    setShowcaseIds([])
-    setTabLoaded({})
-    setStatusMessage(null)
-  }
-
-  useEffect(() => {
-    const t = localStorage.getItem(TOKEN_KEY)
-    setToken(t)
-    setLoading(true)
-    setError(null)
-    resetPageState()
-    void loadProfile(t)
+    void loadProfile(savedToken)
   }, [profileIdentifier])
 
   useEffect(() => {
-    if (!statusMessage) return
-    const timeoutId = window.setTimeout(() => setStatusMessage(null), 3000)
-    return () => window.clearTimeout(timeoutId)
-  }, [statusMessage])
-
-  const loadProfile = async (t?: string | null) => {
-    try {
-      const headers = t ? { Authorization: `Bearer ${t}` } : {}
-      const res = await axios.get<PublicProfile>(`${API_URL}/api/profile/public/${encodedProfileIdentifier}`, { headers })
-      setProfile(res.data)
-    } catch (err: any) {
-      const status = err.response?.status
-      setError(status === 404 ? 'Профиль не найден' : status === 403 ? 'Профиль скрыт' : 'Ошибка загрузки профиля')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadOnce = async <T,>(key: string, loader: () => Promise<T>, setter: (value: T) => void) => {
-    if (tabLoaded[key]) return
-    try {
-      const data = await loader()
-      setter(data)
-      setTabLoaded(prev => ({ ...prev, [key]: true }))
-    } catch {}
-  }
-
-  const loadAchievements = async () => loadOnce('achievements', async () => (await axios.get<Achievement[]>(`${API_URL}/api/achievements/user/${encodedProfileIdentifier}?completed_only=true`)).data, setAchievements)
-  const loadMedia = async () => loadOnce('media', async () => (await axios.get<MediaItem[]>(`${API_URL}/api/profile/public/${encodedProfileIdentifier}/media`)).data, setMedia)
-  const loadActivity = async () => loadOnce('activity', async () => (await axios.get<ActivitySummary>(`${API_URL}/api/profile/public/${encodedProfileIdentifier}/activity`)).data, setActivity)
-  const loadRegistrations = async () => loadOnce('tournaments', async () => (await axios.get<TournamentRegistration[]>(`${API_URL}/api/profile/public/${encodedProfileIdentifier}/registrations`)).data, setRegistrations)
-
-  const loadShowcase = async () => {
-    try {
-      const res = await axios.get<Achievement[]>(`${API_URL}/api/achievements/showcase/${encodedProfileIdentifier}`)
-      setShowcase(res.data)
-      setShowcaseIds(res.data.map(item => item.id))
-    } catch {
-      setShowcase([])
-      setShowcaseIds([])
-    }
-  }
+    if (!toast) return
+    const id = window.setTimeout(() => setToast(null), 3200)
+    return () => window.clearTimeout(id)
+  }, [toast])
 
   useEffect(() => {
     if (!profile) return
-    void axios.get<GameAccount[]>(`${API_URL}/api/game-stats/public/${encodedProfileIdentifier}/accounts`).then(res => setGameAccounts(res.data)).catch(() => setGameAccounts([]))
-    void axios.get<FriendItem[]>(`${API_URL}/api/friends/public/${encodedProfileIdentifier}`).then(res => setFriends(res.data)).catch(() => setFriends([]))
-    void loadShowcase()
+    void axios.get<GameAccount[]>(`${API_URL}/api/game-stats/public/${encodedProfileIdentifier}/accounts`).then((r) => setAccounts(r.data)).catch(() => setAccounts([]))
+    void axios.get<FriendItem[]>(`${API_URL}/api/friends/public/${encodedProfileIdentifier}`).then((r) => setFriends(r.data)).catch(() => setFriends([]))
+    void axios.get<Achievement[]>(`${API_URL}/api/achievements/showcase/${encodedProfileIdentifier}`).then((r) => {
+      setShowcase(r.data)
+      setShowcaseIds(r.data.map((item) => item.id))
+    }).catch(() => {
+      setShowcase([])
+      setShowcaseIds([])
+    })
     if (token) {
-      void axios.get(`${API_URL}/api/friends/status/${encodedProfileIdentifier}`, { headers: { Authorization: `Bearer ${token}` } }).then(res => setFriendStatus(res.data.status)).catch(() => setFriendStatus('none'))
+      void axios.get(`${API_URL}/api/friends/status/${encodedProfileIdentifier}`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => setFriendStatus(r.data.status)).catch(() => setFriendStatus('none'))
     }
   }, [profile, token, encodedProfileIdentifier])
 
   useEffect(() => {
     if (!profile) return
-    if (tab === 'media') void loadMedia()
-    if (tab === 'achievements') void loadAchievements()
-    if (tab === 'activity') void loadActivity()
-    if (tab === 'tournaments') void loadRegistrations()
+    if (tab === 'media') void loadOnce('media', () => axios.get<MediaItem[]>(`${API_URL}/api/profile/public/${encodedProfileIdentifier}/media`).then((r) => r.data), setMedia)
+    if (tab === 'achievements') void loadOnce('achievements', () => axios.get<Achievement[]>(`${API_URL}/api/achievements/user/${encodedProfileIdentifier}?completed_only=true`).then((r) => r.data), setAchievements)
+    if (tab === 'activity') void loadOnce('activity', () => axios.get<ActivitySummary>(`${API_URL}/api/profile/public/${encodedProfileIdentifier}/activity`).then((r) => r.data), setActivity)
+    if (tab === 'tournaments') void loadOnce('tournaments', () => axios.get<TournamentRegistration[]>(`${API_URL}/api/profile/public/${encodedProfileIdentifier}/registrations`).then((r) => r.data), setRegistrations)
   }, [tab, profile, encodedProfileIdentifier])
 
-  const toggleShowcase = (id: number) => {
-    setShowcaseIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id].slice(0, 3))
-  }
-
-  const setSuccess = (text: string) => setStatusMessage({ type: 'success', text })
-  const setFailure = (text: string) => setStatusMessage({ type: 'error', text })
-
-  const updateFile = async (kind: 'avatar' | 'banner', file: File) => {
-    if (!token) return
-    const formData = new FormData()
-    formData.append('file', file)
+  async function loadProfile(currentToken?: string | null) {
     try {
-      const res = await axios.post<{ avatar_url?: string; banner_url?: string }>(`${API_URL}/api/profile/${kind}`, formData, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
-      })
-      setProfile(prev => prev ? { ...prev, ...(kind === 'avatar' ? { avatar_url: res.data.avatar_url ?? prev.avatar_url } : { banner_url: res.data.banner_url ?? prev.banner_url }) } : prev)
-      setSuccess(kind === 'avatar' ? 'Аватар обновлён.' : 'Баннер обновлён.')
-    } catch {
-      setFailure(kind === 'avatar' ? 'Не удалось загрузить аватар.' : 'Не удалось загрузить баннер.')
+      const headers = currentToken ? { Authorization: `Bearer ${currentToken}` } : {}
+      const res = await axios.get<PublicProfile>(`${API_URL}/api/profile/public/${encodedProfileIdentifier}`, { headers })
+      setProfile(res.data)
+    } catch (err: any) {
+      const status = err.response?.status
+      setError(status === 404 ? 'Профиль не найден' : status === 403 ? 'Профиль скрыт владельцем' : 'Не удалось загрузить профиль')
     } finally {
-      if (kind === 'avatar' && avatarInputRef.current) avatarInputRef.current.value = ''
-      if (kind === 'banner' && bannerInputRef.current) bannerInputRef.current.value = ''
+      setLoading(false)
     }
   }
 
-  const authIdentity = getAuthIdentityFromToken(token)
-  const isOwnProfile = Boolean((authIdentity.userId && profile?.user_id && authIdentity.userId === String(profile.user_id)) || (authIdentity.discordId && profile?.discord_id && authIdentity.discordId === String(profile.discord_id)))
-  const displayName = profile?.site_nickname || profile?.discord_username || 'Профиль'
-  const publicIdentifier = profile?.user_tag || profile?.discord_id || profile?.user_id || profileIdentifier
-  const sharePath = `/profile/${encodeURIComponent(String(publicIdentifier))}`
-
-  const copyLink = async () => {
-    const shareUrl = typeof window === 'undefined' ? sharePath : `${window.location.origin}${sharePath}`
+  async function loadOnce<T>(key: string, loader: () => Promise<T>, setter: (value: T) => void) {
+    if (loaded[key]) return
     try {
-      if (navigator.share) {
-        await navigator.share({ title: `${displayName} | Lesnaya Komanda`, text: `Профиль игрока ${displayName}`, url: shareUrl })
-        return
-      }
-      await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 2000)
+      const value = await loader()
+      setter(value)
+      setLoaded((prev) => ({ ...prev, [key]: true }))
     } catch {
-      setFailure('Не удалось поделиться ссылкой на профиль.')
+      setter([] as T)
     }
   }
 
-  const openEdit = () => {
+  function openEdit() {
     if (!profile) return
     setEditNick(profile.site_nickname ?? '')
     setEditBio(profile.bio ?? '')
@@ -219,12 +209,12 @@ export default function PublicProfilePage() {
     setEditOpen(true)
   }
 
-  const saveProfile = async () => {
+  async function saveProfile() {
     if (!token) return
     setEditSaving(true)
     try {
       const res = await axios.put<PublicProfile>(`${API_URL}/api/profile`, { site_nickname: editNick || null, bio: editBio || null, is_hidden: editHidden }, { headers: { Authorization: `Bearer ${token}` } })
-      setProfile(prev => prev ? { ...prev, ...res.data } : prev)
+      setProfile((prev) => prev ? { ...prev, ...res.data } : prev)
       setEditOpen(false)
       setSuccess('Профиль сохранён.')
     } catch {
@@ -234,16 +224,16 @@ export default function PublicProfilePage() {
     }
   }
 
-  const saveTwitch = async () => {
+  async function saveTwitch() {
     if (!token) return
     setTwitchSaving(true)
     try {
       if (twitchInput.trim()) {
         await axios.post(`${API_URL}/api/profile/twitch?twitch_username=${encodeURIComponent(twitchInput.trim())}`, {}, { headers: { Authorization: `Bearer ${token}` } })
-        setProfile(prev => prev ? { ...prev, twitch_username: twitchInput.trim() } : prev)
+        setProfile((prev) => prev ? { ...prev, twitch_username: twitchInput.trim() } : prev)
       } else {
         await axios.delete(`${API_URL}/api/profile/twitch`, { headers: { Authorization: `Bearer ${token}` } })
-        setProfile(prev => prev ? { ...prev, twitch_username: null } : prev)
+        setProfile((prev) => prev ? { ...prev, twitch_username: null } : prev)
       }
       setSuccess('Twitch обновлён.')
     } catch {
@@ -253,13 +243,63 @@ export default function PublicProfilePage() {
     }
   }
 
-  const saveShowcase = async () => {
+  async function updateFile(kind: 'avatar' | 'banner', file: File) {
+    if (!token) return
+    const formData = new FormData()
+    formData.append('file', file)
+    setUploading(kind)
+    try {
+      const res = await axios.post<{ avatar_url?: string; banner_url?: string }>(`${API_URL}/api/profile/${kind}`, formData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } })
+      setProfile((prev) => prev ? { ...prev, ...(kind === 'avatar' ? { avatar_url: res.data.avatar_url ?? prev.avatar_url } : { banner_url: res.data.banner_url ?? prev.banner_url }) } : prev)
+      setSuccess(kind === 'avatar' ? 'Аватар обновлён.' : 'Баннер обновлён.')
+    } catch {
+      setFailure(kind === 'avatar' ? 'Не удалось загрузить аватар.' : 'Не удалось загрузить баннер.')
+    } finally {
+      setUploading(null)
+      if (kind === 'avatar' && avatarInputRef.current) avatarInputRef.current.value = ''
+      if (kind === 'banner' && bannerInputRef.current) bannerInputRef.current.value = ''
+    }
+  }
+
+  async function copyLink() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${displayName} | Lesnaya Komanda`, text: `Профиль игрока ${displayName}`, url: shareUrl })
+        return
+      }
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1800)
+    } catch {
+      setFailure('Не удалось поделиться ссылкой на профиль.')
+    }
+  }
+
+  async function sendFriendRequest() {
+    if (!token) return
+    setFriendLoading(true)
+    try {
+      const res = await axios.post<{ status: 'sent' | 'accepted' }>(`${API_URL}/api/friends/request/${encodedProfileIdentifier}`, {}, { headers: { Authorization: `Bearer ${token}` } })
+      setFriendStatus(res.data.status === 'accepted' ? 'friends' : 'pending')
+      setSuccess(res.data.status === 'accepted' ? 'Пользователь добавлен в друзья.' : 'Заявка в друзья отправлена.')
+    } catch {
+      setFailure('Не удалось отправить заявку в друзья.')
+    } finally {
+      setFriendLoading(false)
+    }
+  }
+
+  function toggleShowcase(id: number) {
+    setShowcaseIds((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev.slice(-2), id])
+  }
+
+  async function saveShowcase() {
     if (!token) return
     setShowcaseSaving(true)
     try {
       await axios.put(`${API_URL}/api/achievements/showcase`, { achievement_ids: showcaseIds }, { headers: { Authorization: `Bearer ${token}` } })
-      setShowcase(achievements.filter(item => showcaseIds.includes(item.id)))
-      setAchievPickerOpen(false)
+      setShowcase(achievements.filter((item) => showcaseIds.includes(item.id)))
+      setAchievementsOpen(false)
       setSuccess('Витрина достижений обновлена.')
     } catch {
       setFailure('Не удалось обновить витрину достижений.')
@@ -268,84 +308,95 @@ export default function PublicProfilePage() {
     }
   }
 
-  const sendFriendRequest = async () => {
-    if (!token) return
-    setFriendLoading(true)
-    try {
-      const res = await axios.post<{ status: 'sent' | 'accepted' }>(`${API_URL}/api/friends/request/${encodedProfileIdentifier}`, {}, { headers: { Authorization: `Bearer ${token}` } })
-      setFriendStatus(res.data.status === 'accepted' ? 'friends' : 'pending')
-      setSuccess('Заявка в друзья отправлена.')
-    } catch {
-      setFailure('Не удалось отправить заявку в друзья.')
-    } finally {
-      setFriendLoading(false)
-    }
-  }
+  const tabs: Array<{ id: Tab; icon: React.ReactNode; label: string }> = [
+    { id: 'stats', icon: <BarChart2 size={14} />, label: 'Статистика' },
+    { id: 'media', icon: <ImageIcon size={14} />, label: 'Медиа' },
+    { id: 'tournaments', icon: <Trophy size={14} />, label: 'Турниры' },
+    { id: 'activity', icon: <Activity size={14} />, label: 'Активность' },
+    { id: 'achievements', icon: <Award size={14} />, label: 'Достижения' },
+  ]
 
   if (loading) return <><Navigation isAuthenticated={!!token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }} apiUrl={API_URL} /><div className={styles.loadingPage}><div className={styles.spinner} /></div></>
-  if (error || !profile) return <><Navigation isAuthenticated={!!token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }} apiUrl={API_URL} /><div className={styles.errorPage}><h2>{error || 'Профиль не найден'}</h2><button onClick={() => router.push('/')} className={styles.backBtn}><ChevronLeft size={16} /> На главную</button></div></>
-
-  const xpPercent = Math.min(100, (profile.current_xp / Math.max(1, profile.level * 100)) * 100)
-  const joinDate = profile.joined_at ? new Date(profile.joined_at).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long' }) : null
-  const showcaseItems = showcase.length > 0 ? showcase : achievements.slice(0, 3)
+  if (error || !profile) return <><Navigation isAuthenticated={!!token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }} apiUrl={API_URL} /><div className={styles.errorPage}><h2>{error || 'Профиль не найден'}</h2><button onClick={() => router.push('/')} className={styles.backBtn}><ChevronLeft size={16} />На главную</button></div></>
 
   return (
     <>
       <Navigation isAuthenticated={!!token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null) }} apiUrl={API_URL} />
-      <div className={styles.page}>
-        {statusMessage && <div className={`${styles.statusMessage} ${statusMessage.type === 'success' ? styles.statusSuccess : styles.statusError}`}>{statusMessage.text}</div>}
-        <div className={styles.profileCard}>
-          <div className={styles.banner} style={profile.banner_url ? { backgroundImage: `url(${getImageUrl(profile.banner_url)})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
-            {isOwnProfile && <><button className={styles.bannerEditBtn} onClick={() => bannerInputRef.current?.click()}><Camera size={14} /> Сменить баннер</button><input ref={bannerInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) void updateFile('banner', e.target.files[0]) }} /></>}
-          </div>
-          <div className={styles.avatarRow}>
-            <div className={styles.avatarWrap}>
-              {profile.avatar_url ? <img src={getImageUrl(profile.avatar_url) || ''} alt={displayName} className={styles.avatar} /> : <div className={styles.avatarPlaceholder}>{displayName[0]?.toUpperCase()}</div>}
-              {isOwnProfile && <><button className={styles.avatarEditBtn} onClick={() => avatarInputRef.current?.click()}><Camera size={14} /></button><input ref={avatarInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) void updateFile('avatar', e.target.files[0]) }} /></>}
-            </div>
-            <div className={styles.avatarActions}>
-              {isOwnProfile ? <button className={styles.editBtn} onClick={openEdit}><Edit2 size={14} /> Редактировать</button> : token && <button className={`${styles.friendBtn} ${(friendStatus === 'pending' || friendStatus === 'friends') ? styles.friendBtnDisabled : ''}`} onClick={sendFriendRequest} disabled={friendLoading || friendStatus === 'pending' || friendStatus === 'friends'}><UserPlus size={14} />{friendStatus === 'friends' ? 'Вы друзья' : friendStatus === 'pending' ? 'Заявка отправлена' : friendStatus === 'incoming' ? 'Принять заявку' : 'Добавить'}</button>}
-              <button className={styles.shareBtn} onClick={copyLink}>{copied ? <Check size={14} /> : <Copy size={14} />}{copied ? 'Скопировано' : 'Поделиться'}</button>
-            </div>
-          </div>
-          <div className={styles.profileInfo}>
-            <div className={styles.nameRow}><h1 className={styles.name}>{displayName}</h1><span className={styles.levelBadge}><Star size={11} /> {profile.level}</span></div>
-            <div className={styles.handleRow}>@{profile.discord_username}{profile.forest_rank && <span className={styles.rank}> · {profile.forest_rank}</span>}{publicIdentifier && <span className={styles.rank}> · ID: {String(publicIdentifier)}</span>}{profile.twitch_username && <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.twitchLink}><Twitch size={12} /> {profile.twitch_username}</a>}</div>
-            <div className={styles.statsInline}><span className={styles.statItem}><Trophy size={12} /> Турниров: {profile.tourney_stats?.played ?? 0}</span><span className={styles.statItem}><Star size={12} /> Побед: {profile.tourney_stats?.wins ?? 0}</span><span className={styles.statItem}>Рейтинг: {profile.rating}</span>{joinDate && <span className={styles.statItem}><Calendar size={12} /> С {joinDate}</span>}</div>
-            {profile.bio && <p className={styles.bio}>{profile.bio}</p>}
-            {profile.roles.length > 0 && <div className={styles.rolesRow}>{profile.roles.map(role => <span key={role.id} className={styles.roleBadge} style={{ borderColor: role.color, color: role.color }}>{role.name}</span>)}</div>}
-          </div>
-        </div>
+      <main className={styles.page}>
+        {toast && <div className={`${styles.statusMessage} ${toast.type === 'success' ? styles.statusSuccess : styles.statusError}`}>{toast.text}</div>}
 
-        <div className={styles.columns}>
-          <div className={styles.mainCol}>
-            <div className={styles.tabs}>
-              <button className={`${styles.tab} ${tab === 'media' ? styles.tabActive : ''}`} onClick={() => setTab('media')}><ImageIcon size={14} /> Медиа</button>
-              <button className={`${styles.tab} ${tab === 'stats' ? styles.tabActive : ''}`} onClick={() => setTab('stats')}><BarChart2 size={14} /> Статистика</button>
-              <button className={`${styles.tab} ${tab === 'tournaments' ? styles.tabActive : ''}`} onClick={() => setTab('tournaments')}><Trophy size={14} /> Турниры</button>
-              <button className={`${styles.tab} ${tab === 'activity' ? styles.tabActive : ''}`} onClick={() => setTab('activity')}><Activity size={14} /> Активность</button>
-              <button className={`${styles.tab} ${tab === 'achievements' ? styles.tabActive : ''}`} onClick={() => setTab('achievements')}><Award size={14} /> Достижения</button>
+        <section className={styles.hero}>
+          <div className={styles.banner} style={profile.banner_url ? { backgroundImage: `linear-gradient(180deg, rgba(13, 18, 30, 0.18), rgba(13, 18, 30, 0.82)), url(${getImageUrl(profile.banner_url)})` } : undefined}>
+            <div className={styles.bannerGlow} />
+            {isOwnProfile && <><button className={styles.bannerEditBtn} onClick={() => bannerInputRef.current?.click()} disabled={uploading === 'banner'}><Camera size={14} />{uploading === 'banner' ? 'Загрузка баннера...' : 'Загрузить баннер'}</button><input ref={bannerInputRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && void updateFile('banner', e.target.files[0])} /></>}
+          </div>
+
+          <div className={styles.heroBody}>
+            <div className={styles.identity}>
+              <div className={styles.avatarWrap}>
+                {profile.avatar_url ? <img src={getImageUrl(profile.avatar_url) || ''} alt={displayName} className={styles.avatar} /> : <div className={styles.avatarPlaceholder}>{displayName.charAt(0).toUpperCase()}</div>}
+                {isOwnProfile && <><button className={styles.avatarEditBtn} onClick={() => avatarInputRef.current?.click()} disabled={uploading === 'avatar'} aria-label="Загрузить аватар"><Camera size={14} /></button><input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && void updateFile('avatar', e.target.files[0])} /></>}
+              </div>
+
+              <div className={styles.headingBlock}>
+                <div className={styles.titleRow}>
+                  <h1 className={styles.name}>{displayName}</h1>
+                  <span className={styles.levelBadge}><Star size={12} />Уровень {profile.level}</span>
+                  {profile.is_hidden && isOwnProfile && <span className={styles.hiddenBadge}><Shield size={12} />Профиль скрыт</span>}
+                </div>
+                <div className={styles.handleRow}>
+                  <span>@{profile.discord_username}</span>
+                  {profile.forest_rank && <span className={styles.metaPill}>{profile.forest_rank}</span>}
+                  <span className={styles.metaPill}>ID: {String(publicIdentifier)}</span>
+                  {profile.joined_at && <span className={styles.metaPill}><Calendar size={12} />На сайте с {new Date(profile.joined_at).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long' })}</span>}
+                </div>
+                <p className={styles.bio}>{profile.bio?.trim() || 'Пока без описания. Здесь можно рассказать о себе, стиле игры и целях.'}</p>
+                {profile.roles.length > 0 && <div className={styles.rolesRow}>{profile.roles.map((role) => <span key={role.id} className={styles.roleBadge} style={{ borderColor: role.color, color: role.color }}>{role.name}</span>)}</div>}
+              </div>
             </div>
-            <div className={styles.tabContent}>
-              {tab === 'media' && <div className={styles.mediaGrid}>{media.length === 0 ? <p className={styles.emptyText}>Нет загруженных медиа</p> : media.map(item => <div key={item.id} className={styles.mediaCard}>{item.media_type === 'image' ? <img src={getImageUrl(item.file_url) || ''} alt={item.title ?? ''} className={styles.mediaThumb} /> : <video src={getImageUrl(item.file_url) || ''} className={styles.mediaThumb} muted />}{item.title && <p className={styles.mediaTitle}>{item.title}</p>}</div>)}</div>}
-              {tab === 'stats' && <div className={styles.statsPanel}><h3 className={styles.statsSectionTitle}>Статистика сайта</h3><div className={styles.statRow}><span>Уровень</span><strong>{profile.level}</strong></div><div className={styles.statRow}><span>Рейтинг</span><strong>{profile.rating}</strong></div><div className={styles.statRow}><span>Турниров сыграно</span><strong>{profile.tourney_stats?.played ?? 0}</strong></div><div className={styles.statRow}><span>Турниров выиграно</span><strong>{profile.tourney_stats?.wins ?? 0}</strong></div><div className={styles.statRow}><span>Опыт</span><strong>{profile.current_xp} / {profile.level * 100} XP</strong></div><div className={styles.xpBarInline}><div className={styles.xpFill} style={{ width: `${xpPercent}%` }} /></div>{gameAccounts.length > 0 ? <><h3 className={styles.statsSectionTitle} style={{ marginTop: '16px' }}>Привязанные игры</h3>{gameAccounts.map(account => <div key={account.game} className={styles.gameAccountRow}><span className={styles.gameLabel}>{account.game === 'steam' ? 'Steam' : account.game === 'dota2' ? 'Dota 2' : account.game === 'valorant' ? 'Valorant' : account.game}</span><span className={styles.gameId}>{account.account_tag ? `${account.account_id}#${account.account_tag}` : account.account_id}</span></div>)}</> : <p className={styles.emptyText} style={{ marginTop: '12px' }}>Нет привязанных игровых аккаунтов</p>}</div>}
-              {tab === 'tournaments' && <div className={styles.sectionList}>{registrations.length === 0 ? <p className={styles.emptyText}>Нет открытых записей на турниры.</p> : registrations.map(item => <div key={`${item.id}-${item.registered_at ?? 'registration'}`} className={styles.listCard}><div className={styles.listCardTitle}>{item.title}</div><div className={styles.listCardMeta}>{item.game && <span>{item.game}</span>}{item.status && <span>Статус: {item.status}</span>}{item.team_name && <span>Команда: {item.team_name}</span>}{item.nickname && <span>Ник: {item.nickname}</span>}{item.start_date && <span>Старт: {new Date(item.start_date).toLocaleDateString('ru-RU')}</span>}{item.prize && <span>Приз: {item.prize}</span>}</div></div>)}</div>}
-              {tab === 'activity' && <div className={styles.sectionList}><div className={styles.listCard}><div className={styles.listCardTitle}>Активность на сервере</div><div className={styles.listCardMeta}><span>Сообщений: {activity?.message_count ?? 0}</span><span>Голосовых часов: {activity?.voice_hours ?? 0}</span></div></div><div className={styles.subsection}><h3 className={styles.statsSectionTitle}>Последние сообщения</h3>{activity?.recent_messages?.length ? activity.recent_messages.map((item, index) => <div key={`${item.created_at ?? index}-${item.channel ?? 'message'}`} className={styles.listCard}><div className={styles.listCardTitle}>{item.channel || 'Без канала'}</div><div className={styles.listCardMeta}>{item.type && <span>Тип: {item.type}</span>}{item.created_at && <span>{new Date(item.created_at).toLocaleString('ru-RU')}</span>}</div></div>) : <p className={styles.emptyText}>Нет данных по сообщениям.</p>}</div><div className={styles.subsection}><h3 className={styles.statsSectionTitle}>Последние голосовые сессии</h3>{activity?.recent_voice?.length ? activity.recent_voice.map((item, index) => <div key={`${item.joined_at ?? index}-${item.channel ?? 'voice'}`} className={styles.listCard}><div className={styles.listCardTitle}>{item.channel || 'Без канала'}</div><div className={styles.listCardMeta}>{item.joined_at && <span>Начало: {new Date(item.joined_at).toLocaleString('ru-RU')}</span>}{item.left_at && <span>Конец: {new Date(item.left_at).toLocaleString('ru-RU')}</span>}{typeof item.duration_minutes === 'number' && <span>Длительность: {item.duration_minutes} мин.</span>}</div></div>) : <p className={styles.emptyText}>Нет данных по голосовой активности.</p>}</div></div>}
-              {tab === 'achievements' && <div className={styles.achievGrid}>{achievements.length === 0 ? <p className={styles.emptyText}>Нет достижений</p> : achievements.map(item => <div key={item.id} className={styles.achievCard}><div className={styles.achievIcon}>{item.icon}</div><div className={styles.achievInfo}><div className={styles.achievName}>{item.name}</div><div className={styles.achievDesc}>{item.description}</div></div><div className={styles.achievPoints}>+{item.points}</div></div>)}</div>}
+
+            <div className={styles.actions}>
+              {isOwnProfile ? <button className={styles.primaryBtn} onClick={openEdit}><Edit2 size={14} />Редактировать профиль</button> : token ? <button className={`${styles.primaryBtn} ${friendStatus === 'friends' || friendStatus === 'pending' ? styles.primaryBtnMuted : ''}`} onClick={sendFriendRequest} disabled={friendLoading || friendStatus === 'friends' || friendStatus === 'pending'}><UserPlus size={14} />{friendStatus === 'friends' ? 'Вы уже друзья' : friendStatus === 'pending' ? 'Заявка отправлена' : friendStatus === 'incoming' ? 'Принять заявку' : 'Добавить в друзья'}</button> : null}
+              <button className={styles.secondaryBtn} onClick={copyLink}>{copied ? <Check size={14} /> : <Copy size={14} />}{copied ? 'Ссылка скопирована' : 'Поделиться профилем'}</button>
             </div>
           </div>
 
-          <div className={styles.sidebar}>
-            <div className={styles.sideCard}><div className={styles.sideCardHeader}><Users size={14} /> Друзья</div>{friends.length === 0 ? <p className={styles.sideCardEmpty}>Пока нет добавленных друзей.</p> : friends.slice(0, 6).map(friend => <div key={friend.id} className={styles.linkedAccount}><span>{friend.username}</span><span className={styles.gameId}>{friend.forest_rank}</span></div>)}</div>
-            <div className={styles.sideCard}><div className={styles.sideCardHeader}><span className={styles.sideCardHeaderLeft}><Award size={14} /> Достижения</span>{isOwnProfile && achievements.length > 0 && <button className={styles.sideCardEditBtn} onClick={() => { void loadAchievements(); setAchievPickerOpen(true) }} title="Выбрать отображаемые"><Edit2 size={13} /></button>}</div>{showcaseItems.length === 0 ? <p className={styles.sideCardEmpty}>Нет достижений</p> : <div className={styles.achievShowcase}>{showcaseItems.map(item => <div key={item.id} className={styles.achievBadge} title={item.name}>{item.icon}</div>)}</div>}</div>
-            <div className={styles.sideCard}><div className={styles.sideCardHeader}>Публичная ссылка</div><div className={styles.linkedAccount}>{sharePath}</div></div>
-            <div className={styles.sideCard}><div className={styles.sideCardHeader}>Привязанные аккаунты</div>{profile.twitch_username && <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.linkedAccount}><Twitch size={14} /> {profile.twitch_username}</a>}{gameAccounts.map(account => <div key={account.game} className={styles.linkedAccount}><span className={styles.gameChip}>{account.game === 'steam' ? '🎮' : account.game === 'dota2' ? '⚔️' : account.game === 'valorant' ? '🔫' : '🕹️'}</span><span>{account.account_tag ? `${account.account_id}#${account.account_tag}` : account.account_id}</span></div>)}{!profile.twitch_username && gameAccounts.length === 0 && <p className={styles.sideCardEmpty}>{isOwnProfile ? 'Привяжи аккаунты в редактировании' : 'Нет привязанных аккаунтов'}</p>}</div>
+          <div className={styles.overviewGrid}>
+            <div className={styles.overviewCard}><div className={styles.overviewLabel}>Рейтинг</div><div className={styles.overviewValue}>{profile.rating}</div></div>
+            <div className={styles.overviewCard}><div className={styles.overviewLabel}>Турниров сыграно</div><div className={styles.overviewValue}>{profile.tourney_stats?.played ?? 0}</div></div>
+            <div className={styles.overviewCard}><div className={styles.overviewLabel}>Побед</div><div className={styles.overviewValue}>{profile.tourney_stats?.wins ?? 0}</div></div>
+            <div className={styles.overviewCard}><div className={styles.overviewLabel}>Прогресс уровня</div><div className={styles.progressMeta}><span>{profile.current_xp} / {profile.level * 100} XP</span><span>{Math.round(xpPercent)}%</span></div><div className={styles.progressBar}><div className={styles.progressFill} style={{ width: `${xpPercent}%` }} /></div></div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {editOpen && <div className={styles.modalOverlay} onClick={() => setEditOpen(false)}><div className={styles.modal} onClick={event => event.stopPropagation()}><div className={styles.modalHeader}><span>Редактировать профиль</span><button className={styles.modalClose} onClick={() => setEditOpen(false)}><X size={18} /></button></div><label className={styles.fieldLabel}>Никнейм</label><input className={styles.fieldInput} value={editNick} onChange={event => setEditNick(event.target.value)} placeholder={profile.discord_username} maxLength={32} /><label className={styles.fieldLabel}>О себе</label><textarea className={styles.fieldTextarea} value={editBio} onChange={event => setEditBio(event.target.value)} placeholder="Расскажи о себе..." maxLength={300} rows={4} /><label className={styles.fieldLabel}>Twitch</label><div className={styles.twitchRow}><input className={styles.fieldInput} value={twitchInput} onChange={event => setTwitchInput(event.target.value)} placeholder="twitch_username" /><button className={styles.twitchSaveBtn} onClick={saveTwitch} disabled={twitchSaving}>{profile.twitch_username && !twitchInput.trim() ? 'Отвязать' : 'Сохранить'}</button></div><label className={styles.hiddenRow}><input type="checkbox" checked={editHidden} onChange={event => setEditHidden(event.target.checked)} />Скрыть профиль</label><div className={styles.modalFooter}><button className={styles.cancelBtn} onClick={() => setEditOpen(false)}>Отмена</button><button className={styles.saveBtn} onClick={saveProfile} disabled={editSaving}>Сохранить</button></div></div></div>}
-      {achievPickerOpen && <div className={styles.modalOverlay} onClick={() => setAchievPickerOpen(false)}><div className={styles.modal} onClick={event => event.stopPropagation()}><div className={styles.modalHeader}><span>Выбери достижения для показа (до 3)</span><button className={styles.modalClose} onClick={() => setAchievPickerOpen(false)}><X size={18} /></button></div><div className={styles.achievPickerGrid}>{achievements.map(item => <button key={item.id} className={`${styles.achievPickerItem} ${showcaseIds.includes(item.id) ? styles.achievPickerSelected : ''}`} onClick={() => toggleShowcase(item.id)} title={item.name}><span className={styles.achievIcon}>{item.icon}</span><span className={styles.achievPickerName}>{item.name}</span>{showcaseIds.includes(item.id) && <Check size={12} className={styles.achievPickerCheck} />}</button>)}</div><div className={styles.modalFooter}><button className={styles.cancelBtn} onClick={() => setAchievPickerOpen(false)}>Отмена</button><button className={styles.saveBtn} onClick={saveShowcase} disabled={showcaseSaving}>{showcaseSaving ? 'Сохранение...' : 'Сохранить витрину'}</button></div></div></div>}
+        <section className={styles.contentGrid}>
+          <div className={styles.mainColumn}>
+            <div className={styles.tabs}>{tabs.map((item) => <button key={item.id} className={`${styles.tab} ${tab === item.id ? styles.tabActive : ''}`} onClick={() => setTab(item.id)}>{item.icon}{item.label}</button>)}</div>
+            <div className={styles.tabPanel}>
+              {tab === 'stats' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Профиль игрока</h3></div><div className={styles.infoGrid}><div className={styles.infoRow}><span>Никнейм на сайте</span><strong>{profile.site_nickname || 'Не задан'}</strong></div><div className={styles.infoRow}><span>Discord</span><strong>@{profile.discord_username}</strong></div><div className={styles.infoRow}><span>Ранг лесной команды</span><strong>{profile.forest_rank || 'Не указан'}</strong></div><div className={styles.infoRow}><span>Всего опыта</span><strong>{profile.total_xp} XP</strong></div></div></div><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Привязанные аккаунты</h3></div>{profile.twitch_username || accounts.length > 0 ? <div className={styles.accountList}>{profile.twitch_username && <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.accountCard}><span className={styles.accountIcon}><Twitch size={16} /></span><div><strong>Twitch</strong><span>{profile.twitch_username}</span></div></a>}{accounts.map((account) => <div key={`${account.game}-${account.account_id}`} className={styles.accountCard}><span className={styles.accountIcon}>{gameLabel(account.game).slice(0, 1)}</span><div><strong>{gameLabel(account.game)}</strong><span>{account.account_tag ? `${account.account_id}#${account.account_tag}` : account.account_id}</span></div></div>)}</div> : <p className={styles.emptyText}>{isOwnProfile ? 'Подключи игровые аккаунты и Twitch в настройках профиля.' : 'Привязанные аккаунты пока не указаны.'}</p>}</div></div>}
+
+              {tab === 'media' && <div className={styles.sectionStack}>{media.length === 0 ? <p className={styles.emptyText}>У пользователя пока нет опубликованных медиа.</p> : <div className={styles.mediaGrid}>{media.map((item) => <article key={item.id} className={styles.mediaCard}>{item.media_type === 'image' ? <img src={getImageUrl(item.file_url) || ''} alt={item.title || 'Медиа'} className={styles.mediaThumb} /> : <video src={getImageUrl(item.file_url) || ''} className={styles.mediaThumb} muted controls={false} />}<div className={styles.mediaBody}><div className={styles.mediaTitle}>{item.title || 'Без названия'}</div><div className={styles.mediaMeta}>{formatDate(item.created_at) || 'Дата неизвестна'}</div></div></article>)}</div>}</div>}
+
+              {tab === 'tournaments' && <div className={styles.sectionStack}>{registrations.length === 0 ? <p className={styles.emptyText}>Пока нет открытых записей на турниры.</p> : registrations.map((item) => <article key={`${item.id}-${item.registered_at ?? 'registration'}`} className={styles.listCard}><div className={styles.listCardTitle}>{item.title}</div><div className={styles.listCardMeta}>{item.game && <span>{item.game}</span>}{item.status && <span>Статус: {item.status}</span>}{item.team_name && <span>Команда: {item.team_name}</span>}{item.nickname && <span>Ник: {item.nickname}</span>}{item.start_date && <span>Старт: {formatDate(item.start_date)}</span>}{item.prize && <span>Приз: {item.prize}</span>}</div></article>)}</div>}
+
+              {tab === 'activity' && <div className={styles.sectionStack}><div className={styles.activityOverview}><div className={styles.metricCard}><span>Сообщений</span><strong>{activity?.message_count ?? 0}</strong></div><div className={styles.metricCard}><span>Голосовых часов</span><strong>{activity?.voice_hours ?? 0}</strong></div></div><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Последние сообщения</h3></div>{activity?.recent_messages?.length ? <div className={styles.sectionStack}>{activity.recent_messages.map((item, index) => <article key={`${item.created_at ?? index}-${item.channel ?? 'message'}`} className={styles.listCard}><div className={styles.listCardTitle}>{item.channel || 'Без канала'}</div><div className={styles.listCardMeta}>{item.type && <span>Тип: {item.type}</span>}{formatDate(item.created_at, 'datetime') && <span>{formatDate(item.created_at, 'datetime')}</span>}</div></article>)}</div> : <p className={styles.emptyText}>Нет данных по сообщениям.</p>}</div><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Последние голосовые сессии</h3></div>{activity?.recent_voice?.length ? <div className={styles.sectionStack}>{activity.recent_voice.map((item, index) => <article key={`${item.joined_at ?? index}-${item.channel ?? 'voice'}`} className={styles.listCard}><div className={styles.listCardTitle}>{item.channel || 'Без канала'}</div><div className={styles.listCardMeta}>{formatDate(item.joined_at, 'datetime') && <span>Начало: {formatDate(item.joined_at, 'datetime')}</span>}{formatDate(item.left_at, 'datetime') && <span>Конец: {formatDate(item.left_at, 'datetime')}</span>}{typeof item.duration_minutes === 'number' && <span>Длительность: {item.duration_minutes} мин.</span>}</div></article>)}</div> : <p className={styles.emptyText}>Нет данных по голосовой активности.</p>}</div></div>}
+
+              {tab === 'achievements' && <div className={styles.sectionStack}>{achievements.length === 0 ? <p className={styles.emptyText}>Достижения пока не открыты.</p> : <div className={styles.achievementGrid}>{achievements.map((item) => <article key={item.id} className={styles.achievementCard}><div className={styles.achievementIcon}>{item.icon}</div><div className={styles.achievementInfo}><div className={styles.achievementName}>{item.name}</div><div className={styles.achievementDescription}>{item.description}</div></div><div className={styles.achievementPoints}>+{item.points}</div></article>)}</div>}</div>}
+            </div>
+          </div>
+
+          <aside className={styles.sidebar}>
+            <div className={styles.sideCard}><div className={styles.sideCardHeader}><span className={styles.sideCardTitle}><Award size={14} />Витрина достижений</span>{isOwnProfile && <button className={styles.sideActionBtn} onClick={() => { void loadOnce('achievements', () => axios.get<Achievement[]>(`${API_URL}/api/achievements/user/${encodedProfileIdentifier}?completed_only=true`).then((r) => r.data), setAchievements); setAchievementsOpen(true) }} title="Редактировать витрину"><Edit2 size={13} /></button>}</div>{showcaseItems.length === 0 ? <p className={styles.sideEmpty}>Выбранных достижений пока нет.</p> : <div className={styles.showcaseGrid}>{showcaseItems.map((item) => <div key={item.id} className={styles.showcaseBadge} title={item.name}><span className={styles.showcaseIcon}>{item.icon}</span><span className={styles.showcaseName}>{item.name}</span></div>)}</div>}</div>
+            <div className={styles.sideCard}><div className={styles.sideCardHeader}><span className={styles.sideCardTitle}><Users size={14} />Друзья</span></div>{friends.length === 0 ? <p className={styles.sideEmpty}>Пока нет добавленных друзей.</p> : <div className={styles.friendList}>{friends.slice(0, 6).map((friend) => <div key={friend.id} className={styles.friendItem}>{friend.avatar_url ? <img src={getImageUrl(friend.avatar_url) || ''} alt={friend.username} className={styles.friendAvatar} /> : <div className={styles.friendAvatarPlaceholder}>{friend.username.charAt(0).toUpperCase()}</div>}<div className={styles.friendMeta}><strong>{friend.username}</strong><span>{friend.forest_rank || 'Участник'}</span></div></div>)}</div>}</div>
+            <div className={styles.sideCard}><div className={styles.sideCardHeader}><span className={styles.sideCardTitle}><LinkIcon size={14} />Публичная ссылка</span></div><div className={styles.shareBox}>{shareUrl}</div></div>
+          </aside>
+        </section>
+      </main>
+
+      {editOpen && <div className={styles.modalOverlay} onClick={() => setEditOpen(false)}><div className={styles.modal} onClick={(event) => event.stopPropagation()}><div className={styles.modalHeader}><span>Редактирование профиля</span><button className={styles.modalClose} onClick={() => setEditOpen(false)}><X size={18} /></button></div><label className={styles.fieldLabel}>Никнейм</label><input className={styles.fieldInput} value={editNick} onChange={(event) => setEditNick(event.target.value)} placeholder={profile.discord_username} maxLength={32} /><label className={styles.fieldLabel}>О себе</label><textarea className={styles.fieldTextarea} value={editBio} onChange={(event) => setEditBio(event.target.value)} placeholder="Коротко расскажи о себе, своей команде или любимых играх." maxLength={300} rows={5} /><label className={styles.fieldLabel}>Twitch</label><div className={styles.twitchRow}><input className={styles.fieldInput} value={twitchInput} onChange={(event) => setTwitchInput(event.target.value)} placeholder="twitch_username" /><button className={styles.twitchSaveBtn} onClick={saveTwitch} disabled={twitchSaving}>{profile.twitch_username && !twitchInput.trim() ? 'Отвязать' : 'Сохранить'}</button></div><label className={styles.checkboxRow}><input type="checkbox" checked={editHidden} onChange={(event) => setEditHidden(event.target.checked)} /><span>Скрыть профиль от других пользователей</span></label><div className={styles.modalFooter}><button className={styles.cancelBtn} onClick={() => setEditOpen(false)}>Отмена</button><button className={styles.saveBtn} onClick={saveProfile} disabled={editSaving}>{editSaving ? 'Сохранение...' : 'Сохранить'}</button></div></div></div>}
+
+      {achievementsOpen && <div className={styles.modalOverlay} onClick={() => setAchievementsOpen(false)}><div className={styles.modal} onClick={(event) => event.stopPropagation()}><div className={styles.modalHeader}><span>Выбери до 3 достижений для витрины</span><button className={styles.modalClose} onClick={() => setAchievementsOpen(false)}><X size={18} /></button></div><div className={styles.pickerGrid}>{achievements.map((item) => <button key={item.id} className={`${styles.pickerItem} ${showcaseIds.includes(item.id) ? styles.pickerItemSelected : ''}`} onClick={() => toggleShowcase(item.id)} title={item.name}><span className={styles.pickerIcon}>{item.icon}</span><span className={styles.pickerText}><strong>{item.name}</strong><span>{item.description}</span></span>{showcaseIds.includes(item.id) && <Check size={14} className={styles.pickerCheck} />}</button>)}</div><div className={styles.modalFooter}><button className={styles.cancelBtn} onClick={() => setAchievementsOpen(false)}>Отмена</button><button className={styles.saveBtn} onClick={saveShowcase} disabled={showcaseSaving}>{showcaseSaving ? 'Сохранение...' : 'Сохранить витрину'}</button></div></div></div>}
+
       <Footer />
     </>
   )
