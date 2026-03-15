@@ -77,6 +77,13 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   }, [mobileMenuOpen, loginModalOpen])
 
   useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? 'hidden' : ''
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileMenuOpen])
+
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(e.target as Node) && mobileMenuOpen) {
         setMobileMenuOpen(false)
@@ -96,7 +103,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className={`${styles.navLinks} ${mobileMenuOpen ? styles.open : ''}`}>
+          <div className={styles.navLinks}>
             {NAV_ITEMS.map((item) =>
               item.label === 'Стримы' ? (
                 <a
@@ -120,7 +127,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
             )}
           </div>
 
-          {/* Auth Buttons */}
+          {/* Desktop Auth Buttons */}
           <div className={styles.headerBtns}>
             {isAuthenticated ? (
               <>
@@ -156,6 +163,78 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
           </button>
         </div>
       </nav>
+
+      {mobileMenuOpen && (
+        <div className={styles.mobileMenu}>
+          <div className={styles.mobileNavLinks}>
+            {NAV_ITEMS.map((item) =>
+              item.label === 'Стримы' ? (
+                <a
+                  key="mobile-streams"
+                  href="#"
+                  className={styles.mobileLink}
+                  onClick={handleStreamsClick}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={`mobile-${item.href}`}
+                  href={item.href}
+                  className={styles.mobileLink}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
+          </div>
+
+          <div className={styles.mobileAuth}>
+            {isAuthenticated ? (
+              <>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    handleProfileClick()
+                  }}
+                  className={`${styles.btn} ${styles.linkButton}`}
+                >
+                  Профиль
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    onLogout()
+                  }}
+                  className={`${styles.btn} ${styles.loginButton}`}
+                >
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/register"
+                  className={`${styles.btn} ${styles.linkButton}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Регистрация
+                </Link>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    setLoginModalOpen(true)
+                  }}
+                  className={`${styles.btn} ${styles.loginButton}`}
+                >
+                  Войти
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <LoginModal
         isOpen={loginModalOpen}

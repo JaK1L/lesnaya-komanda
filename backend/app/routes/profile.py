@@ -535,6 +535,9 @@ async def upload_banner(
     service = ProfileService(db)
     await service.delete_old_banner(current_user.id)
     banner_url = await service.save_banner_file(current_user.id, file)
+    # Gracefully handle environments where the banner_url migration
+    # has not been applied yet.
+    await db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_url VARCHAR(500)")
     await db.execute("UPDATE users SET banner_url = $1 WHERE id = $2", banner_url, current_user.id)
     return {"banner_url": banner_url}
 

@@ -56,3 +56,7 @@ npm run dev
 ## 👥 Команда
 
 Lesnaya Komanda Team
+
+## 🔎 Аудит проекта
+
+Текущая оценка и обзор архитектуры: `PROJECT_REVIEW.md`.

@@ -20,6 +20,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  gap: 16px;
 }
 
 /* Logo */
@@ -27,13 +28,14 @@
   display: flex;
   align-items: center;
   height: 100%;
-  padding: 16px 20px;
+  padding: 16px 0;
   flex-shrink: 0;
   text-decoration: none;
   color: var(--color-white);
   font-size: 16px;
   font-weight: 600;
   transition: opacity 0.2s;
+  z-index: 3;
 }
 
 .logo:hover {
@@ -48,7 +50,7 @@
   justify-content: center;
   gap: 36px;
   height: 100%;
-  padding: 9px 32px;
+  padding: 9px 16px;
 }
 
 .link {
@@ -72,8 +74,8 @@
 .headerBtns {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 12px;
+  padding: 16px 0;
   flex-shrink: 0;
 }
 
@@ -94,6 +96,7 @@
   backdrop-filter: blur(var(--blur-button));
   -webkit-backdrop-filter: blur(var(--blur-button));
   transition: opacity 0.2s ease, transform 0.15s ease;
+  border-radius: 10px;
 }
 
 .btn:hover {
@@ -113,63 +116,111 @@
   display: none;
 }
 
-/* Responsive */
-@media (max-width: 1100px) {
-  .nav {
-    padding: 0 40px;
-  }
+@media (max-width: 1200px) {
   .navLinks {
     gap: 20px;
-    padding: 9px 16px;
+  }
+
+  .link {
+    font-size: 15px;
   }
 }
 
-@media (max-width: 768px) {
-  .nav {
-    padding: 0 20px;
-  }
-
-  .navLinks {
+@media (max-width: 960px) {
+  .navLinks,
+  .headerBtns {
     display: none;
   }
 
   .mobileMenuButton {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 40px;
+    height: 40px;
     background: var(--color-white-10);
-    border: none;
+    border: 1px solid var(--color-border);
     color: var(--color-white);
     cursor: pointer;
-    padding: 8px;
     transition: background 0.2s;
+    border-radius: 10px;
+    z-index: 3;
   }
 
   .mobileMenuButton:hover {
     background: rgba(255, 255, 255, 0.18);
   }
 
-  .navLinks.open {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
+  .mobileMenu {
+    position: fixed;
     top: 74px;
     left: 0;
     right: 0;
-    background: rgba(30, 30, 30, 0.98);
-    backdrop-filter: blur(var(--blur-header));
-    padding: 20px;
-    gap: 16px;
+    max-height: calc(100vh - 74px);
+    overflow-y: auto;
+    background: rgba(19, 19, 19, 0.98);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
     border-bottom: 1px solid var(--color-border);
-  }
-
-  .headerBtns {
+    padding: 16px;
+    display: flex;
     flex-direction: column;
-    width: 100%;
+    gap: 8px;
+    z-index: 99;
   }
 
-  .btn {
+  .mobileNavLinks {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .mobileLink {
+    display: flex;
+    align-items: center;
+    min-height: 46px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    color: var(--color-white);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid transparent;
+    font-size: 15px;
+  }
+
+  .mobileLink:hover {
+    border-color: rgba(145, 71, 255, 0.45);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .mobileAuth {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .mobileAuth .btn {
     width: 100%;
-    justify-content: center;
+    min-height: 44px;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 560px) {
+  .nav {
+    height: 66px;
+  }
+
+  .mobileMenu {
+    top: 66px;
+    max-height: calc(100vh - 66px);
+    padding: 12px;
+  }
+
+  .mobileAuth {
+    grid-template-columns: 1fr;
   }
 }

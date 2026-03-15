@@ -59,6 +59,27 @@
   --blur-button: 15px;
 }
 
+@media (max-width: 1200px) {
+  :root {
+    --page-padding-x: 72px;
+    --page-padding-y: 52px;
+  }
+}
+
+@media (max-width: 960px) {
+  :root {
+    --page-padding-x: 24px;
+    --page-padding-y: 44px;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --page-padding-x: 16px;
+    --page-padding-y: 32px;
+  }
+}
+
 /* ─── Base ─── */
 html {
   scroll-behavior: smooth;
