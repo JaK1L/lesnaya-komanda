@@ -28,17 +28,28 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Жизненный цикл приложения"""
     # Запуск
-    await database.connect()
-    logger.info("✅ Подключение к базе данных установлено")
-    
-    # Инициализация базы данных
-    await init_db()
-    
+    app.state.db_ready = False
+    try:
+        await database.connect()
+        logger.info("✅ Подключение к базе данных установлено")
+
+        # Инициализация базы данных
+        await init_db()
+        app.state.db_ready = True
+    except Exception:
+        logger.error(
+            "❌ Не удалось подключиться к базе данных при запуске. "
+            "Приложение продолжит работу в деградированном режиме и "
+            "повторит подключение при первом запросе к БД.",
+            exc_info=True,
+        )
+
     yield
-    
+
     # Завершение
-    await database.disconnect()
-    logger.info("✅ Подключение к базе данных закрыто")
+    if database.pool:
+        await database.disconnect()
+        logger.info("✅ Подключение к базе данных закрыто")
 
 app = FastAPI(
     title="Лесная Команда API",
