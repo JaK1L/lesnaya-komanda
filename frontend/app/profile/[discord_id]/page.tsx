@@ -116,7 +116,8 @@ export default function PublicProfilePage() {
   const authIdentity = getAuthIdentityFromToken(token)
   const isOwnProfile = Boolean(
     (authIdentity.userId && profile?.user_id && authIdentity.userId === String(profile.user_id)) ||
-    (authIdentity.discordId && profile?.discord_id && authIdentity.discordId === String(profile.discord_id)),
+    (authIdentity.discordId && profile?.discord_id && authIdentity.discordId === String(profile.discord_id)) ||
+    (authIdentity.userTag && profile?.user_tag && authIdentity.userTag === profile.user_tag),
   )
 
   const displayName = profile?.site_nickname || profile?.discord_username || 'Профиль'

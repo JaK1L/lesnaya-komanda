@@ -86,21 +86,24 @@ export function getProfileIdentifierFromProfileResponse(profile: unknown): strin
 export function getAuthIdentityFromToken(token: string | null): {
   userId: string | null
   discordId: string | null
+  userTag: string | null
 } {
   if (!token) {
-    return { userId: null, discordId: null }
+    return { userId: null, discordId: null, userTag: null }
   }
 
   const payload = decodePayload(token)
   if (!payload) {
-    return { userId: null, discordId: null }
+    return { userId: null, discordId: null, userTag: null }
   }
 
   const userId = toIdentifierString(payload.user_id)
   const discordCandidate = toIdentifierString(payload.discord_id) ?? toIdentifierString(payload.sub)
+  const userTag = toIdentifierString(payload.user_tag)
 
   return {
     userId: userId && isNumeric(userId) ? userId : null,
     discordId: discordCandidate && isNumeric(discordCandidate) ? discordCandidate : null,
+    userTag,
   }
 }
