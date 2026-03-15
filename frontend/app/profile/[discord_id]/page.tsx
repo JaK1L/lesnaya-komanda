@@ -67,7 +67,14 @@ interface Achievement {
 
 export default function PublicProfilePage() {
   const { discord_id } = useParams<{ discord_id: string }>()
-  const profileIdentifier = String(discord_id ?? '').trim()
+  const profileIdentifier = (() => {
+    const raw = String(discord_id ?? '').trim()
+    try {
+      return decodeURIComponent(raw)
+    } catch {
+      return raw
+    }
+  })()
   const encodedProfileIdentifier = encodeURIComponent(profileIdentifier)
   const router = useRouter()
   const [profile, setProfile] = useState<PublicProfile | null>(null)

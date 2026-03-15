@@ -3,6 +3,22 @@ Helpers for resolving profile/user identifiers used in public routes.
 """
 from typing import Optional
 import asyncpg
+from urllib.parse import unquote
+
+
+def _normalize_identifier(identifier: str) -> str:
+    value = identifier.strip()
+    if not value:
+        return ""
+
+    # Decode URL-encoded identifiers (including accidental double encoding).
+    for _ in range(2):
+        decoded = unquote(value)
+        if decoded == value:
+            break
+        value = decoded
+
+    return value.strip()
 
 
 def _parse_numeric_identifier(identifier: str) -> Optional[int]:
@@ -31,7 +47,7 @@ async def resolve_user_by_identifier(
     - discord_id (numeric)
     - internal user id (numeric)
     """
-    value = identifier.strip()
+    value = _normalize_identifier(identifier)
     if not value:
         return None
 

@@ -24,7 +24,12 @@ function toIdentifierString(value: unknown): string | null {
     return String(Math.trunc(value))
   }
   if (typeof value === 'string' && value.trim().length > 0) {
-    return value.trim()
+    const trimmed = value.trim()
+    try {
+      return decodeURIComponent(trimmed)
+    } catch {
+      return trimmed
+    }
   }
   return null
 }
