@@ -17,13 +17,13 @@ interface NavigationProps {
 }
 
 const NAV_ITEMS = [
-  { label: 'РќР°С€Р° РєРѕРјР°РЅРґР°', href: '/team' },
-  { label: 'РЎС‚СЂРёРјС‹', href: '#streams' },
-  { label: 'РўСѓСЂРЅРёСЂС‹', href: '/tournaments' },
-  { label: 'РњРµРґРёР°', href: '/media' },
-  { label: 'Рћ РЅР°СЃ', href: '/about' },
-  { label: 'РЎРѕС†. СЃРµС‚Рё', href: '/social' },
-  { label: 'РњРµСЂС‡', href: '/merch' },
+  { label: 'Наша команда', href: '/team' },
+  { label: 'Стримы', href: '#streams' },
+  { label: 'Турниры', href: '/tournaments' },
+  { label: 'Медиа', href: '/media' },
+  { label: 'О нас', href: '/about' },
+  { label: 'Соц. сети', href: '/social' },
+  { label: 'Мерч', href: '/merch' },
 ]
 
 export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
@@ -131,7 +131,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
 
             <div className={styles.navLinks}>
               {NAV_ITEMS.map(item =>
-                item.label === 'РЎС‚СЂРёРјС‹' ? (
+                item.label === 'Стримы' ? (
                   <a
                     key="streams"
                     href="#"
@@ -157,22 +157,22 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
               {isAuthenticated ? (
                 <>
                   <button onClick={handleProfileClick} className={`${styles.btn} ${styles.linkButton}`}>
-                    РџСЂРѕС„РёР»СЊ
+                    Профиль
                   </button>
                   <button onClick={onLogout} className={`${styles.btn} ${styles.loginButton}`}>
-                    Р’С‹Р№С‚Рё
+                    Выйти
                   </button>
                 </>
               ) : (
                 <>
                   <Link href="/register" className={`${styles.btn} ${styles.linkButton}`}>
-                    Р РµРіРёСЃС‚СЂР°С†РёСЏ
+                    Регистрация
                   </Link>
                   <button
                     onClick={() => setLoginModalOpen(true)}
                     className={`${styles.btn} ${styles.loginButton}`}
                   >
-                    Р’РѕР№С‚Рё
+                    Войти
                   </button>
                 </>
               )}
@@ -193,7 +193,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
           <div className={styles.mobileMenu}>
             <div className={styles.mobileNavLinks}>
               {NAV_ITEMS.map(item =>
-                item.label === 'РЎС‚СЂРёРјС‹' ? (
+                item.label === 'Стримы' ? (
                   <a
                     key="mobile-streams"
                     href="#"
@@ -225,7 +225,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
                     }}
                     className={`${styles.btn} ${styles.linkButton}`}
                   >
-                    РџСЂРѕС„РёР»СЊ
+                    Профиль
                   </button>
                   <button
                     onClick={() => {
@@ -234,7 +234,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
                     }}
                     className={`${styles.btn} ${styles.loginButton}`}
                   >
-                    Р’С‹Р№С‚Рё
+                    Выйти
                   </button>
                 </>
               ) : (
@@ -244,7 +244,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
                     className={`${styles.btn} ${styles.linkButton}`}
                     onClick={closeMobileMenu}
                   >
-                    Р РµРіРёСЃС‚СЂР°С†РёСЏ
+                    Регистрация
                   </Link>
                   <button
                     onClick={() => {
@@ -253,7 +253,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
                     }}
                     className={`${styles.btn} ${styles.loginButton}`}
                   >
-                    Р’РѕР№С‚Рё
+                    Войти
                   </button>
                 </>
               )}
