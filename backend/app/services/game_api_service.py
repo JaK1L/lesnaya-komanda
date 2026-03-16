@@ -86,6 +86,8 @@ class GameAPIService:
             "total_matches_played",
             "total_matches_won",
         )
+        if wins > matches_played:
+            matches_played = wins
         headshots = self._stat_value(stats_dict, "total_kills_headshot")
 
         return {
@@ -160,6 +162,11 @@ class GameAPIService:
             losses = total_matches - wins
 
         if not total_matches and not wins and not losses:
+            opendota_stats = await self._get_opendota_wl(account_id)
+            if opendota_stats:
+                return opendota_stats
+
+        if not total_matches and not wins and not losses:
             recent_matches = await self.get_dota2_recent_matches(account_id, 20) or []
             wins = sum(1 for match in recent_matches if match.get("won"))
             losses = sum(1 for match in recent_matches if not match.get("won"))
@@ -179,7 +186,7 @@ class GameAPIService:
         """Return recent Dota 2 matches via Steam match history APIs."""
         if not self.steam_api_key:
             logger.warning("Steam API key not configured")
-            return None
+            return await self._get_opendota_recent_matches(account_id, limit)
 
         try:
             numeric_account_id = int(account_id)
@@ -196,7 +203,7 @@ class GameAPIService:
         )
         matches = history.get("result", {}).get("matches", []) if history else []
         if not matches:
-            return []
+            return await self._get_opendota_recent_matches(account_id, limit)
 
         detailed_matches: list[Dict[str, Any]] = []
         async with aiohttp.ClientSession() as session:
@@ -238,7 +245,7 @@ class GameAPIService:
                     }
                 )
 
-        return detailed_matches
+        return detailed_matches or await self._get_opendota_recent_matches(account_id, limit)
 
     async def get_valorant_profile(
         self,
@@ -422,6 +429,82 @@ class GameAPIService:
                 exc_info=True,
             )
             return None
+
+    async def _get_opendota_wl(self, account_id: str) -> Optional[Dict[str, Any]]:
+        url = f"https://api.opendota.com/api/players/{account_id}/wl"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status != 200:
+                        logger.warning(
+                            "OpenDota wl request failed (%s) for %s",
+                            response.status,
+                            account_id,
+                        )
+                        return None
+
+                    data = await response.json()
+                    wins = int(data.get("win", 0) or 0)
+                    losses = int(data.get("lose", 0) or 0)
+                    total_matches = wins + losses
+                    if not total_matches:
+                        return None
+
+                    return {
+                        "wins": wins,
+                        "losses": losses,
+                        "total_matches": total_matches,
+                        "win_rate": round(wins / max(total_matches, 1) * 100, 2),
+                    }
+        except Exception as exc:
+            logger.error(
+                "Error fetching OpenDota win/loss for %s: %s",
+                account_id,
+                exc,
+                exc_info=True,
+            )
+            return None
+
+    async def _get_opendota_recent_matches(self, account_id: str, limit: int = 10) -> list[Dict[str, Any]]:
+        url = f"https://api.opendota.com/api/players/{account_id}/recentMatches"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status != 200:
+                        logger.warning(
+                            "OpenDota recentMatches request failed (%s) for %s",
+                            response.status,
+                            account_id,
+                        )
+                        return []
+
+                    matches = await response.json()
+                    normalized = []
+                    for match in matches[:limit]:
+                        player_slot = int(match.get("player_slot", 0) or 0)
+                        radiant_player = player_slot < 128
+                        radiant_win = bool(match.get("radiant_win"))
+                        normalized.append(
+                            {
+                                "match_id": match.get("match_id"),
+                                "hero_id": match.get("hero_id"),
+                                "kills": int(match.get("kills", 0) or 0),
+                                "deaths": int(match.get("deaths", 0) or 0),
+                                "assists": int(match.get("assists", 0) or 0),
+                                "duration": int(match.get("duration", 0) or 0),
+                                "start_time": match.get("start_time"),
+                                "won": radiant_win if radiant_player else not radiant_win,
+                            }
+                        )
+                    return normalized
+        except Exception as exc:
+            logger.error(
+                "Error fetching OpenDota recent matches for %s: %s",
+                account_id,
+                exc,
+                exc_info=True,
+            )
+            return []
 
     async def _get_game_user_stats(
         self,

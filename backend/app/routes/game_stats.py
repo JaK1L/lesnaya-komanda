@@ -65,7 +65,7 @@ async def _build_game_stats_payload(accounts) -> dict:
                             "assists": match.get("assists", 0),
                             "duration": match.get("duration", 0),
                             "start_time": match.get("start_time"),
-                            "won": bool(match.get("radiant_win")) == (int(match.get("player_slot", 0)) < 128),
+                            "won": bool(match.get("won")),
                         }
                         for match in recent_matches
                     ],
