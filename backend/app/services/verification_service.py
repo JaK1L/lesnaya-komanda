@@ -27,6 +27,34 @@ async def ensure_verification_schema(db: asyncpg.Connection) -> None:
         )
         """
     )
+    await db.execute(
+        "ALTER TABLE verification_requests ADD COLUMN IF NOT EXISTS admin_note TEXT"
+    )
+    await db.execute(
+        "ALTER TABLE verification_requests ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ"
+    )
+    await db.execute(
+        "ALTER TABLE verification_requests ADD COLUMN IF NOT EXISTS reviewed_by INTEGER"
+    )
+    await db.execute(
+        "ALTER TABLE verification_requests ADD COLUMN IF NOT EXISTS reviewed_by_name TEXT"
+    )
+
+    fk_exists = await db.fetchval(
+        """
+        SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.table_constraints
+            WHERE table_name = 'verification_requests'
+              AND constraint_type = 'FOREIGN KEY'
+              AND constraint_name = 'verification_requests_reviewed_by_fkey'
+        )
+        """
+    )
+    if fk_exists:
+        await db.execute(
+            "ALTER TABLE verification_requests DROP CONSTRAINT IF EXISTS verification_requests_reviewed_by_fkey"
+        )
 
 
 async def get_user_verification_request(
@@ -48,7 +76,7 @@ async def get_user_verification_request(
             vr.updated_at,
             vr.reviewed_at,
             vr.reviewed_by,
-            COALESCE(reviewer.site_nickname, reviewer.discord_username) AS reviewed_by_name
+            COALESCE(vr.reviewed_by_name, reviewer.site_nickname, reviewer.discord_username) AS reviewed_by_name
         FROM verification_requests vr
         LEFT JOIN users reviewer ON reviewer.id = vr.reviewed_by
         WHERE vr.user_id = $1

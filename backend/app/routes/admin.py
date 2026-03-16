@@ -915,7 +915,11 @@ async def approve_verification_request(
     if not request_row:
         raise HTTPException(status_code=404, detail="Verification request not found")
 
-    badge = (payload.badge or "Стример").strip() or "Стример"
+    reviewer_user_id = await db.fetchval(
+        "SELECT id FROM users WHERE id = $1",
+        current_user.id,
+    )
+    badge = (payload.badge or "\u0421\u0442\u0440\u0438\u043c\u0435\u0440").strip() or "\u0421\u0442\u0440\u0438\u043c\u0435\u0440"
 
     async with db.transaction():
         await db.execute(
@@ -925,11 +929,13 @@ async def approve_verification_request(
                 admin_note = $1,
                 reviewed_at = NOW(),
                 reviewed_by = $2,
+                reviewed_by_name = $3,
                 updated_at = NOW()
-            WHERE id = $3
+            WHERE id = $4
             """,
             payload.admin_note,
-            current_user.id,
+            reviewer_user_id,
+            current_user.username,
             request_id,
         )
         await db.execute(
@@ -961,6 +967,11 @@ async def reject_verification_request(
     if not request_row:
         raise HTTPException(status_code=404, detail="Verification request not found")
 
+    reviewer_user_id = await db.fetchval(
+        "SELECT id FROM users WHERE id = $1",
+        current_user.id,
+    )
+
     async with db.transaction():
         await db.execute(
             """
@@ -969,11 +980,13 @@ async def reject_verification_request(
                 admin_note = $1,
                 reviewed_at = NOW(),
                 reviewed_by = $2,
+                reviewed_by_name = $3,
                 updated_at = NOW()
-            WHERE id = $3
+            WHERE id = $4
             """,
             payload.admin_note,
-            current_user.id,
+            reviewer_user_id,
+            current_user.username,
             request_id,
         )
         await db.execute(
