@@ -21,6 +21,22 @@ interface User {
   joined_at: string | null
   last_seen: string | null
   avatar_url: string | null
+  is_verified?: boolean
+  verification_badge?: string | null
+}
+
+interface VerificationRequest {
+  id: number
+  user_id: number
+  discord_username: string | null
+  site_nickname: string | null
+  avatar_url: string | null
+  twitch_url: string
+  telegram_contact: string
+  reason: string
+  status: string
+  created_at: string
+  updated_at: string
 }
 
 export default function AdminUsersPage() {
@@ -29,6 +45,8 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [verificationRequests, setVerificationRequests] = useState<VerificationRequest[]>([])
+  const [reviewLoadingId, setReviewLoadingId] = useState<number | null>(null)
   const [xpModal, setXpModal] = useState<User | null>(null)
   const [xpAmount, setXpAmount] = useState(100)
   const [xpReason, setXpReason] = useState('Выдано администратором')
@@ -46,16 +64,49 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('admin_token')
-      const response = await fetch(`${API_URL}/api/admin/users?limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!response.ok) throw new Error('Failed to fetch')
-      const data = await response.json()
+      const [usersResponse, requestsResponse] = await Promise.all([
+        fetch(`${API_URL}/api/admin/users?limit=100`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/admin/verification-requests`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ])
+      if (!usersResponse.ok) throw new Error('Failed to fetch')
+      const data = await usersResponse.json()
       setUsers(data.items ?? data)
+      if (requestsResponse.ok) {
+        const requestsData = await requestsResponse.json()
+        setVerificationRequests(requestsData)
+      } else {
+        setVerificationRequests([])
+      }
     } catch (error) {
       console.error('Error fetching users:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleReviewVerification = async (requestId: number, action: 'approve' | 'reject') => {
+    setReviewLoadingId(requestId)
+    try {
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch(`${API_URL}/api/admin/verification-requests/${requestId}/${action}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      })
+      if (!response.ok) throw new Error('Review failed')
+      void fetchUsers()
+    } catch (error) {
+      console.error('Verification review failed', error)
+      alert('Не удалось обработать заявку')
+    } finally {
+      setReviewLoadingId(null)
     }
   }
 
@@ -180,6 +231,60 @@ export default function AdminUsersPage() {
       )}
 
       <UserModal isOpen={showModal} onClose={handleCloseModal} onSave={handleSave} editingUser={editingUser} />
+
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ marginBottom: '1rem' }}>Заявки на верификацию</h2>
+        {verificationRequests.length === 0 ? (
+          <div className={styles.empty}>
+            <p>Новых заявок нет</p>
+          </div>
+        ) : (
+          <div className={styles.list}>
+            {verificationRequests.map((request) => (
+              <div key={request.id} className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {request.avatar_url && (
+                      <img
+                        src={getImageUrl(request.avatar_url) || request.avatar_url}
+                        alt={request.discord_username || 'user'}
+                        style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }}
+                      />
+                    )}
+                    <div>
+                      <h3>{request.site_nickname || request.discord_username || 'Пользователь'}</h3>
+                      <small style={{ color: '#888' }}>Подана {new Date(request.created_at).toLocaleString('ru-RU')}</small>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                      onClick={() => handleReviewVerification(request.id, 'approve')}
+                      disabled={reviewLoadingId === request.id}
+                      style={{ padding: '0.65rem 0.9rem', borderRadius: '10px', border: 'none', background: '#22c55e', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Одобрить
+                    </button>
+                    <button
+                      onClick={() => handleReviewVerification(request.id, 'reject')}
+                      disabled={reviewLoadingId === request.id}
+                      style={{ padding: '0.65rem 0.9rem', borderRadius: '10px', border: 'none', background: '#ef4444', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Отклонить
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.cardContent}>
+                  <div style={{ display: 'grid', gap: '0.75rem' }}>
+                    <div><strong>Twitch:</strong> {request.twitch_url}</div>
+                    <div><strong>Telegram:</strong> {request.telegram_contact}</div>
+                    <div><strong>Почему верифицировать:</strong> {request.reason}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className={styles.list}>
         {users.length === 0 ? (

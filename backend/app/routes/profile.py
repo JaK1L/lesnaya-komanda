@@ -9,9 +9,18 @@ import asyncpg
 from datetime import datetime, timezone
 
 from ..database import get_db
-from ..schemas import ProfileResponse, ProfileUpdate
+from ..schemas import (
+    ProfileResponse,
+    ProfileUpdate,
+    VerificationRequestCreate,
+    VerificationRequestResponse,
+)
 from ..services.profile_service import ProfileService
 from ..services.user_identity import resolve_user_by_identifier
+from ..services.verification_service import (
+    ensure_verification_schema,
+    get_user_verification_request,
+)
 from ..auth import get_current_user, get_optional_current_user, User
 
 router = APIRouter()
@@ -51,6 +60,7 @@ async def get_public_profile(
     Returns profile if user exists and hasn't hidden their profile.
     """
     try:
+        await ensure_verification_schema(db)
         profile_meta = await resolve_user_by_identifier(db, profile_identifier)
         if not profile_meta:
             raise HTTPException(status_code=404, detail="Profile not found")
@@ -76,7 +86,9 @@ async def get_public_profile(
                 current_xp,
                 total_xp,
                 points,
-                twitch_username
+                twitch_username,
+                is_verified,
+                verification_badge
             FROM users
             WHERE id = $1
             """,
@@ -105,6 +117,8 @@ async def get_public_profile(
             roles = [{"id": r["id"], "name": r["name"], "color": r.get("color", "#9147ff")} for r in roles_rows]
         except Exception:
             roles = []
+
+        verification_request = await get_user_verification_request(db, user_id)
 
         # Tournament stats
         tourney_stats = {"played": 0, "wins": 0}
@@ -144,6 +158,9 @@ async def get_public_profile(
             "points": row.get('points', 0),
             "tourney_stats": tourney_stats,
             "twitch_username": row.get('twitch_username'),
+            "is_verified": row.get('is_verified', False) or False,
+            "verification_badge": row.get('verification_badge'),
+            "verification_status": verification_request["status"] if verification_request else None,
             "roles": roles,
         }
 
@@ -403,7 +420,71 @@ async def get_profile(
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching profile: {str(e)}"
+        )    
+
+
+@router.get("/profile/verification-request", response_model=Optional[VerificationRequestResponse])
+async def get_my_verification_request(
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    request_row = await get_user_verification_request(db, current_user.id)
+    if not request_row:
+        return None
+    return VerificationRequestResponse(**request_row)
+
+
+@router.post("/profile/verification-request", response_model=VerificationRequestResponse)
+async def create_or_update_verification_request(
+    payload: VerificationRequestCreate,
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    await ensure_verification_schema(db)
+
+    existing = await db.fetchrow(
+        "SELECT id, status FROM verification_requests WHERE user_id = $1",
+        current_user.id,
+    )
+
+    if existing and existing["status"] == "approved":
+        raise HTTPException(status_code=400, detail="Profile is already verified")
+
+    if existing:
+        await db.execute(
+            """
+            UPDATE verification_requests
+            SET twitch_url = $1,
+                telegram_contact = $2,
+                reason = $3,
+                status = 'pending',
+                admin_note = NULL,
+                reviewed_at = NULL,
+                reviewed_by = NULL,
+                updated_at = NOW()
+            WHERE user_id = $4
+            """,
+            payload.twitch_url,
+            payload.telegram_contact,
+            payload.reason,
+            current_user.id,
         )
+    else:
+        await db.execute(
+            """
+            INSERT INTO verification_requests (user_id, twitch_url, telegram_contact, reason)
+            VALUES ($1, $2, $3, $4)
+            """,
+            current_user.id,
+            payload.twitch_url,
+            payload.telegram_contact,
+            payload.reason,
+        )
+
+    request_row = await get_user_verification_request(db, current_user.id)
+    if not request_row:
+        raise HTTPException(status_code=500, detail="Failed to save verification request")
+    return VerificationRequestResponse(**request_row)
 
 
 @router.put("/profile", response_model=ProfileResponse)

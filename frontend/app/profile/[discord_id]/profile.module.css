@@ -221,6 +221,18 @@
   border: 1px solid rgba(145, 71, 255, 0.24);
 }
 
+.verifiedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  background: rgba(77, 208, 122, 0.14);
+  color: #baf5cb;
+  border: 1px solid rgba(77, 208, 122, 0.22);
+}
+
 .hiddenBadge {
   background: rgba(255, 183, 77, 0.12);
   color: #ffd48f;
@@ -964,6 +976,32 @@
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+}
+
+.verificationBtn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(145, 71, 255, 0.18);
+  background: rgba(145, 71, 255, 0.1);
+  color: #f7edff;
+  cursor: pointer;
+}
+
+.verificationBtnStatus {
+  font-size: 0.8rem;
+  color: rgba(240, 247, 255, 0.76);
+}
+
+.modalHint {
+  margin: 0 0 1rem;
+  color: rgba(240, 247, 255, 0.76);
+  line-height: 1.6;
 }
 
 .uploadActionBtn:disabled {

@@ -11,6 +11,7 @@ import io
 from fastapi import UploadFile, HTTPException
 
 from ..schemas import ProfileResponse, ProfileUpdate
+from .verification_service import ensure_verification_schema, get_user_verification_request
 
 
 class ProfileService:
@@ -50,6 +51,8 @@ class ProfileService:
         Returns:
             ProfileResponse object or None if user not found
         """
+        await ensure_verification_schema(self.db)
+
         query = """
             SELECT 
                 discord_id,
@@ -68,7 +71,9 @@ class ProfileService:
                 current_xp,
                 total_xp,
                 points,
-                twitch_username
+                twitch_username,
+                is_verified,
+                verification_badge
             FROM users
             WHERE id = $1
         """
@@ -80,6 +85,7 @@ class ProfileService:
                 return None
 
             roles = await self._fetch_user_roles(user_id)
+            verification_request = await get_user_verification_request(self.db, user_id)
 
             # Safely extract game_preferences
             game_prefs = row['game_preferences']
@@ -120,6 +126,9 @@ class ProfileService:
                 current_xp=row.get('current_xp', 0),
                 total_xp=row.get('total_xp', 0),
                 points=row.get('points', 0),
+                is_verified=row.get('is_verified', False) or False,
+                verification_badge=row.get('verification_badge'),
+                verification_status=verification_request["status"] if verification_request else None,
                 twitch_username=row.get('twitch_username'),
                 roles=roles
             )

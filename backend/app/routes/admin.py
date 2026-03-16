@@ -15,6 +15,7 @@ from ..models import User
 from ..pagination import PaginatedResponse
 from ..rate_limit import limiter
 from ..validation import ContentValidationMixin, validate_url, validate_telegram_url
+from ..services.verification_service import ensure_verification_schema
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -753,6 +754,27 @@ class UserOut(BaseModel):
     site_nickname: Optional[str] = None
     joined_at: Optional[datetime] = None
     last_seen: datetime
+    is_verified: bool = False
+    verification_badge: Optional[str] = None
+
+
+class VerificationRequestOut(BaseModel):
+    id: int
+    user_id: int
+    discord_username: Optional[str] = None
+    site_nickname: Optional[str] = None
+    avatar_url: Optional[str] = None
+    twitch_url: str
+    telegram_contact: str
+    reason: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class VerificationReviewPayload(BaseModel):
+    badge: Optional[str] = Field(default="Стример", max_length=50)
+    admin_note: Optional[str] = Field(default=None, max_length=500)
 
 
 @router.get("/users")
@@ -763,12 +785,13 @@ async def list_users(
     current_user: User = Depends(get_current_admin_user),
 ):
     """Получить список всех пользователей с пагинацией (только для админов)."""
+    await ensure_verification_schema(db)
     offset = (page - 1) * limit
     
     rows = await db.fetch(
         """
         SELECT id, discord_id, user_tag, discord_username, forest_rank, rating, 
-               avatar_url, site_nickname, joined_at, last_seen
+               avatar_url, site_nickname, joined_at, last_seen, is_verified, verification_badge
         FROM users
         ORDER BY last_seen DESC, id DESC
         LIMIT $1 OFFSET $2
@@ -846,6 +869,124 @@ async def delete_user(
     if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     return {"status": "deleted"}
+
+
+@router.get("/verification-requests", response_model=List[VerificationRequestOut])
+async def list_verification_requests(
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    await ensure_verification_schema(db)
+    rows = await db.fetch(
+        """
+        SELECT
+            vr.id,
+            vr.user_id,
+            u.discord_username,
+            u.site_nickname,
+            u.avatar_url,
+            vr.twitch_url,
+            vr.telegram_contact,
+            vr.reason,
+            vr.status,
+            vr.created_at,
+            vr.updated_at
+        FROM verification_requests vr
+        JOIN users u ON u.id = vr.user_id
+        WHERE vr.status = 'pending'
+        ORDER BY vr.created_at DESC, vr.id DESC
+        """
+    )
+    return [VerificationRequestOut(**dict(row)) for row in rows]
+
+
+@router.post("/verification-requests/{request_id}/approve")
+async def approve_verification_request(
+    request_id: int,
+    payload: VerificationReviewPayload,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    await ensure_verification_schema(db)
+    request_row = await db.fetchrow(
+        "SELECT id, user_id FROM verification_requests WHERE id = $1",
+        request_id,
+    )
+    if not request_row:
+        raise HTTPException(status_code=404, detail="Verification request not found")
+
+    badge = (payload.badge or "Стример").strip() or "Стример"
+
+    async with db.transaction():
+        await db.execute(
+            """
+            UPDATE verification_requests
+            SET status = 'approved',
+                admin_note = $1,
+                reviewed_at = NOW(),
+                reviewed_by = $2,
+                updated_at = NOW()
+            WHERE id = $3
+            """,
+            payload.admin_note,
+            current_user.id,
+            request_id,
+        )
+        await db.execute(
+            """
+            UPDATE users
+            SET is_verified = TRUE,
+                verification_badge = $1
+            WHERE id = $2
+            """,
+            badge,
+            request_row["user_id"],
+        )
+
+    return {"status": "approved", "badge": badge}
+
+
+@router.post("/verification-requests/{request_id}/reject")
+async def reject_verification_request(
+    request_id: int,
+    payload: VerificationReviewPayload,
+    db: asyncpg.Connection = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    await ensure_verification_schema(db)
+    request_row = await db.fetchrow(
+        "SELECT id, user_id FROM verification_requests WHERE id = $1",
+        request_id,
+    )
+    if not request_row:
+        raise HTTPException(status_code=404, detail="Verification request not found")
+
+    async with db.transaction():
+        await db.execute(
+            """
+            UPDATE verification_requests
+            SET status = 'rejected',
+                admin_note = $1,
+                reviewed_at = NOW(),
+                reviewed_by = $2,
+                updated_at = NOW()
+            WHERE id = $3
+            """,
+            payload.admin_note,
+            current_user.id,
+            request_id,
+        )
+        await db.execute(
+            """
+            UPDATE users
+            SET is_verified = FALSE,
+                verification_badge = NULL
+            WHERE id = $1
+            """,
+            request_row["user_id"],
+        )
+
+    return {"status": "rejected"}
 
 
 # Team Members Management

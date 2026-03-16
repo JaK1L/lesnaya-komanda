@@ -189,9 +189,41 @@ class ProfileResponse(BaseModel):
     current_xp: int = 0
     total_xp: int = 0
     points: int = 0
+    is_verified: bool = False
+    verification_badge: Optional[str] = None
+    verification_status: Optional[str] = None
     game_preferences: Optional[List[Dict[str, Any]]] = None
     twitch_username: Optional[str] = None
     roles: List[RoleOut] = []
+
+
+class VerificationRequestCreate(BaseModel):
+    twitch_url: str = Field(..., min_length=1, max_length=500)
+    telegram_contact: str = Field(..., min_length=1, max_length=200)
+    reason: str = Field(..., min_length=10, max_length=1500)
+
+    @field_validator("twitch_url", "telegram_contact", "reason")
+    @classmethod
+    def trim_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Field cannot be empty")
+        return value
+
+
+class VerificationRequestResponse(BaseModel):
+    id: int
+    user_id: int
+    twitch_url: str
+    telegram_contact: str
+    reason: str
+    status: str
+    admin_note: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[int] = None
+    reviewed_by_name: Optional[str] = None
 
 
 class XPTransaction(BaseModel):
