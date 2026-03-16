@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   Copy,
   Edit2,
+  ExternalLink,
   Gamepad2,
   Image as ImageIcon,
   Link2,
@@ -164,6 +165,16 @@ const gameAccountIcon = (game: string) => {
 }
 const verificationStatusLabel = (status?: string | null) =>
   status === 'approved' ? 'Верифицирован' : status === 'pending' ? 'На рассмотрении' : status === 'rejected' ? 'Отклонена' : 'Подать заявку'
+const formatNumber = (value?: number | null) => (typeof value === 'number' ? value.toLocaleString('ru-RU') : '—')
+const formatPercent = (value?: number | null, digits = 1) => (typeof value === 'number' ? `${value.toFixed(digits)}%` : '—')
+const formatDotaRank = (rankTier?: number | null, leaderboardRank?: number | null) => {
+  if (typeof leaderboardRank === 'number') return `Топ #${leaderboardRank}`
+  if (!rankTier) return 'Не определён'
+  const medals = ['Рекрут', 'Страж', 'Рыцарь', 'Герой', 'Легенда', 'Властелин', 'Божество', 'Титан']
+  const medalIndex = Math.max(0, Math.min(medals.length - 1, Math.floor(rankTier / 10) - 1))
+  const stars = rankTier % 10
+  return stars > 0 ? `${medals[medalIndex]} ${stars}` : medals[medalIndex]
+}
 export default function PublicProfilePage() {
   const { discord_id } = useParams<{ discord_id: string }>()
   const router = useRouter()
@@ -207,6 +218,7 @@ export default function PublicProfilePage() {
   const [twitchSaving, setTwitchSaving] = useState(false)
   const [showcaseIds, setShowcaseIds] = useState<number[]>([])
   const [showcaseSaving, setShowcaseSaving] = useState(false)
+  const [unlinkingGame, setUnlinkingGame] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
   const tabsRef = useRef<HTMLDivElement>(null)
@@ -259,7 +271,7 @@ export default function PublicProfilePage() {
   }, [toast])
   useEffect(() => {
     if (!profile) return
-    void axios.get<GameAccount[]>(`${API_URL}/api/game-stats/public/${encodedProfileIdentifier}/accounts`).then((r) => setAccounts(r.data)).catch(() => setAccounts([]))
+    void loadLinkedAccounts()
     void axios.get<FriendItem[]>(`${API_URL}/api/friends/public/${encodedProfileIdentifier}`).then((r) => setFriends(r.data)).catch(() => setFriends([]))
     void axios.get<Achievement[]>(`${API_URL}/api/achievements/showcase/${encodedProfileIdentifier}`).then((r) => {
       setShowcase(r.data)
@@ -425,6 +437,14 @@ export default function PublicProfilePage() {
       if (kind === 'banner' && bannerInputRef.current) bannerInputRef.current.value = ''
     }
   }
+  async function loadLinkedAccounts() {
+    try {
+      const res = await axios.get<GameAccount[]>(`${API_URL}/api/game-stats/public/${encodedProfileIdentifier}/accounts`)
+      setAccounts(res.data)
+    } catch {
+      setAccounts([])
+    }
+  }
   function handleFileSelection(kind: 'avatar' | 'banner', event: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = event.target.files?.[0]
     if (!selectedFile) return
@@ -471,6 +491,26 @@ export default function PublicProfilePage() {
       setFailure('Не удалось обновить витрину достижений.')
     } finally {
       setShowcaseSaving(false)
+    }
+  }
+  async function unlinkGameAccount(game: string) {
+    if (!token) return
+    setUnlinkingGame(game)
+    try {
+      await axios.delete(`${API_URL}/api/game-stats/${game}`, { headers: { Authorization: `Bearer ${token}` } })
+      setAccounts((prev) => prev.filter((account) => account.game !== game))
+      setGameStats((prev) => {
+        if (!prev) return prev
+        const next = { ...prev }
+        delete next[game as keyof PublicGameStats]
+        return next
+      })
+      setLoaded((prev) => ({ ...prev, games: false }))
+      setSuccess(`${gameLabel(game)} отвязан.`)
+    } catch {
+      setFailure(`Не удалось отвязать ${gameLabel(game)}.`)
+    } finally {
+      setUnlinkingGame(null)
     }
   }
   function formatDuration(seconds?: number | null) {
@@ -546,7 +586,7 @@ export default function PublicProfilePage() {
             <div className={styles.tabs} ref={tabsRef}>{tabs.map((item) => <button key={item.id} ref={(node) => { tabRefs.current[item.id] = node }} className={`${styles.tab} ${tab === item.id ? styles.tabActive : ''}`} onClick={() => setTab(item.id)}>{item.icon}<span>{item.label}</span></button>)}</div>
             <div className={styles.tabPanel}>
               {tab === 'stats' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Основные данные</h3></div><div className={styles.infoGrid}><div className={styles.infoRow}><span>Никнейм на сайте</span><strong>{profile.site_nickname || 'Не указан'}</strong></div><div className={styles.infoRow}><span>Discord</span><strong>@{profile.discord_username}</strong></div><div className={styles.infoRow}><span>Ранг Лесной Команды</span><strong>{profile.forest_rank || 'Не назначен'}</strong></div><div className={styles.infoRow}><span>Общий опыт</span><strong>{profile.total_xp} XP</strong></div></div></div></div>}
-              {tab === 'accounts' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Привязанные аккаунты</h3></div>{profile.twitch_username || accounts.length > 0 ? <div className={styles.accountList}>{profile.twitch_username && <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.accountCard}><span className={`${styles.accountIcon} ${styles.accountIconTwitch}`}><Twitch size={18} /></span><div className={styles.accountMeta}><strong>Twitch</strong><span>{profile.twitch_username}</span></div></a>}{accounts.map((account) => <div key={`${account.game}-${account.account_id}`} className={styles.accountCard}><span className={`${styles.accountIcon} ${styles[`accountIcon${gameLabel(account.game).replace(/[^a-zA-Z0-9]/g, '')}`] || ''}`}>{gameAccountIcon(account.game)}</span><div className={styles.accountMeta}><strong>{gameLabel(account.game)}</strong><span>{account.account_tag ? `${account.account_id}#${account.account_tag}` : account.account_id}</span></div></div>)}</div> : <p className={styles.emptyText}>{isOwnProfile ? 'Подключи игровые аккаунты и Twitch в настройках профиля.' : 'Привязанные аккаунты пока не указаны.'}</p>}</div></div>}
+              {tab === 'accounts' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Привязанные аккаунты</h3></div>{profile.twitch_username || accounts.length > 0 ? <div className={styles.accountList}>{profile.twitch_username && <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.accountCard}><span className={`${styles.accountIcon} ${styles.accountIconTwitch}`}><Twitch size={18} /></span><div className={styles.accountMeta}><strong>Twitch</strong><span>{profile.twitch_username}</span></div><span className={styles.accountExternal}><ExternalLink size={14} /></span></a>}{accounts.map((account) => <div key={`${account.game}-${account.account_id}`} className={styles.accountCard}><span className={`${styles.accountIcon} ${styles[`accountIcon${gameLabel(account.game).replace(/[^a-zA-Z0-9]/g, '')}`] || ''}`}>{gameAccountIcon(account.game)}</span><div className={styles.accountMeta}><strong>{gameLabel(account.game)}</strong><span>{account.account_tag ? `${account.account_id}#${account.account_tag}` : account.account_id}</span></div>{isOwnProfile && <button className={styles.accountDetachBtn} onClick={() => unlinkGameAccount(account.game)} disabled={unlinkingGame === account.game}>{unlinkingGame === account.game ? 'Отвязка...' : 'Отвязать'}</button>}</div>)}</div> : <p className={styles.emptyText}>{isOwnProfile ? 'Подключи игровые аккаунты и Twitch в настройках профиля.' : 'Привязанные аккаунты пока не указаны.'}</p>}{isOwnProfile && accounts.length > 0 && <div className={styles.accountHint}>Игровые аккаунты можно отвязать здесь, а Twitch редактируется в модалке профиля.</div>}</div></div>}
               {tab === 'games' && <div className={styles.sectionStack}>
                 {!gameStats || Object.keys(gameStats).length === 0 ? <p className={styles.emptyText}>Игровая статистика пока недоступна. Сначала нужно привязать игровые аккаунты.</p> : <div className={styles.gameCards}>
                   {gameStats.steam?.cs2_stats && <article className={styles.gameCard}>
@@ -554,14 +594,19 @@ export default function PublicProfilePage() {
                       <div>
                         <div className={styles.gameCardEyebrow}>Counter-Strike 2</div>
                         <h3 className={styles.gameCardTitle}>{gameStats.steam.profile?.username || 'Steam аккаунт'}</h3>
+                        <div className={styles.gameCardSubtext}>Источник: Steam API</div>
                       </div>
                       {gameStats.steam.profile?.profile_url && <a href={gameStats.steam.profile.profile_url} target="_blank" rel="noreferrer" className={styles.gameCardLink}>Steam профиль</a>}
                     </div>
                     <div className={styles.gameMetricsGrid}>
                       <div className={styles.gameMetric}><span>K/D</span><strong>{gameStats.steam.cs2_stats.kd_ratio?.toFixed(2) || '0.00'}</strong></div>
-                      <div className={styles.gameMetric}><span>Винрейт</span><strong>{gameStats.steam.cs2_stats.win_rate?.toFixed(1) || 0}%</strong></div>
-                      <div className={styles.gameMetric}><span>Матчей</span><strong>{gameStats.steam.cs2_stats.matches_played || 0}</strong></div>
-                      <div className={styles.gameMetric}><span>Побед / поражений</span><strong>{gameStats.steam.cs2_stats.wins || 0} / {gameStats.steam.cs2_stats.losses || 0}</strong></div>
+                      <div className={styles.gameMetric}><span>Винрейт</span><strong>{formatPercent(gameStats.steam.cs2_stats.win_rate)}</strong></div>
+                      <div className={styles.gameMetric}><span>Матчей</span><strong>{formatNumber(gameStats.steam.cs2_stats.matches_played)}</strong></div>
+                      <div className={styles.gameMetric}><span>Побед / поражений</span><strong>{formatNumber(gameStats.steam.cs2_stats.wins)} / {formatNumber(gameStats.steam.cs2_stats.losses)}</strong></div>
+                      <div className={styles.gameMetric}><span>Убийств</span><strong>{formatNumber(gameStats.steam.cs2_stats.kills)}</strong></div>
+                      <div className={styles.gameMetric}><span>Смертей</span><strong>{formatNumber(gameStats.steam.cs2_stats.deaths)}</strong></div>
+                      <div className={styles.gameMetric}><span>Хедшоты</span><strong>{formatPercent(gameStats.steam.cs2_stats.headshot_pct)}</strong></div>
+                      <div className={styles.gameMetric}><span>MVP</span><strong>{formatNumber(gameStats.steam.cs2_stats.mvps)}</strong></div>
                     </div>
                     <div className={styles.gameHint}>История матчей CS2 пока недоступна через текущий API-источник.</div>
                   </article>}
@@ -570,25 +615,28 @@ export default function PublicProfilePage() {
                       <div>
                         <div className={styles.gameCardEyebrow}>Dota 2</div>
                         <h3 className={styles.gameCardTitle}>{gameStats.dota2.profile?.username || 'Dota 2 аккаунт'}</h3>
+                        <div className={styles.gameCardSubtext}>Матчи: Steam API · Ранг и MMR: OpenDota</div>
                       </div>
                       <div className={styles.gameCardBadge}>{gameStats.dota2.profile?.mmr_estimate ? `MMR ~${gameStats.dota2.profile.mmr_estimate}` : 'MMR скрыт'}</div>
                     </div>
                     <div className={styles.gameMetricsGrid}>
                       <div className={styles.gameMetric}><span>K/D</span><strong>{gameStats.dota2.stats?.average_kd?.toFixed(2) || '0.00'}</strong></div>
-                      <div className={styles.gameMetric}><span>Рейтинг</span><strong>{gameStats.dota2.profile?.rank_tier || gameStats.dota2.profile?.leaderboard_rank || 'Нет'}</strong></div>
-                      <div className={styles.gameMetric}><span>Матчей</span><strong>{gameStats.dota2.stats?.total_matches || 0}</strong></div>
-                      <div className={styles.gameMetric}><span>Побед / поражений</span><strong>{gameStats.dota2.stats?.wins || 0} / {gameStats.dota2.stats?.losses || 0}</strong></div>
+                      <div className={styles.gameMetric}><span>Рейтинг</span><strong>{formatDotaRank(gameStats.dota2.profile?.rank_tier, gameStats.dota2.profile?.leaderboard_rank)}</strong></div>
+                      <div className={styles.gameMetric}><span>Матчей</span><strong>{formatNumber(gameStats.dota2.stats?.total_matches)}</strong></div>
+                      <div className={styles.gameMetric}><span>Побед / поражений</span><strong>{formatNumber(gameStats.dota2.stats?.wins)} / {formatNumber(gameStats.dota2.stats?.losses)}</strong></div>
+                      <div className={styles.gameMetric}><span>Винрейт</span><strong>{formatPercent(gameStats.dota2.stats?.win_rate)}</strong></div>
                     </div>
-                    {gameStats.dota2.match_history?.length ? <div className={styles.matchHistoryList}>{gameStats.dota2.match_history.map((match) => <div key={match.match_id} className={styles.matchHistoryItem}>
+                    {gameStats.dota2.match_history?.length ? <><div className={styles.gameSectionTitle}>Последние матчи</div><div className={styles.matchHistoryList}>{gameStats.dota2.match_history.map((match) => <div key={match.match_id} className={styles.matchHistoryItem}>
                       <div className={styles.matchHistoryTop}><strong>{match.won ? 'Победа' : 'Поражение'}</strong><span className={`${styles.matchResult} ${match.won ? styles.matchResultWin : styles.matchResultLoss}`}>{match.kills}/{match.deaths}/{match.assists}</span></div>
-                      <div className={styles.matchHistoryMeta}><span>Матч #{match.match_id}</span><span>Герой ID: {match.hero_id ?? '—'}</span><span>{formatDuration(match.duration)}</span>{match.start_time ? <span>{new Date(match.start_time * 1000).toLocaleDateString('ru-RU')}</span> : null}</div>
-                    </div>)}</div> : <div className={styles.gameHint}>История матчей Dota 2 пока пуста.</div>}
+                      <div className={styles.matchHistoryMeta}><span>Матч #{match.match_id}</span><span>Герой: #{match.hero_id ?? '—'}</span><span>{formatDuration(match.duration)}</span>{match.start_time ? <span>{new Date(match.start_time * 1000).toLocaleDateString('ru-RU')}</span> : null}</div>
+                    </div>)}</div></> : <div className={styles.gameHint}>История матчей Dota 2 пока пуста.</div>}
                   </article>}
                   {gameStats.valorant && <article className={styles.gameCard}>
                     <div className={styles.gameCardHeader}>
                       <div>
                         <div className={styles.gameCardEyebrow}>Valorant</div>
                         <h3 className={styles.gameCardTitle}>{gameStats.valorant.profile?.username || 'Valorant аккаунт'}</h3>
+                        <div className={styles.gameCardSubtext}>Источник: Henrik / Riot data</div>
                       </div>
                       <div className={styles.gameCardBadge}>{gameStats.valorant.mmr?.current_tier || 'Unranked'}</div>
                     </div>

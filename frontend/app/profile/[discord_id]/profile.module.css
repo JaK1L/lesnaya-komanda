@@ -555,12 +555,21 @@
   border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
+.accountExternal {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(240, 247, 255, 0.54);
+}
+
 .accountCard strong {
   display: block;
 }
 
 .accountMeta {
   min-width: 0;
+  flex: 1;
 }
 
 .accountMeta strong {
@@ -605,6 +614,36 @@
 .accountIconValorant {
   background: linear-gradient(135deg, rgba(255, 113, 139, 0.24), rgba(196, 52, 91, 0.14));
   color: #ffe5ea;
+}
+
+.accountDetachBtn {
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f4eefe;
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.accountDetachBtn:hover:not(:disabled) {
+  border-color: rgba(255, 128, 128, 0.32);
+  background: rgba(255, 106, 106, 0.1);
+  color: #fff0f0;
+}
+
+.accountDetachBtn:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.accountHint {
+  margin-top: 0.9rem;
+  font-size: 0.85rem;
+  color: rgba(240, 247, 255, 0.56);
 }
 
 .mediaGrid {
@@ -839,6 +878,12 @@
   color: #f8fbff;
 }
 
+.gameCardSubtext {
+  margin-top: 0.38rem;
+  font-size: 0.83rem;
+  color: rgba(240, 247, 255, 0.58);
+}
+
 .gameCardLink,
 .gameCardBadge {
   display: inline-flex;
@@ -865,7 +910,7 @@
 
 .gameMetricsGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.75rem;
 }
 
@@ -893,6 +938,14 @@
   display: grid;
   gap: 0.75rem;
   margin-top: 1rem;
+}
+
+.gameSectionTitle {
+  margin-top: 1rem;
+  margin-bottom: 0.15rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: rgba(245, 248, 255, 0.88);
 }
 
 .matchHistoryItem {
@@ -1335,6 +1388,20 @@
   .mediaGrid {
     grid-template-columns: 1fr;
   }
+
+  .gameCardHeader,
+  .accountCard {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .accountExternal {
+    margin-left: 0;
+  }
+
+  .accountDetachBtn {
+    width: 100%;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1408,5 +1475,9 @@
   .modal {
     border-radius: 22px;
     padding: 1rem;
+  }
+
+  .gameMetricsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
