@@ -180,6 +180,15 @@ export default function PublicProfilePage() {
   const showcaseItems = showcase.length ? showcase : achievements.slice(0, 3)
   const setSuccess = (text: string) => setToast({ type: 'success', text })
   const setFailure = (text: string) => setToast({ type: 'error', text })
+  function mergeProfileUpdate(nextProfile: PublicProfile, previousProfile: PublicProfile): PublicProfile {
+    return {
+      ...previousProfile,
+      ...nextProfile,
+      is_owner: previousProfile.is_owner || nextProfile.is_owner || true,
+      user_tag: nextProfile.user_tag ?? previousProfile.user_tag ?? null,
+      discord_id: nextProfile.discord_id ?? previousProfile.discord_id,
+    }
+  }
   useEffect(() => {
     const savedToken = localStorage.getItem(TOKEN_KEY)
     setToken(savedToken)
@@ -272,7 +281,7 @@ export default function PublicProfilePage() {
     setEditSaving(true)
     try {
       const res = await axios.put<PublicProfile>(`${API_URL}/api/profile`, { site_nickname: editNick || null, bio: editBio || null, is_hidden: editHidden }, { headers: { Authorization: `Bearer ${token}` } })
-      setProfile((prev) => prev ? { ...prev, ...res.data } : prev)
+      setProfile((prev) => prev ? mergeProfileUpdate(res.data, prev) : prev)
       setEditOpen(false)
       setSuccess('Профиль сохранен.')
     } catch {
@@ -349,7 +358,10 @@ export default function PublicProfilePage() {
           { headers: { Authorization: `Bearer ${token}` } },
         )
 
-        setProfile((prev) => prev ? { ...prev, ...data, ...(kind === 'avatar' ? { avatar_url: uploadedUrl } : { banner_url: uploadedUrl }) } : prev)
+        setProfile((prev) => prev ? {
+          ...mergeProfileUpdate(data, prev),
+          ...(kind === 'avatar' ? { avatar_url: uploadedUrl } : { banner_url: uploadedUrl }),
+        } : prev)
         setSuccess(kind === 'avatar' ? 'Аватар обновлен.' : 'Баннер обновлен.')
       } catch (fallbackError: any) {
         setFailure(

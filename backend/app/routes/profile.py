@@ -536,6 +536,7 @@ async def update_profile(
     
     try:
         updated_profile = await service.update_user_profile(current_user.id, data)
+        updated_profile.is_owner = True
         return updated_profile
         
     except HTTPException:
