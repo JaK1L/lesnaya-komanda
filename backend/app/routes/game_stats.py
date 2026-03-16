@@ -18,6 +18,80 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/game-stats", tags=["game_stats"])
 
 
+async def _build_game_stats_payload(accounts) -> dict:
+    result: dict = {}
+
+    for account in accounts:
+        game = account["game"]
+        account_id = account["account_id"]
+
+        try:
+            if game == "steam":
+                profile = await game_api_service.get_steam_profile(account_id)
+                cs2_stats = await game_api_service.get_cs2_stats(account_id)
+                if cs2_stats:
+                    matches_played = int(cs2_stats.get("matches_played") or 0)
+                    wins = int(cs2_stats.get("wins") or 0)
+                    cs2_stats["losses"] = max(matches_played - wins, 0)
+                result["steam"] = {
+                    "profile": profile,
+                    "cs2_stats": cs2_stats,
+                    "match_history": [],
+                }
+
+            elif game == "dota2":
+                profile = await game_api_service.get_dota2_profile(account_id)
+                stats = await game_api_service.get_dota2_stats(account_id)
+                recent_matches = await game_api_service.get_dota2_recent_matches(account_id, 5) or []
+
+                average_kd = None
+                if recent_matches:
+                    total_kills = sum(int(match.get("kills") or 0) for match in recent_matches)
+                    total_deaths = sum(int(match.get("deaths") or 0) for match in recent_matches)
+                    average_kd = round(total_kills / max(total_deaths, 1), 2)
+
+                result["dota2"] = {
+                    "profile": profile,
+                    "stats": {
+                        **(stats or {}),
+                        "average_kd": average_kd,
+                    } if stats or average_kd is not None else stats,
+                    "match_history": [
+                        {
+                            "match_id": match.get("match_id"),
+                            "hero_id": match.get("hero_id"),
+                            "kills": match.get("kills", 0),
+                            "deaths": match.get("deaths", 0),
+                            "assists": match.get("assists", 0),
+                            "duration": match.get("duration", 0),
+                            "start_time": match.get("start_time"),
+                            "won": bool(match.get("radiant_win")) == (int(match.get("player_slot", 0)) < 128),
+                        }
+                        for match in recent_matches
+                    ],
+                }
+
+            elif game == "valorant":
+                riot_id = account_id
+                tag = account.get("account_tag")
+                region = account.get("region") or "eu"
+                if not tag:
+                    continue
+
+                profile = await game_api_service.get_valorant_profile(riot_id, tag, region)
+                mmr = await game_api_service.get_valorant_mmr(riot_id, tag, region)
+                result["valorant"] = {
+                    "profile": profile,
+                    "mmr": mmr,
+                    "match_history": [],
+                }
+        except Exception as exc:
+            logger.error(f"Error fetching {game} stats for {account_id}: {exc}", exc_info=True)
+            continue
+
+    return result
+
+
 # Test endpoint
 @router.get("/test")
 async def test_game_stats_api():
@@ -114,6 +188,27 @@ async def get_public_game_accounts(
         user_id
     )
     return [dict(row) for row in rows]
+
+
+@router.get("/public/{profile_identifier}/stats")
+async def get_public_game_stats(
+    profile_identifier: str,
+    db: asyncpg.Connection = Depends(get_db),
+):
+    user = await resolve_user_by_identifier(db, profile_identifier)
+    if not user:
+        return {}
+
+    rows = await db.fetch(
+        """
+        SELECT game, account_id, account_tag, region
+        FROM game_accounts
+        WHERE user_id = $1
+        ORDER BY linked_at DESC
+        """,
+        int(user["id"]),
+    )
+    return await _build_game_stats_payload(rows)
 
 
 @router.get("/my-accounts")
@@ -300,42 +395,4 @@ async def get_user_game_stats(
         user_id
     )
     
-    result = {}
-    
-    for account in accounts:
-        game = account['game']
-        account_id = account['account_id']
-        
-        try:
-            if game == "steam":
-                profile = await game_api_service.get_steam_profile(account_id)
-                cs2_stats = await game_api_service.get_cs2_stats(account_id)
-                result['steam'] = {
-                    'profile': profile,
-                    'cs2_stats': cs2_stats,
-                }
-            
-            elif game == "dota2":
-                profile = await game_api_service.get_dota2_profile(account_id)
-                stats = await game_api_service.get_dota2_stats(account_id)
-                result['dota2'] = {
-                    'profile': profile,
-                    'stats': stats,
-                }
-            
-            elif game == "valorant":
-                riot_id = account_id
-                tag = account['account_tag']
-                region = account['region'] or 'eu'
-                
-                profile = await game_api_service.get_valorant_profile(riot_id, tag, region)
-                mmr = await game_api_service.get_valorant_mmr(riot_id, tag, region)
-                result['valorant'] = {
-                    'profile': profile,
-                    'mmr': mmr,
-                }
-        except Exception as e:
-            print(f"Error fetching {game} stats: {e}")
-            continue
-    
-    return result
+    return await _build_game_stats_payload(accounts)

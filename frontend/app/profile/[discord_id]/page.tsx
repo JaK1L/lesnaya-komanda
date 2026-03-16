@@ -35,11 +35,56 @@ import { getAuthIdentityFromToken } from '../../../lib/profileIdentifier'
 import styles from './profile.module.css'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const TOKEN_KEY = 'lesnaya_token'
-type Tab = 'stats' | 'accounts' | 'media' | 'tournaments' | 'activity' | 'achievements'
+type Tab = 'stats' | 'accounts' | 'games' | 'media' | 'tournaments' | 'activity' | 'achievements'
 type FriendStatus = 'none' | 'pending' | 'incoming' | 'friends'
 type UploadKind = 'avatar' | 'banner' | null
 interface Role { id: number; name: string; color: string }
 interface GameAccount { game: string; account_id: string; account_tag: string | null }
+interface SteamProfile { username: string | null; avatar_url: string | null; profile_url: string | null; status: string | null }
+interface CS2Stats {
+  kills: number
+  deaths: number
+  kd_ratio: number
+  wins: number
+  losses?: number
+  matches_played: number
+  mvps: number
+  headshots: number
+  headshot_pct?: number
+  win_rate: number
+  damage_per_round?: number
+}
+interface DotaProfile {
+  username: string | null
+  avatar_url: string | null
+  rank_tier: number | null
+  leaderboard_rank: number | null
+  mmr_estimate: number | null
+}
+interface DotaStats {
+  wins: number
+  losses: number
+  total_matches: number
+  win_rate: number
+  average_kd?: number | null
+}
+interface DotaRecentMatch {
+  match_id: number
+  hero_id: number | null
+  kills: number
+  deaths: number
+  assists: number
+  duration: number
+  start_time: number | null
+  won: boolean
+}
+interface ValorantProfile { username: string | null; account_level: number | null; card_url: string | null; region: string | null }
+interface ValorantMMR { current_tier: string | null; ranking_in_tier: number | null; mmr_change: number | null; elo: number | null; games_needed_for_rating: number }
+interface PublicGameStats {
+  steam?: { profile: SteamProfile | null; cs2_stats: CS2Stats | null; match_history: Array<Record<string, unknown>> }
+  dota2?: { profile: DotaProfile | null; stats: DotaStats | null; match_history: DotaRecentMatch[] }
+  valorant?: { profile: ValorantProfile | null; mmr: ValorantMMR | null; match_history: Array<Record<string, unknown>> }
+}
 interface MediaItem { id: number; title: string | null; media_type: string; file_url: string; created_at: string }
 interface Achievement { id: number; name: string; description: string; icon: string; points: number }
 interface ActivityItem { type?: string; channel: string | null; created_at?: string | null; joined_at?: string | null; left_at?: string | null; duration_minutes?: number }
@@ -144,6 +189,7 @@ export default function PublicProfilePage() {
   const [registrations, setRegistrations] = useState<TournamentRegistration[]>([])
   const [accounts, setAccounts] = useState<GameAccount[]>([])
   const [friends, setFriends] = useState<FriendItem[]>([])
+  const [gameStats, setGameStats] = useState<PublicGameStats | null>(null)
   const [loaded, setLoaded] = useState<Record<string, boolean>>({})
   const [editOpen, setEditOpen] = useState(false)
   const [achievementsOpen, setAchievementsOpen] = useState(false)
@@ -203,6 +249,7 @@ export default function PublicProfilePage() {
     setRegistrations([])
     setAccounts([])
     setFriends([])
+    setGameStats(null)
     void loadProfile(savedToken)
   }, [profileIdentifier])
   useEffect(() => {
@@ -234,6 +281,7 @@ export default function PublicProfilePage() {
     if (tab === 'achievements') void loadOnce('achievements', () => axios.get<Achievement[]>(`${API_URL}/api/achievements/user/${encodedProfileIdentifier}?completed_only=true`).then((r) => r.data), setAchievements)
     if (tab === 'activity') void loadOnce('activity', () => axios.get<ActivitySummary>(`${API_URL}/api/profile/public/${encodedProfileIdentifier}/activity`).then((r) => r.data), setActivity)
     if (tab === 'tournaments') void loadOnce('tournaments', () => axios.get<TournamentRegistration[]>(`${API_URL}/api/profile/public/${encodedProfileIdentifier}/registrations`).then((r) => r.data), setRegistrations)
+    if (tab === 'games') void loadOnce('games', () => axios.get<PublicGameStats>(`${API_URL}/api/game-stats/public/${encodedProfileIdentifier}/stats`).then((r) => r.data), setGameStats)
   }, [tab, profile, encodedProfileIdentifier])
   useEffect(() => {
     const activeTab = tabRefs.current[tab]
@@ -425,9 +473,17 @@ export default function PublicProfilePage() {
       setShowcaseSaving(false)
     }
   }
+  function formatDuration(seconds?: number | null) {
+    if (!seconds || seconds <= 0) return '0 мин'
+    const totalMinutes = Math.round(seconds / 60)
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    return hours > 0 ? `${hours} ч ${minutes} мин` : `${minutes} мин`
+  }
   const tabs: Array<{ id: Tab; icon: React.ReactNode; label: string }> = [
     { id: 'stats', icon: <BarChart2 size={14} />, label: 'Информация' },
     { id: 'accounts', icon: <Link2 size={14} />, label: 'Привязки' },
+    { id: 'games', icon: <Gamepad2 size={14} />, label: 'Статистика игр' },
     { id: 'media', icon: <ImageIcon size={14} />, label: 'Медиа' },
     { id: 'tournaments', icon: <Trophy size={14} />, label: 'Турниры' },
     { id: 'activity', icon: <Activity size={14} />, label: 'Активность' },
@@ -491,6 +547,61 @@ export default function PublicProfilePage() {
             <div className={styles.tabPanel}>
               {tab === 'stats' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Основные данные</h3></div><div className={styles.infoGrid}><div className={styles.infoRow}><span>Никнейм на сайте</span><strong>{profile.site_nickname || 'Не указан'}</strong></div><div className={styles.infoRow}><span>Discord</span><strong>@{profile.discord_username}</strong></div><div className={styles.infoRow}><span>Ранг Лесной Команды</span><strong>{profile.forest_rank || 'Не назначен'}</strong></div><div className={styles.infoRow}><span>Общий опыт</span><strong>{profile.total_xp} XP</strong></div></div></div></div>}
               {tab === 'accounts' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Привязанные аккаунты</h3></div>{profile.twitch_username || accounts.length > 0 ? <div className={styles.accountList}>{profile.twitch_username && <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.accountCard}><span className={`${styles.accountIcon} ${styles.accountIconTwitch}`}><Twitch size={18} /></span><div className={styles.accountMeta}><strong>Twitch</strong><span>{profile.twitch_username}</span></div></a>}{accounts.map((account) => <div key={`${account.game}-${account.account_id}`} className={styles.accountCard}><span className={`${styles.accountIcon} ${styles[`accountIcon${gameLabel(account.game).replace(/[^a-zA-Z0-9]/g, '')}`] || ''}`}>{gameAccountIcon(account.game)}</span><div className={styles.accountMeta}><strong>{gameLabel(account.game)}</strong><span>{account.account_tag ? `${account.account_id}#${account.account_tag}` : account.account_id}</span></div></div>)}</div> : <p className={styles.emptyText}>{isOwnProfile ? 'Подключи игровые аккаунты и Twitch в настройках профиля.' : 'Привязанные аккаунты пока не указаны.'}</p>}</div></div>}
+              {tab === 'games' && <div className={styles.sectionStack}>
+                {!gameStats || Object.keys(gameStats).length === 0 ? <p className={styles.emptyText}>Игровая статистика пока недоступна. Сначала нужно привязать игровые аккаунты.</p> : <div className={styles.gameCards}>
+                  {gameStats.steam?.cs2_stats && <article className={styles.gameCard}>
+                    <div className={styles.gameCardHeader}>
+                      <div>
+                        <div className={styles.gameCardEyebrow}>Counter-Strike 2</div>
+                        <h3 className={styles.gameCardTitle}>{gameStats.steam.profile?.username || 'Steam аккаунт'}</h3>
+                      </div>
+                      {gameStats.steam.profile?.profile_url && <a href={gameStats.steam.profile.profile_url} target="_blank" rel="noreferrer" className={styles.gameCardLink}>Steam профиль</a>}
+                    </div>
+                    <div className={styles.gameMetricsGrid}>
+                      <div className={styles.gameMetric}><span>K/D</span><strong>{gameStats.steam.cs2_stats.kd_ratio?.toFixed(2) || '0.00'}</strong></div>
+                      <div className={styles.gameMetric}><span>Винрейт</span><strong>{gameStats.steam.cs2_stats.win_rate?.toFixed(1) || 0}%</strong></div>
+                      <div className={styles.gameMetric}><span>Матчей</span><strong>{gameStats.steam.cs2_stats.matches_played || 0}</strong></div>
+                      <div className={styles.gameMetric}><span>Побед / поражений</span><strong>{gameStats.steam.cs2_stats.wins || 0} / {gameStats.steam.cs2_stats.losses || 0}</strong></div>
+                    </div>
+                    <div className={styles.gameHint}>История матчей CS2 пока недоступна через текущий API-источник.</div>
+                  </article>}
+                  {gameStats.dota2 && <article className={styles.gameCard}>
+                    <div className={styles.gameCardHeader}>
+                      <div>
+                        <div className={styles.gameCardEyebrow}>Dota 2</div>
+                        <h3 className={styles.gameCardTitle}>{gameStats.dota2.profile?.username || 'Dota 2 аккаунт'}</h3>
+                      </div>
+                      <div className={styles.gameCardBadge}>{gameStats.dota2.profile?.mmr_estimate ? `MMR ~${gameStats.dota2.profile.mmr_estimate}` : 'MMR скрыт'}</div>
+                    </div>
+                    <div className={styles.gameMetricsGrid}>
+                      <div className={styles.gameMetric}><span>K/D</span><strong>{gameStats.dota2.stats?.average_kd?.toFixed(2) || '0.00'}</strong></div>
+                      <div className={styles.gameMetric}><span>Рейтинг</span><strong>{gameStats.dota2.profile?.rank_tier || gameStats.dota2.profile?.leaderboard_rank || 'Нет'}</strong></div>
+                      <div className={styles.gameMetric}><span>Матчей</span><strong>{gameStats.dota2.stats?.total_matches || 0}</strong></div>
+                      <div className={styles.gameMetric}><span>Побед / поражений</span><strong>{gameStats.dota2.stats?.wins || 0} / {gameStats.dota2.stats?.losses || 0}</strong></div>
+                    </div>
+                    {gameStats.dota2.match_history?.length ? <div className={styles.matchHistoryList}>{gameStats.dota2.match_history.map((match) => <div key={match.match_id} className={styles.matchHistoryItem}>
+                      <div className={styles.matchHistoryTop}><strong>{match.won ? 'Победа' : 'Поражение'}</strong><span className={`${styles.matchResult} ${match.won ? styles.matchResultWin : styles.matchResultLoss}`}>{match.kills}/{match.deaths}/{match.assists}</span></div>
+                      <div className={styles.matchHistoryMeta}><span>Матч #{match.match_id}</span><span>Герой ID: {match.hero_id ?? '—'}</span><span>{formatDuration(match.duration)}</span>{match.start_time ? <span>{new Date(match.start_time * 1000).toLocaleDateString('ru-RU')}</span> : null}</div>
+                    </div>)}</div> : <div className={styles.gameHint}>История матчей Dota 2 пока пуста.</div>}
+                  </article>}
+                  {gameStats.valorant && <article className={styles.gameCard}>
+                    <div className={styles.gameCardHeader}>
+                      <div>
+                        <div className={styles.gameCardEyebrow}>Valorant</div>
+                        <h3 className={styles.gameCardTitle}>{gameStats.valorant.profile?.username || 'Valorant аккаунт'}</h3>
+                      </div>
+                      <div className={styles.gameCardBadge}>{gameStats.valorant.mmr?.current_tier || 'Unranked'}</div>
+                    </div>
+                    <div className={styles.gameMetricsGrid}>
+                      <div className={styles.gameMetric}><span>K/D</span><strong>Нет данных</strong></div>
+                      <div className={styles.gameMetric}><span>Рейтинг</span><strong>{gameStats.valorant.mmr?.elo || gameStats.valorant.mmr?.ranking_in_tier || 'Нет'}</strong></div>
+                      <div className={styles.gameMetric}><span>Матчей</span><strong>{gameStats.valorant.mmr?.games_needed_for_rating ? `Калибровка: ${gameStats.valorant.mmr.games_needed_for_rating}` : 'Нет данных'}</strong></div>
+                      <div className={styles.gameMetric}><span>Побед / поражений</span><strong>Нет данных</strong></div>
+                    </div>
+                    <div className={styles.gameHint}>Текущий источник Valorant отдает рейтинг и MMR, но не возвращает публичную историю матчей и W/L.</div>
+                  </article>}
+                </div>}
+              </div>}
               {tab === 'media' && <div className={styles.sectionStack}>{media.length === 0 ? <p className={styles.emptyText}>У пользователя пока нет опубликованных медиа.</p> : <div className={styles.mediaGrid}>{media.map((item) => <article key={item.id} className={styles.mediaCard}>{item.media_type === 'image' ? <img src={getImageUrl(item.file_url) || ''} alt={item.title || 'Медиа'} className={styles.mediaThumb} /> : <video src={getImageUrl(item.file_url) || ''} className={styles.mediaThumb} muted controls={false} />}<div className={styles.mediaBody}><div className={styles.mediaTitle}>{item.title || 'Без названия'}</div><div className={styles.mediaMeta}>{formatDate(item.created_at) || 'Дата неизвестна'}</div></div></article>)}</div>}</div>}
               {tab === 'tournaments' && <div className={styles.sectionStack}>{registrations.length === 0 ? <p className={styles.emptyText}>Пока нет записей на турниры.</p> : registrations.map((item) => <article key={`${item.id}-${item.registered_at ?? 'registration'}`} className={`${styles.listCard} ${item.is_winner ? styles.tournamentWinnerCard : ''}`}><div className={styles.listCardTitle}>{item.title}</div><div className={styles.listCardMeta}>{item.game && <span>{item.game}</span>}{item.team_name && <span>Команда: {item.team_name}</span>}{item.nickname && <span>Ник: {item.nickname}</span>}{item.start_date && <span>Старт: {formatDate(item.start_date)}</span>}{item.prize && <span>Приз: {item.prize}</span>}</div><div className={styles.tournamentResultRow}><span className={`${styles.tournamentStatusBadge} ${item.is_winner ? styles.tournamentStatusWinner : item.is_in_progress ? styles.tournamentStatusLive : styles.tournamentStatusDone}`}>{item.result_label || (item.is_in_progress ? 'Турнир еще идет' : 'Турнир завершен')}</span>{item.is_winner && <span className={styles.tournamentWinnerText}>🏆 Игрок выиграл этот турнир</span>}</div></article>)}</div>}
               {tab === 'activity' && <div className={styles.sectionStack}>{activity?.collector_state && activity.collector_state !== 'active' && activity.collector_message ? <div className={`${styles.statusNotice} ${activity.collector_state === 'bot_unavailable' ? styles.statusNoticeWarning : ''}`}><strong>{activity.collector_state === 'bot_unavailable' ? 'Статистика Discord недоступна.' : 'Статистика пока пуста.'}</strong><span>{activity.collector_message}</span>{activity.last_presence_sync_at && <span>Последняя синхронизация presence: {formatDate(activity.last_presence_sync_at, 'datetime')}</span>}</div> : null}<div className={styles.activityOverview}><div className={styles.metricCard}><span>Сообщений</span><strong>{activity?.message_count ?? 0}</strong></div><div className={styles.metricCard}><span>Голосовых часов</span><strong>{activity?.voice_hours ?? 0}</strong></div></div><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Последние сообщения</h3></div>{activity?.recent_messages?.length ? <div className={styles.sectionStack}>{activity.recent_messages.map((item, index) => <article key={`${item.created_at ?? index}-${item.channel ?? 'message'}`} className={styles.listCard}><div className={styles.listCardTitle}>{item.channel || 'Без канала'}</div><div className={styles.listCardMeta}>{item.type && <span>Тип: {item.type}</span>}{formatDate(item.created_at, 'datetime') && <span>{formatDate(item.created_at, 'datetime')}</span>}</div></article>)}</div> : <p className={styles.emptyText}>Нет данных по сообщениям.</p>}</div><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Последние голосовые сессии</h3></div>{activity?.recent_voice?.length ? <div className={styles.sectionStack}>{activity.recent_voice.map((item, index) => <article key={`${item.joined_at ?? index}-${item.channel ?? 'voice'}`} className={styles.listCard}><div className={styles.listCardTitle}>{item.channel || 'Без канала'}</div><div className={styles.listCardMeta}>{formatDate(item.joined_at, 'datetime') && <span>Начало: {formatDate(item.joined_at, 'datetime')}</span>}{formatDate(item.left_at, 'datetime') && <span>Конец: {formatDate(item.left_at, 'datetime')}</span>}{typeof item.duration_minutes === 'number' && <span>Длительность: {item.duration_minutes} мин.</span>}</div></article>)}</div> : <p className={styles.emptyText}>Нет данных по голосовой активности.</p>}</div></div>}
