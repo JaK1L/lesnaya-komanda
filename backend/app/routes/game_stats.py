@@ -101,7 +101,6 @@ async def test_game_stats_api():
         "status": "ok",
         "message": "Game Stats API is working!",
         "config": {
-            "tracker_api_key_set": bool(os.getenv("TRACKER_API_KEY")),
             "steam_api_key_set": bool(os.getenv("STEAM_API_KEY")),
             "riot_api_key_set": bool(os.getenv("RIOT_API_KEY")),
         },
