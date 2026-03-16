@@ -173,6 +173,7 @@ class ProfileResponse(BaseModel):
     """Response model for user profile data"""
     user_id: int
     discord_id: Optional[int] = None
+    is_owner: bool = False
     site_nickname: Optional[str] = None
     discord_username: Optional[str] = None
     user_tag: Optional[str] = None

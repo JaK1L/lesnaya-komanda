@@ -744,6 +744,8 @@ class UserUpdate(BaseModel):
 class UserOut(BaseModel):
     id: int
     discord_id: Optional[int] = None
+    public_profile_identifier: str
+    user_tag: Optional[str] = None
     discord_username: Optional[str] = None
     forest_rank: str
     rating: float
@@ -765,7 +767,7 @@ async def list_users(
     
     rows = await db.fetch(
         """
-        SELECT id, discord_id, discord_username, forest_rank, rating, 
+        SELECT id, discord_id, user_tag, discord_username, forest_rank, rating, 
                avatar_url, site_nickname, joined_at, last_seen
         FROM users
         ORDER BY last_seen DESC, id DESC
@@ -777,7 +779,16 @@ async def list_users(
     total = await db.fetchval("SELECT COUNT(*) FROM users")
     
     return PaginatedResponse.create(
-        items=[UserOut(**dict(row)) for row in rows],
+        items=[
+            UserOut(
+                **dict(row),
+                public_profile_identifier=(
+                    dict(row).get("user_tag")
+                    or (str(dict(row).get("discord_id")) if dict(row).get("discord_id") is not None else str(dict(row)["id"]))
+                ),
+            )
+            for row in rows
+        ],
         total=total,
         page=page,
         limit=limit

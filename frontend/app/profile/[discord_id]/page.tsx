@@ -47,6 +47,7 @@ interface FriendItem { id: number; username: string; avatar_url: string | null; 
 interface PublicProfile {
   user_id: number
   discord_id: number | null
+  is_owner?: boolean
   user_tag?: string | null
   site_nickname: string | null
   discord_username: string
@@ -115,6 +116,7 @@ export default function PublicProfilePage() {
 
   const authIdentity = getAuthIdentityFromToken(token)
   const isOwnProfile = Boolean(
+    profile?.is_owner ||
     (authIdentity.userId && profile?.user_id && authIdentity.userId === String(profile.user_id)) ||
     (authIdentity.discordId && profile?.discord_id && authIdentity.discordId === String(profile.discord_id)) ||
     (authIdentity.userTag && profile?.user_tag && authIdentity.userTag === profile.user_tag),

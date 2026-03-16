@@ -12,7 +12,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface User {
   id: number
-  discord_id: number
+  discord_id: number | null
+  public_profile_identifier: string
+  user_tag?: string | null
   discord_username: string
   forest_rank: string
   rating: number
@@ -72,7 +74,7 @@ export default function AdminUsersPage() {
   }
 
   const handleOpenProfile = (user: User) => {
-    router.push(`/profile/${encodeURIComponent(String(user.discord_id))}`)
+    router.push(`/profile/${encodeURIComponent(user.public_profile_identifier)}`)
   }
 
   const handleDelete = async (user: User) => {

@@ -7,7 +7,7 @@ import styles from './NewsModal.module.css'
 
 interface User {
   id: number
-  discord_id: number
+  discord_id: number | null
   discord_username: string
   forest_rank: string
   rating: number

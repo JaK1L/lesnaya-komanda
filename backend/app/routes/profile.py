@@ -125,6 +125,7 @@ async def get_public_profile(
         return {
             "user_id": row["id"],
             "discord_id": row['discord_id'],
+            "is_owner": _is_owner(current_user, row["id"]),
             "user_tag": row.get('user_tag'),
             "site_nickname": row['site_nickname'],
             "discord_username": row['discord_username'],
