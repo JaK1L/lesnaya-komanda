@@ -83,6 +83,24 @@ interface FaceitMatch {
   score?: string | null
   finished_at?: number | string | null
 }
+interface CSSkillProfile {
+  steam_id: string | null
+  nickname: string | null
+  avatar_url: string | null
+  profile_url: string | null
+}
+interface CSSkillMatch {
+  match_id: string | number | null
+  map?: string | null
+  kills: number
+  deaths: number
+  assists: number
+  kd_ratio?: number | null
+  result?: string | null
+  score?: string | null
+  played_at?: number | string | null
+  details_url?: string | null
+}
 interface DotaProfile {
   username: string | null
   avatar_url: string | null
@@ -115,6 +133,7 @@ interface PublicGameStats {
     profile: SteamProfile | null
     cs2_stats: CS2Stats | null
     match_history: Array<Record<string, unknown>>
+    csskill?: { profile: CSSkillProfile | null; match_history: CSSkillMatch[] } | null
     faceit?: { profile: FaceitProfile | null; stats: FaceitStats | null; match_history: FaceitMatch[] } | null
   }
   dota2?: { profile: DotaProfile | null; stats: DotaStats | null; match_history: DotaRecentMatch[] }
@@ -629,7 +648,7 @@ export default function PublicProfilePage() {
                       <div>
                         <div className={styles.gameCardEyebrow}>Counter-Strike 2</div>
                         <h3 className={styles.gameCardTitle}>{cs2View === 'faceit' ? (gameStats.steam.faceit?.profile?.nickname || 'FACEIT аккаунт') : (gameStats.steam.profile?.username || 'Steam аккаунт')}</h3>
-                        <div className={styles.gameCardSubtext}>{cs2View === 'faceit' ? 'Источник: FACEIT Data API' : 'Источник: Steam API'}</div>
+                        <div className={styles.gameCardSubtext}>{cs2View === 'faceit' ? 'Источник: FACEIT Data API' : 'Источник: Steam API + CSSkill history'}</div>
                       </div>
                       <div className={styles.gameCardHeaderActions}>
                         <div className={styles.providerSwitch}>
@@ -667,7 +686,10 @@ export default function PublicProfilePage() {
                       <div className={styles.gameMetric}><span>Хедшоты</span><strong>{formatPercent(gameStats.steam.cs2_stats.headshot_pct)}</strong></div>
                       <div className={styles.gameMetric}><span>MVP</span><strong>{formatNumber(gameStats.steam.cs2_stats.mvps)}</strong></div>
                     </div>
-                    <div className={styles.gameHint}>История Premier матчей будет подключена отдельным CS provider. CSSkill интеграцию можно включить, как только будут точные endpoint’ы и ключ.</div>
+                    {gameStats.steam.csskill?.match_history?.length ? <><div className={styles.gameSectionTitle}>Последние Premier матчи</div><div className={styles.matchHistoryList}>{gameStats.steam.csskill.match_history.map((match) => <div key={match.match_id || `${match.map}-${match.played_at}`} className={styles.matchHistoryItem}>
+                      <div className={styles.matchHistoryTop}><strong>{match.map || 'CS2 матч'}</strong><span className={`${styles.matchResult} ${String(match.result || '').toLowerCase().includes('win') || String(match.result || '').includes('victory') ? styles.matchResultWin : styles.matchResultLoss}`}>{match.kills}/{match.deaths}/{match.assists}</span></div>
+                      <div className={styles.matchHistoryMeta}><span>{match.result || 'Результат неизвестен'}</span>{match.score ? <span>Счёт: {match.score}</span> : null}{typeof match.kd_ratio === 'number' ? <span>K/D: {match.kd_ratio.toFixed(2)}</span> : null}{match.played_at ? <span>{new Date(match.played_at).toLocaleDateString('ru-RU')}</span> : null}{match.details_url ? <a href={match.details_url} target="_blank" rel="noreferrer" className={styles.inlineLink}>Детали матча</a> : null}</div>
+                    </div>)}</div></> : <div className={styles.gameHint}>История Premier матчей сейчас недоступна. Если CSSkill не отвечает, профиль продолжит показывать основную Steam-статистику без ошибок.</div>}
                     </> : <div className={styles.gameHint}>Premier статистика сейчас недоступна для этого аккаунта.</div>}
                     </>}
                   </article>}
