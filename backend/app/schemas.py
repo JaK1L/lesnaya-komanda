@@ -283,6 +283,12 @@ class ProfileUpdate(BaseModel):
         description="URL аватара пользователя",
         examples=["https://cdn.discordapp.com/avatars/123456789/abc123.png"]
     )
+    banner_url: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="URL баннера профиля",
+        examples=["https://i.ibb.co/example/banner.jpg"]
+    )
     bio: Optional[str] = Field(
         None, 
         max_length=500,
@@ -309,6 +315,15 @@ class ProfileUpdate(BaseModel):
     @classmethod
     def validate_bio(cls, v: Optional[str]) -> Optional[str]:
         """Trim whitespace from bio"""
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                return None
+        return v
+
+    @field_validator('avatar_url', 'banner_url')
+    @classmethod
+    def validate_media_url(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
             v = v.strip()
             if len(v) == 0:

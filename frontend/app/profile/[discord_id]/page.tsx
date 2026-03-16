@@ -30,6 +30,7 @@ import {
 import { Navigation } from '../../../components/layout/Navigation'
 import { Footer } from '../../../components/layout/Footer'
 import { getImageUrl } from '../../../lib/imageUtils'
+import { uploadImage } from '../../../lib/imageUpload'
 import { getAuthIdentityFromToken } from '../../../lib/profileIdentifier'
 import styles from './profile.module.css'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -331,7 +332,33 @@ export default function PublicProfilePage() {
       setProfile((prev) => prev ? { ...prev, ...(kind === 'avatar' ? { avatar_url: res.data.avatar_url ?? prev.avatar_url } : { banner_url: res.data.banner_url ?? prev.banner_url }) } : prev)
       setSuccess(kind === 'avatar' ? 'Аватар обновлен.' : 'Баннер обновлен.')
     } catch (error: any) {
-      setFailure(error.response?.data?.detail || (kind === 'avatar' ? 'Не удалось загрузить аватар.' : 'Не удалось загрузить баннер.'))
+      try {
+        const fallbackUpload = await uploadImage(file)
+        if (!fallbackUpload.success || !fallbackUpload.url) {
+          throw new Error(fallbackUpload.error || 'Не удалось загрузить изображение')
+        }
+        const uploadedUrl = fallbackUpload.url
+
+        const payload = kind === 'avatar'
+          ? { avatar_url: uploadedUrl }
+          : { banner_url: uploadedUrl }
+
+        const { data } = await axios.put<PublicProfile>(
+          `${API_URL}/api/profile`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+
+        setProfile((prev) => prev ? { ...prev, ...data, ...(kind === 'avatar' ? { avatar_url: uploadedUrl } : { banner_url: uploadedUrl }) } : prev)
+        setSuccess(kind === 'avatar' ? 'Аватар обновлен.' : 'Баннер обновлен.')
+      } catch (fallbackError: any) {
+        setFailure(
+          fallbackError?.response?.data?.detail ||
+          fallbackError?.message ||
+          error.response?.data?.detail ||
+          (kind === 'avatar' ? 'Не удалось загрузить аватар.' : 'Не удалось загрузить баннер.')
+        )
+      }
     } finally {
       setUploading(null)
       if (kind === 'avatar' && avatarInputRef.current) avatarInputRef.current.value = ''

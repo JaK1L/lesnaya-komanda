@@ -259,6 +259,9 @@ class ProfileService:
         """
         # Start transaction for atomic update
         async with self.db.transaction():
+            await self.db.execute(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_url VARCHAR(500)"
+            )
             # Check if user exists
             exists = await self.db.fetchval(
                 "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)",
@@ -275,8 +278,9 @@ class ProfileService:
                     site_nickname = $1,
                     avatar_url = COALESCE($2, avatar_url),
                     bio = $3,
-                    is_hidden = $4
-                WHERE id = $5
+                    is_hidden = $4,
+                    banner_url = COALESCE($5, banner_url)
+                WHERE id = $6
                 RETURNING 
                     discord_id,
                     site_nickname,
@@ -300,6 +304,7 @@ class ProfileService:
                 data.avatar_url,
                 data.bio,
                 data.is_hidden,
+                data.banner_url,
                 user_id
             )
             
