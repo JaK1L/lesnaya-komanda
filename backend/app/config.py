@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     # Twitch OAuth (для привязки аккаунта)
     TWITCH_CLIENT_ID: Optional[str] = None
     TWITCH_CLIENT_SECRET: Optional[str] = None
+    IMGBB_API_KEY: Optional[str] = None
 
     # Discord (бот и OAuth для входа на сайт)
     DISCORD_BOT_TOKEN: Optional[str] = None

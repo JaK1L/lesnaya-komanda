@@ -1,13 +1,16 @@
 """
 Сервис для работы с профилем пользователя
 """
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 import asyncpg
 from pathlib import Path
 import uuid
 from datetime import datetime
 from PIL import Image
 import io
+import os
+import base64
+import httpx
 from fastapi import UploadFile, HTTPException
 
 from ..schemas import ProfileResponse, ProfileUpdate
@@ -25,10 +28,66 @@ class ProfileService:
 
     def __init__(self, db: asyncpg.Connection):
         self.db = db
+        self.imgbb_api_key = os.getenv("IMGBB_API_KEY") or os.getenv("NEXT_PUBLIC_IMGBB_API_KEY")
+        self.require_persistent_storage = bool(os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RENDER"))
         self.upload_dir = Path(__file__).parent.parent.parent / "uploads" / "avatars"
         self.upload_dir.mkdir(parents=True, exist_ok=True)
         self.banner_dir = Path(__file__).parent.parent.parent / "uploads" / "banners"
         self.banner_dir.mkdir(parents=True, exist_ok=True)
+
+    def _validate_image_content(self, content: bytes, max_size: int, label: str) -> Tuple[bytes, str]:
+        if len(content) > max_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"{label} file must be under {max_size / 1024 / 1024}MB"
+            )
+
+        try:
+            image = Image.open(io.BytesIO(content))
+            image_format = image.format
+
+            if image_format not in self.ALLOWED_FORMATS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"{label} must be {', '.join(self.ALLOWED_FORMATS)}"
+                )
+
+            ext = image_format.lower()
+            if ext == 'jpeg':
+                ext = 'jpg'
+            return content, ext
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid image file")
+
+    async def _upload_to_imgbb(self, content: bytes, file_stem: str) -> str:
+        if not self.imgbb_api_key:
+            raise HTTPException(
+                status_code=500,
+                detail="Image storage is not configured. Set IMGBB_API_KEY on the backend."
+            )
+
+        encoded_image = base64.b64encode(content).decode("ascii")
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    "https://api.imgbb.com/1/upload",
+                    params={"key": self.imgbb_api_key},
+                    data={
+                        "image": encoded_image,
+                        "name": file_stem,
+                    },
+                )
+            response.raise_for_status()
+            payload = response.json()
+        except httpx.HTTPError as exc:
+            raise HTTPException(status_code=502, detail=f"Image upload failed: {exc}") from exc
+
+        if not payload.get("success") or not payload.get("data", {}).get("url"):
+            raise HTTPException(status_code=502, detail="Image upload failed")
+
+        return payload["data"]["url"]
 
     async def _fetch_user_roles(self, user_id: int) -> List[Dict]:
         """Fetch roles defensively: legacy environments may not have role tables."""
@@ -239,51 +298,23 @@ class ProfileService:
         Raises:
             HTTPException: If file validation fails
         """
-        # Read file content
         content = await file.read()
-        
-        # Check file size
-        if len(content) > self.MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Avatar file must be under {self.MAX_FILE_SIZE / 1024 / 1024}MB"
-            )
-        
-        # Validate image format using Pillow
-        try:
-            image = Image.open(io.BytesIO(content))
-            image_format = image.format
-            
-            if image_format not in self.ALLOWED_FORMATS:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Avatar must be {', '.join(self.ALLOWED_FORMATS)}"
-                )
-            
-            # Get file extension
-            ext = image_format.lower()
-            if ext == 'jpeg':
-                ext = 'jpg'
-            
-        except Exception as e:
-            if isinstance(e, HTTPException):
-                raise
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid image file"
-            )
-        
-        # Generate unique filename
         timestamp = int(datetime.now().timestamp())
         unique_id = uuid.uuid4().hex[:8]
+        _, ext = self._validate_image_content(content, self.MAX_FILE_SIZE, "Avatar")
         filename = f"{user_id}_{unique_id}_{timestamp}.{ext}"
-        
-        # Save file
+
+        if self.imgbb_api_key:
+            return await self._upload_to_imgbb(content, Path(filename).stem)
+        if self.require_persistent_storage:
+            raise HTTPException(
+                status_code=500,
+                detail="Persistent image storage is not configured. Set IMGBB_API_KEY on the backend."
+            )
+
         file_path = self.upload_dir / filename
         with open(file_path, 'wb') as f:
             f.write(content)
-        
-        # Return relative path for database
         return f"/api/uploads/avatars/{filename}"
     
     async def delete_old_avatar(self, user_id: int) -> None:
@@ -321,21 +352,18 @@ class ProfileService:
 
     async def save_banner_file(self, user_id: int, file: UploadFile) -> str:
         content = await file.read()
-        if len(content) > self.MAX_BANNER_SIZE:
-            raise HTTPException(status_code=400, detail="Banner must be under 8MB")
-        try:
-            image = Image.open(io.BytesIO(content))
-            if image.format not in self.ALLOWED_FORMATS:
-                raise HTTPException(status_code=400, detail=f"Banner must be {', '.join(self.ALLOWED_FORMATS)}")
-            ext = image.format.lower()
-            if ext == 'jpeg':
-                ext = 'jpg'
-        except HTTPException:
-            raise
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid image file")
         timestamp = int(datetime.now().timestamp())
+        _, ext = self._validate_image_content(content, self.MAX_BANNER_SIZE, "Banner")
         filename = f"banner_{user_id}_{uuid.uuid4().hex[:8]}_{timestamp}.{ext}"
+
+        if self.imgbb_api_key:
+            return await self._upload_to_imgbb(content, Path(filename).stem)
+        if self.require_persistent_storage:
+            raise HTTPException(
+                status_code=500,
+                detail="Persistent image storage is not configured. Set IMGBB_API_KEY on the backend."
+            )
+
         with open(self.banner_dir / filename, 'wb') as f:
             f.write(content)
         return f"/api/uploads/banners/{filename}"

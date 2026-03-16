@@ -330,8 +330,8 @@ export default function PublicProfilePage() {
       const res = await axios.post<{ avatar_url?: string; banner_url?: string }>(`${API_URL}/api/profile/${kind}`, formData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } })
       setProfile((prev) => prev ? { ...prev, ...(kind === 'avatar' ? { avatar_url: res.data.avatar_url ?? prev.avatar_url } : { banner_url: res.data.banner_url ?? prev.banner_url }) } : prev)
       setSuccess(kind === 'avatar' ? 'Аватар обновлен.' : 'Баннер обновлен.')
-    } catch {
-      setFailure(kind === 'avatar' ? 'Не удалось загрузить аватар.' : 'Не удалось загрузить баннер.')
+    } catch (error: any) {
+      setFailure(error.response?.data?.detail || (kind === 'avatar' ? 'Не удалось загрузить аватар.' : 'Не удалось загрузить баннер.'))
     } finally {
       setUploading(null)
       if (kind === 'avatar' && avatarInputRef.current) avatarInputRef.current.value = ''
