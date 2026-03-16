@@ -1013,16 +1013,6 @@
   color: rgba(240, 247, 255, 0.6);
 }
 
-.inlineLink {
-  color: #d7c0ff;
-  text-decoration: none;
-  font-weight: 700;
-}
-
-.inlineLink:hover {
-  color: #f2e8ff;
-}
-
 .matchResult {
   display: inline-flex;
   align-items: center;

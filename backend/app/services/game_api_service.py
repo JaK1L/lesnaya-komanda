@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import logging
 import os
-import time
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -26,9 +25,7 @@ class GameAPIService:
         self.steam_api_key = os.getenv("STEAM_API_KEY")
         self.riot_api_key = os.getenv("RIOT_API_KEY")
         self.faceit_api_key = os.getenv("FACEIT_API_KEY")
-        self.csskill_api_key = os.getenv("CSSKILL_API_KEY")
         self._dota_heroes_cache: Dict[int, str] = {}
-        self._api_cache: Dict[str, tuple[float, Any]] = {}
 
     async def get_steam_profile(self, steam_id: str) -> Optional[Dict[str, Any]]:
         """Return a Steam public profile."""
@@ -77,28 +74,6 @@ class GameAPIService:
         """Return CS2 stats directly from Steam API."""
         logger.info("Fetching CS2 stats from Steam API for %s", steam_id)
         return await self._get_cs2_stats_steam(steam_id)
-
-    async def get_csskill_cs2_data(self, steam_id: str, limit: int = 5) -> Optional[Dict[str, Any]]:
-        profile = await self.get_csskill_player_profile(steam_id)
-        recent_matches = await self.get_csskill_recent_matches(steam_id, limit)
-
-        if not profile and not recent_matches:
-            return None
-
-        normalized_matches: list[Dict[str, Any]] = []
-        for match in recent_matches or []:
-            match_id = match.get("match_id")
-            details = None
-            events = None
-            if match_id:
-                details = await self.get_csskill_match_details(str(match_id))
-                events = await self.get_csskill_match_events(str(match_id))
-            normalized_matches.append(self._normalize_csskill_match(match, details, events))
-
-        return {
-            "profile": profile,
-            "match_history": normalized_matches,
-        }
 
     async def _get_cs2_stats_steam(self, steam_id: str) -> Optional[Dict[str, Any]]:
         stats_dict = await self._get_game_user_stats(steam_id, CS2_APP_ID)
@@ -346,61 +321,6 @@ class GameAPIService:
             "match_history": [self._normalize_faceit_match(item) for item in items if item],
         }
 
-    async def get_csskill_player_profile(self, steam_id: str) -> Optional[Dict[str, Any]]:
-        payload = await self._csskill_get_first(
-            [
-                f"/players/{steam_id}",
-                f"/player/{steam_id}",
-            ]
-        )
-        if not payload:
-            return None
-
-        player = self._extract_payload_object(payload)
-        if not player:
-            return None
-
-        return {
-            "steam_id": str(player.get("steam_id") or steam_id),
-            "nickname": player.get("nickname") or player.get("name") or player.get("username"),
-            "avatar_url": player.get("avatar") or player.get("avatar_url"),
-            "profile_url": player.get("profile_url") or player.get("url"),
-        }
-
-    async def get_csskill_recent_matches(self, steam_id: str, limit: int = 5) -> list[Dict[str, Any]]:
-        payload = await self._csskill_get_first(
-            [
-                f"/players/{steam_id}/matches",
-                f"/players/{steam_id}/recent-matches",
-                f"/players/{steam_id}/history",
-                f"/player/{steam_id}/matches",
-            ],
-            {"limit": max(1, min(limit, 10))},
-        )
-        if not payload:
-            return []
-        return self._extract_payload_list(payload)[:limit]
-
-    async def get_csskill_match_details(self, match_id: str) -> Optional[Dict[str, Any]]:
-        payload = await self._csskill_get_first(
-            [
-                f"/matches/{match_id}",
-                f"/match/{match_id}",
-            ]
-        )
-        return self._extract_payload_object(payload) if payload else None
-
-    async def get_csskill_match_events(self, match_id: str) -> Optional[Dict[str, Any]]:
-        payload = await self._csskill_get_first(
-            [
-                f"/matches/{match_id}/events",
-                f"/match/{match_id}/events",
-                f"/matches/{match_id}/statistics",
-                f"/match/{match_id}/statistics",
-            ]
-        )
-        return self._extract_payload_object(payload) if payload else None
-
     async def get_valorant_profile(
         self,
         riot_id: str,
@@ -576,50 +496,6 @@ class GameAPIService:
         except Exception as exc:
             logger.error("Error calling FACEIT API %s: %s", path, exc, exc_info=True)
             return None
-
-    async def _csskill_get(
-        self,
-        path: str,
-        params: Optional[Dict[str, Any]] = None,
-        ttl_seconds: int = 600,
-    ) -> Optional[Dict[str, Any]]:
-        if not self.csskill_api_key:
-            return None
-
-        cache_key = f"csskill:{path}:{repr(sorted((params or {}).items()))}"
-        cached = self._api_cache.get(cache_key)
-        now = time.time()
-        if cached and cached[0] > now:
-            return cached[1]
-
-        url = f"https://api.csskill.com{path}"
-        headers = {"Authorization": f"Bearer {self.csskill_api_key}"}
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers, params=params or {}) as response:
-                    if response.status == 200:
-                        payload = await response.json()
-                        self._api_cache[cache_key] = (now + ttl_seconds, payload)
-                        return payload
-                    if response.status != 404:
-                        body = await response.text()
-                        logger.warning("CSSkill API request failed (%s) for %s: %s", response.status, url, body)
-                    return None
-        except Exception as exc:
-            logger.error("Error calling CSSkill API %s: %s", path, exc, exc_info=True)
-            return None
-
-    async def _csskill_get_first(
-        self,
-        paths: list[str],
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:
-        for path in paths:
-            payload = await self._csskill_get(path, params=params)
-            if payload:
-                return payload
-        return None
 
     async def _get_faceit_player_by_steam_id(self, steam_id: str) -> Optional[Dict[str, Any]]:
         return await self._faceit_get(
@@ -830,77 +706,5 @@ class GameAPIService:
             "score": stats.get("Score") or stats.get("score"),
             "finished_at": item.get("finished_at") or item.get("created_at"),
         }
-
-    def _extract_payload_object(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        if not isinstance(payload, dict):
-            return None
-        if any(key in payload for key in ("steam_id", "player_id", "match_id", "id", "nickname", "name")):
-            return payload
-        for key in ("data", "player", "match", "result"):
-            value = payload.get(key)
-            if isinstance(value, dict):
-                return value
-        return None
-
-    def _extract_payload_list(self, payload: Dict[str, Any]) -> list[Dict[str, Any]]:
-        if isinstance(payload, list):
-            return [item for item in payload if isinstance(item, dict)]
-        if not isinstance(payload, dict):
-            return []
-        for key in ("items", "matches", "data", "results"):
-            value = payload.get(key)
-            if isinstance(value, list):
-                return [item for item in value if isinstance(item, dict)]
-        return []
-
-    def _normalize_csskill_match(
-        self,
-        match: Dict[str, Any],
-        details: Optional[Dict[str, Any]] = None,
-        events: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        merged: Dict[str, Any] = {}
-        for source in (match, details or {}, events or {}):
-            if isinstance(source, dict):
-                merged.update(source)
-
-        kills = self._coerce_csskill_number(merged, "kills", "Kills")
-        deaths = self._coerce_csskill_number(merged, "deaths", "Deaths")
-        assists = self._coerce_csskill_number(merged, "assists", "Assists")
-        kd_ratio = self._coerce_csskill_float(merged, "kd_ratio", "kd", "K/D")
-        if kd_ratio is None and kills:
-            kd_ratio = round(kills / max(deaths, 1), 2)
-
-        return {
-            "match_id": merged.get("match_id") or merged.get("id"),
-            "map": merged.get("map") or merged.get("map_name"),
-            "kills": kills,
-            "deaths": deaths,
-            "assists": assists,
-            "kd_ratio": kd_ratio,
-            "result": merged.get("result") or merged.get("outcome"),
-            "score": merged.get("score") or merged.get("final_score"),
-            "played_at": merged.get("played_at") or merged.get("date") or merged.get("finished_at") or merged.get("created_at"),
-            "details_url": merged.get("details_url") or merged.get("url"),
-        }
-
-    def _coerce_csskill_number(self, payload: Dict[str, Any], *keys: str) -> int:
-        value = self._coerce_csskill_float(payload, *keys)
-        return int(value) if value is not None else 0
-
-    def _coerce_csskill_float(self, payload: Dict[str, Any], *keys: str) -> Optional[float]:
-        for key in keys:
-            raw = payload.get(key)
-            if raw in (None, ""):
-                continue
-            if isinstance(raw, (int, float)):
-                return float(raw)
-            normalized = str(raw).replace("%", "").replace(",", ".").strip()
-            try:
-                return float(normalized)
-            except ValueError:
-                continue
-        return None
-
 
 game_api_service = GameAPIService()
