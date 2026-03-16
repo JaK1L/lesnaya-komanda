@@ -865,6 +865,44 @@
   margin-bottom: 1rem;
 }
 
+.gameCardHeaderActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.providerSwitch {
+  display: inline-flex;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.providerBtn {
+  border: 0;
+  background: transparent;
+  color: rgba(240, 247, 255, 0.72);
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.providerBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.providerBtnActive {
+  background: rgba(145, 71, 255, 0.18);
+  color: #fff;
+}
+
 .gameCardEyebrow {
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -1393,6 +1431,11 @@
   .accountCard {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .gameCardHeaderActions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .accountExternal {

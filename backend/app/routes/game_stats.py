@@ -29,6 +29,7 @@ async def _build_game_stats_payload(accounts) -> dict:
             if game == "steam":
                 profile = await game_api_service.get_steam_profile(account_id)
                 cs2_stats = await game_api_service.get_cs2_stats(account_id)
+                faceit = await game_api_service.get_faceit_cs2_data(account_id)
                 if cs2_stats:
                     matches_played = int(cs2_stats.get("matches_played") or 0)
                     wins = int(cs2_stats.get("wins") or 0)
@@ -37,6 +38,7 @@ async def _build_game_stats_payload(accounts) -> dict:
                     "profile": profile,
                     "cs2_stats": cs2_stats,
                     "match_history": [],
+                    "faceit": faceit,
                 }
 
             elif game == "dota2":
@@ -106,6 +108,7 @@ async def test_game_stats_api():
         "message": "Game Stats API is working!",
         "config": {
             "steam_api_key_set": bool(os.getenv("STEAM_API_KEY")),
+            "faceit_api_key_set": bool(os.getenv("FACEIT_API_KEY")),
             "riot_api_key_set": bool(os.getenv("RIOT_API_KEY")),
         },
         "endpoints": [

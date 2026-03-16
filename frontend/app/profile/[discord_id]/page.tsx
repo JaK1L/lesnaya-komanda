@@ -55,6 +55,34 @@ interface CS2Stats {
   win_rate: number
   damage_per_round?: number
 }
+interface FaceitProfile {
+  player_id: string | null
+  nickname: string | null
+  avatar_url: string | null
+  faceit_url: string | null
+  skill_level: number | null
+  elo: number | null
+}
+interface FaceitStats {
+  matches: number
+  wins: number
+  losses?: number | null
+  win_rate?: number | null
+  kd_ratio?: number | null
+  headshot_pct?: number | null
+}
+interface FaceitMatch {
+  match_id: string | null
+  map?: string | null
+  kills: number
+  deaths: number
+  assists: number
+  kd_ratio?: number | null
+  headshot_pct?: number | null
+  result?: string | null
+  score?: string | null
+  finished_at?: number | string | null
+}
 interface DotaProfile {
   username: string | null
   avatar_url: string | null
@@ -83,7 +111,12 @@ interface DotaRecentMatch {
 interface ValorantProfile { username: string | null; account_level: number | null; card_url: string | null; region: string | null }
 interface ValorantMMR { current_tier: string | null; ranking_in_tier: number | null; mmr_change: number | null; elo: number | null; games_needed_for_rating: number }
 interface PublicGameStats {
-  steam?: { profile: SteamProfile | null; cs2_stats: CS2Stats | null; match_history: Array<Record<string, unknown>> }
+  steam?: {
+    profile: SteamProfile | null
+    cs2_stats: CS2Stats | null
+    match_history: Array<Record<string, unknown>>
+    faceit?: { profile: FaceitProfile | null; stats: FaceitStats | null; match_history: FaceitMatch[] } | null
+  }
   dota2?: { profile: DotaProfile | null; stats: DotaStats | null; match_history: DotaRecentMatch[] }
   valorant?: { profile: ValorantProfile | null; mmr: ValorantMMR | null; match_history: Array<Record<string, unknown>> }
 }
@@ -220,6 +253,7 @@ export default function PublicProfilePage() {
   const [showcaseIds, setShowcaseIds] = useState<number[]>([])
   const [showcaseSaving, setShowcaseSaving] = useState(false)
   const [unlinkingGame, setUnlinkingGame] = useState<string | null>(null)
+  const [cs2View, setCs2View] = useState<'premier' | 'faceit'>('premier')
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
   const tabsRef = useRef<HTMLDivElement>(null)
@@ -590,15 +624,39 @@ export default function PublicProfilePage() {
               {tab === 'accounts' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Привязанные аккаунты</h3></div>{profile.twitch_username || accounts.length > 0 ? <div className={styles.accountList}>{profile.twitch_username && <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.accountCard}><span className={`${styles.accountIcon} ${styles.accountIconTwitch}`}><Twitch size={18} /></span><div className={styles.accountMeta}><strong>Twitch</strong><span>{profile.twitch_username}</span></div><span className={styles.accountExternal}><ExternalLink size={14} /></span></a>}{accounts.map((account) => <div key={`${account.game}-${account.account_id}`} className={styles.accountCard}><span className={`${styles.accountIcon} ${styles[`accountIcon${gameLabel(account.game).replace(/[^a-zA-Z0-9]/g, '')}`] || ''}`}>{gameAccountIcon(account.game)}</span><div className={styles.accountMeta}><strong>{gameLabel(account.game)}</strong><span>{account.account_tag ? `${account.account_id}#${account.account_tag}` : account.account_id}</span></div>{isOwnProfile && <button className={styles.accountDetachBtn} onClick={() => unlinkGameAccount(account.game)} disabled={unlinkingGame === account.game}>{unlinkingGame === account.game ? 'Отвязка...' : 'Отвязать'}</button>}</div>)}</div> : <p className={styles.emptyText}>{isOwnProfile ? 'Подключи игровые аккаунты и Twitch в настройках профиля.' : 'Привязанные аккаунты пока не указаны.'}</p>}{isOwnProfile && accounts.length > 0 && <div className={styles.accountHint}>Игровые аккаунты можно отвязать здесь, а Twitch редактируется в модалке профиля.</div>}</div></div>}
               {tab === 'games' && <div className={styles.sectionStack}>
                 {!gameStats || Object.keys(gameStats).length === 0 ? <p className={styles.emptyText}>Игровая статистика пока недоступна. Сначала нужно привязать игровые аккаунты.</p> : <div className={styles.gameCards}>
-                  {gameStats.steam?.cs2_stats && <article className={styles.gameCard}>
+                  {(gameStats.steam?.cs2_stats || gameStats.steam?.faceit) && <article className={styles.gameCard}>
                     <div className={styles.gameCardHeader}>
                       <div>
                         <div className={styles.gameCardEyebrow}>Counter-Strike 2</div>
-                        <h3 className={styles.gameCardTitle}>{gameStats.steam.profile?.username || 'Steam аккаунт'}</h3>
-                        <div className={styles.gameCardSubtext}>Источник: Steam API</div>
+                        <h3 className={styles.gameCardTitle}>{cs2View === 'faceit' ? (gameStats.steam.faceit?.profile?.nickname || 'FACEIT аккаунт') : (gameStats.steam.profile?.username || 'Steam аккаунт')}</h3>
+                        <div className={styles.gameCardSubtext}>{cs2View === 'faceit' ? 'Источник: FACEIT Data API' : 'Источник: Steam API'}</div>
                       </div>
-                      {gameStats.steam.profile?.profile_url && <a href={gameStats.steam.profile.profile_url} target="_blank" rel="noreferrer" className={styles.gameCardLink}>Steam профиль</a>}
+                      <div className={styles.gameCardHeaderActions}>
+                        <div className={styles.providerSwitch}>
+                          <button className={`${styles.providerBtn} ${cs2View === 'premier' ? styles.providerBtnActive : ''}`} onClick={() => setCs2View('premier')}>Premier</button>
+                          <button className={`${styles.providerBtn} ${cs2View === 'faceit' ? styles.providerBtnActive : ''}`} onClick={() => setCs2View('faceit')} disabled={!gameStats.steam.faceit}>FACEIT</button>
+                        </div>
+                        {cs2View === 'faceit'
+                          ? (gameStats.steam.faceit?.profile?.faceit_url && <a href={gameStats.steam.faceit.profile.faceit_url} target="_blank" rel="noreferrer" className={styles.gameCardLink}>FACEIT профиль</a>)
+                          : (gameStats.steam.profile?.profile_url && <a href={gameStats.steam.profile.profile_url} target="_blank" rel="noreferrer" className={styles.gameCardLink}>Steam профиль</a>)}
+                      </div>
                     </div>
+                    {cs2View === 'faceit' && gameStats.steam.faceit ? <>
+                    <div className={styles.gameMetricsGrid}>
+                      <div className={styles.gameMetric}><span>Уровень</span><strong>{formatNumber(gameStats.steam.faceit.profile?.skill_level)}</strong></div>
+                      <div className={styles.gameMetric}><span>ELO</span><strong>{formatNumber(gameStats.steam.faceit.profile?.elo)}</strong></div>
+                      <div className={styles.gameMetric}><span>K/D</span><strong>{gameStats.steam.faceit.stats?.kd_ratio?.toFixed(2) || '—'}</strong></div>
+                      <div className={styles.gameMetric}><span>Винрейт</span><strong>{formatPercent(gameStats.steam.faceit.stats?.win_rate)}</strong></div>
+                      <div className={styles.gameMetric}><span>Матчей</span><strong>{formatNumber(gameStats.steam.faceit.stats?.matches)}</strong></div>
+                      <div className={styles.gameMetric}><span>Побед / поражений</span><strong>{formatNumber(gameStats.steam.faceit.stats?.wins)} / {formatNumber(gameStats.steam.faceit.stats?.losses)}</strong></div>
+                      <div className={styles.gameMetric}><span>Хедшоты</span><strong>{formatPercent(gameStats.steam.faceit.stats?.headshot_pct)}</strong></div>
+                    </div>
+                    {gameStats.steam.faceit.match_history?.length ? <><div className={styles.gameSectionTitle}>Последние FACEIT матчи</div><div className={styles.matchHistoryList}>{gameStats.steam.faceit.match_history.map((match) => <div key={match.match_id || `${match.map}-${match.finished_at}`} className={styles.matchHistoryItem}>
+                      <div className={styles.matchHistoryTop}><strong>{match.map || 'FACEIT матч'}</strong><span className={`${styles.matchResult} ${String(match.result || '').toLowerCase().includes('win') || String(match.result || '').includes('1') ? styles.matchResultWin : styles.matchResultLoss}`}>{match.kills}/{match.deaths}/{match.assists}</span></div>
+                      <div className={styles.matchHistoryMeta}><span>{match.result || 'Результат неизвестен'}</span>{match.score ? <span>Счёт: {match.score}</span> : null}{typeof match.kd_ratio === 'number' ? <span>K/D: {match.kd_ratio.toFixed(2)}</span> : null}{typeof match.headshot_pct === 'number' ? <span>HS: {match.headshot_pct.toFixed(1)}%</span> : null}{match.finished_at ? <span>{new Date(match.finished_at).toLocaleDateString('ru-RU')}</span> : null}</div>
+                    </div>)}</div></> : <div className={styles.gameHint}>История FACEIT матчей пока недоступна.</div>}
+                    </> : <>
+                    {gameStats.steam.cs2_stats ? <>
                     <div className={styles.gameMetricsGrid}>
                       <div className={styles.gameMetric}><span>K/D</span><strong>{gameStats.steam.cs2_stats.kd_ratio?.toFixed(2) || '0.00'}</strong></div>
                       <div className={styles.gameMetric}><span>Винрейт</span><strong>{formatPercent(gameStats.steam.cs2_stats.win_rate)}</strong></div>
@@ -609,7 +667,9 @@ export default function PublicProfilePage() {
                       <div className={styles.gameMetric}><span>Хедшоты</span><strong>{formatPercent(gameStats.steam.cs2_stats.headshot_pct)}</strong></div>
                       <div className={styles.gameMetric}><span>MVP</span><strong>{formatNumber(gameStats.steam.cs2_stats.mvps)}</strong></div>
                     </div>
-                    <div className={styles.gameHint}>История матчей CS2 пока недоступна через текущий API-источник.</div>
+                    <div className={styles.gameHint}>История Premier матчей будет подключена отдельным CS provider. CSSkill интеграцию можно включить, как только будут точные endpoint’ы и ключ.</div>
+                    </> : <div className={styles.gameHint}>Premier статистика сейчас недоступна для этого аккаунта.</div>}
+                    </>}
                   </article>}
                   {gameStats.dota2 && <article className={styles.gameCard}>
                     <div className={styles.gameCardHeader}>

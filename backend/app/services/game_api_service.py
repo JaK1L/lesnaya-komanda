@@ -24,6 +24,7 @@ class GameAPIService:
     def __init__(self) -> None:
         self.steam_api_key = os.getenv("STEAM_API_KEY")
         self.riot_api_key = os.getenv("RIOT_API_KEY")
+        self.faceit_api_key = os.getenv("FACEIT_API_KEY")
         self._dota_heroes_cache: Dict[int, str] = {}
 
     async def get_steam_profile(self, steam_id: str) -> Optional[Dict[str, Any]]:
@@ -250,6 +251,76 @@ class GameAPIService:
 
         return detailed_matches or await self._get_opendota_recent_matches(account_id, limit)
 
+    async def get_faceit_cs2_data(self, steam_id: str, limit: int = 5) -> Optional[Dict[str, Any]]:
+        player = await self._get_faceit_player_by_steam_id(steam_id)
+        if not player:
+            return None
+
+        player_id = player.get("player_id")
+        if not player_id:
+            return None
+
+        lifetime = await self._faceit_get(f"/players/{player_id}/stats/cs2")
+        recent = await self._faceit_get(
+            f"/players/{player_id}/games/cs2/stats",
+            {"limit": max(1, min(limit, 20))},
+        )
+
+        lifetime_data = lifetime or {}
+        lifetime_stats = lifetime_data.get("lifetime", {}) if isinstance(lifetime_data, dict) else {}
+        items = recent.get("items", []) if isinstance(recent, dict) else []
+
+        matches = self._coerce_faceit_number(
+            lifetime_stats,
+            "Matches",
+            "matches",
+        )
+        wins = self._coerce_faceit_number(
+            lifetime_stats,
+            "Wins",
+            "wins",
+        )
+        losses = max(matches - wins, 0) if matches else None
+        win_rate = self._coerce_faceit_float(
+            lifetime_stats,
+            "Win Rate %",
+            "Win Rate",
+        )
+        if win_rate is None and matches:
+            win_rate = round(wins / max(matches, 1) * 100, 2)
+
+        kd_ratio = self._coerce_faceit_float(
+            lifetime_stats,
+            "Average K/D Ratio",
+            "Average K/D",
+            "K/D Ratio",
+        )
+        hs_percent = self._coerce_faceit_float(
+            lifetime_stats,
+            "Average Headshots %",
+            "Headshots %",
+        )
+
+        return {
+            "profile": {
+                "player_id": player.get("player_id"),
+                "nickname": player.get("nickname"),
+                "avatar_url": player.get("avatar"),
+                "faceit_url": player.get("faceit_url"),
+                "skill_level": (player.get("games", {}) or {}).get("cs2", {}).get("skill_level"),
+                "elo": (player.get("games", {}) or {}).get("cs2", {}).get("faceit_elo"),
+            },
+            "stats": {
+                "matches": matches,
+                "wins": wins,
+                "losses": losses,
+                "win_rate": win_rate,
+                "kd_ratio": kd_ratio,
+                "headshot_pct": hs_percent,
+            },
+            "match_history": [self._normalize_faceit_match(item) for item in items if item],
+        }
+
     async def get_valorant_profile(
         self,
         riot_id: str,
@@ -401,6 +472,36 @@ class GameAPIService:
         body = await response.text()
         logger.warning("Steam API request failed (%s) for %s: %s", response.status, url, body)
         return None
+
+    async def _faceit_get(
+        self,
+        path: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        if not self.faceit_api_key:
+            return None
+
+        url = f"https://open.faceit.com/data/v4{path}"
+        headers = {"Authorization": f"Bearer {self.faceit_api_key}"}
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, params=params or {}) as response:
+                    if response.status == 200:
+                        return await response.json()
+
+                    body = await response.text()
+                    logger.warning("FACEIT API request failed (%s) for %s: %s", response.status, url, body)
+                    return None
+        except Exception as exc:
+            logger.error("Error calling FACEIT API %s: %s", path, exc, exc_info=True)
+            return None
+
+    async def _get_faceit_player_by_steam_id(self, steam_id: str) -> Optional[Dict[str, Any]]:
+        return await self._faceit_get(
+            "/players",
+            {"game": "cs2", "game_player_id": steam_id},
+        )
 
     async def _get_opendota_player_profile(self, account_id: str) -> Optional[Dict[str, Any]]:
         url = f"https://api.opendota.com/api/players/{account_id}"
@@ -572,6 +673,39 @@ class GameAPIService:
         if value > STEAM_ID64_BASE:
             return str(value)
         return str(STEAM_ID64_BASE + value)
+
+    def _coerce_faceit_number(self, payload: Dict[str, Any], *keys: str) -> int:
+        value = self._coerce_faceit_float(payload, *keys)
+        return int(value) if value is not None else 0
+
+    def _coerce_faceit_float(self, payload: Dict[str, Any], *keys: str) -> Optional[float]:
+        for key in keys:
+            raw = payload.get(key)
+            if raw in (None, ""):
+                continue
+            if isinstance(raw, (int, float)):
+                return float(raw)
+            normalized = str(raw).replace("%", "").replace(",", ".").strip()
+            try:
+                return float(normalized)
+            except ValueError:
+                continue
+        return None
+
+    def _normalize_faceit_match(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        stats = item.get("stats", {}) if isinstance(item, dict) else {}
+        return {
+            "match_id": item.get("match_id") or item.get("matchId"),
+            "map": stats.get("Map") or stats.get("map"),
+            "kills": self._coerce_faceit_number(stats, "Kills", "kills"),
+            "deaths": self._coerce_faceit_number(stats, "Deaths", "deaths"),
+            "assists": self._coerce_faceit_number(stats, "Assists", "assists"),
+            "kd_ratio": self._coerce_faceit_float(stats, "K/D Ratio", "K/D", "kd_ratio"),
+            "headshot_pct": self._coerce_faceit_float(stats, "Headshots %", "HS %", "Headshots"),
+            "result": stats.get("Result") or stats.get("result"),
+            "score": stats.get("Score") or stats.get("score"),
+            "finished_at": item.get("finished_at") or item.get("created_at"),
+        }
 
 
 game_api_service = GameAPIService()
