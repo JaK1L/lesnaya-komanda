@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from pathlib import Path
 from typing import Any, Dict, Optional
 import asyncpg
+from datetime import datetime, timezone
 
 from ..database import get_db
 from ..schemas import ProfileResponse, ProfileUpdate
@@ -199,6 +200,9 @@ async def get_public_activity(
     voice_hours = 0.0
     recent_messages = []
     recent_voice = []
+    collector_state = "active"
+    collector_message = None
+    last_presence_sync_at = None
 
     if target_discord_id is None:
         return {
@@ -206,9 +210,23 @@ async def get_public_activity(
             "voice_hours": voice_hours,
             "recent_messages": [],
             "recent_voice": [],
+            "collector_state": "not_linked",
+            "collector_message": "Discord аккаунт не привязан к этому профилю.",
+            "last_presence_sync_at": None,
         }
 
     try:
+        latest_presence_sync = await db.fetchval(
+            "SELECT MAX(updated_at) FROM discord_presence"
+        )
+        user_presence_sync = await db.fetchval(
+            "SELECT updated_at FROM discord_presence WHERE discord_id = $1",
+            target_discord_id,
+        )
+
+        if latest_presence_sync:
+            last_presence_sync_at = latest_presence_sync.isoformat()
+
         message_count = int(
             await db.fetchval(
                 "SELECT COUNT(*) FROM activity_log WHERE discord_id = $1",
@@ -242,13 +260,43 @@ async def get_public_activity(
                LIMIT 5""",
             target_discord_id,
         )
+
+        has_user_activity = bool(
+            message_count > 0 or voice_hours > 0 or recent_messages or recent_voice
+        )
+        if not has_user_activity:
+            now = datetime.now(timezone.utc)
+            if latest_presence_sync is None:
+                collector_state = "bot_unavailable"
+                collector_message = "Discord-бот ещё не запущен или не пишет данные в базу."
+            else:
+                latest_sync_utc = (
+                    latest_presence_sync.replace(tzinfo=timezone.utc)
+                    if latest_presence_sync.tzinfo is None
+                    else latest_presence_sync.astimezone(timezone.utc)
+                )
+                is_stale = (now - latest_sync_utc).total_seconds() > 30 * 60
+
+                if is_stale:
+                    collector_state = "bot_unavailable"
+                    collector_message = "Discord-бот давно не обновлял статистику. Проверь worker и intents."
+                elif user_presence_sync is None:
+                    collector_state = "user_no_data"
+                    collector_message = "Бот работает, но активности этого пользователя пока не зафиксировано."
+                else:
+                    collector_state = "user_no_data"
+                    collector_message = "Для этого пользователя пока нет сообщений или голосовых сессий в статистике."
     except (asyncpg.UndefinedTableError, asyncpg.UndefinedColumnError):
         # Activity tables may be absent in some environments.
-        pass
+        collector_state = "bot_unavailable"
+        collector_message = "Таблицы Discord-статистики ещё не созданы в базе данных."
 
     return {
         "message_count": message_count,
         "voice_hours": voice_hours,
+        "collector_state": collector_state,
+        "collector_message": collector_message,
+        "last_presence_sync_at": last_presence_sync_at,
         "recent_messages": [
             {
                 "type": r["type"],

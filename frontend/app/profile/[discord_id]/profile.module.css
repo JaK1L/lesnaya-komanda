@@ -391,11 +391,13 @@
   display: flex;
   gap: 0.35rem;
   overflow-x: auto;
-  padding: 0.35rem;
+  padding: 0.35rem max(0.35rem, 50%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.03);
   scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
 }
 
 .tabs::-webkit-scrollbar {
@@ -407,6 +409,7 @@
   align-items: center;
   gap: 0.45rem;
   flex-shrink: 0;
+  scroll-snap-align: center;
   border: none;
   background: transparent;
   color: rgba(240, 247, 255, 0.68);
@@ -415,11 +418,20 @@
   font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.tab:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .tabActive {
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(145, 71, 255, 0.22), rgba(91, 46, 179, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(199, 160, 255, 0.14);
   color: #fff;
+  transform: translateY(-1px);
 }
 
 .tabPanel {
@@ -468,16 +480,23 @@
 }
 
 .sideActionBtn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(145, 71, 255, 0.22);
+  background: rgba(145, 71, 255, 0.12);
+  color: #efe0ff;
   cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.sideActionBtn:hover {
+  background: rgba(145, 71, 255, 0.2);
+  border-color: rgba(145, 71, 255, 0.34);
+  color: #fff;
 }
 
 .infoGrid {
@@ -520,14 +539,23 @@
   background: rgba(8, 12, 18, 0.34);
   color: #f5fbff;
   text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.accountCard strong,
-.accountCard span {
+.accountCard strong {
   display: block;
 }
 
-.accountCard span:last-child {
+.accountMeta {
+  min-width: 0;
+}
+
+.accountMeta strong {
+  font-size: 1rem;
+}
+
+.accountMeta span {
+  display: block;
   margin-top: 0.2rem;
   color: rgba(240, 247, 255, 0.64);
   overflow-wrap: anywhere;
@@ -544,6 +572,26 @@
   background: rgba(145, 71, 255, 0.12);
   color: #dbc2ff;
   font-weight: 800;
+}
+
+.accountIconTwitch {
+  background: linear-gradient(135deg, rgba(145, 71, 255, 0.28), rgba(101, 51, 204, 0.18));
+  color: #f2e8ff;
+}
+
+.accountIconSteam {
+  background: linear-gradient(135deg, rgba(102, 214, 255, 0.2), rgba(61, 123, 255, 0.14));
+  color: #dff5ff;
+}
+
+.accountIconDota2 {
+  background: linear-gradient(135deg, rgba(255, 111, 111, 0.24), rgba(193, 56, 56, 0.14));
+  color: #ffe1e1;
+}
+
+.accountIconValorant {
+  background: linear-gradient(135deg, rgba(255, 113, 139, 0.24), rgba(196, 52, 91, 0.14));
+  color: #ffe5ea;
 }
 
 .mediaGrid {
@@ -601,6 +649,33 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.statusNotice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(145, 71, 255, 0.34);
+  background: rgba(145, 71, 255, 0.1);
+  color: rgba(244, 247, 255, 0.92);
+}
+
+.statusNotice strong {
+  font-size: 0.96rem;
+  color: #ffffff;
+}
+
+.statusNotice span {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgba(240, 247, 255, 0.78);
+}
+
+.statusNoticeWarning {
+  border-color: rgba(255, 177, 66, 0.36);
+  background: rgba(255, 177, 66, 0.11);
 }
 
 .metricCard {
@@ -751,15 +826,6 @@
   margin-top: 0.2rem;
   color: rgba(240, 247, 255, 0.6);
   font-size: 0.85rem;
-}
-
-.shareBox {
-  border-radius: 16px;
-  background: rgba(8, 12, 18, 0.34);
-  padding: 0.95rem;
-  color: rgba(240, 247, 255, 0.84);
-  overflow-wrap: anywhere;
-  font-size: 0.92rem;
 }
 
 .sideEmpty,
