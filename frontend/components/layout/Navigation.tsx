@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu, X } from 'lucide-react'
+import { Bell, Menu, X } from 'lucide-react'
 import axios from 'axios'
 import { LoginModal } from '../auth/LoginModal'
 import Logo from '../Logo/Logo'
+import { getImageUrl } from '../../lib/imageUtils'
 import { getProfileIdentifierFromProfileResponse, getProfileIdentifierFromToken } from '../../lib/profileIdentifier'
 import styles from './Navigation.module.css'
 
@@ -14,6 +15,18 @@ interface NavigationProps {
   isAuthenticated: boolean
   onLogout: () => void
   apiUrl: string
+}
+
+interface NotificationItem {
+  id: number
+  kind: string
+  title: string
+  body: string | null
+  link: string | null
+  is_read: boolean
+  created_at: string
+  actor_name: string | null
+  actor_avatar_url: string | null
 }
 
 const NAV_ITEMS = [
@@ -30,9 +43,63 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loginModalOpen, setLoginModalOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const navRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const router = useRouter()
+
+  const loadNotifications = async () => {
+    const token = localStorage.getItem('lesnaya_token')
+    if (!token) return
+
+    try {
+      const [listRes, countRes] = await Promise.all([
+        axios.get<NotificationItem[]>(`${API_URL}/api/notifications`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get<{ count: number }>(`${API_URL}/api/notifications/unread-count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ])
+      setNotifications(listRes.data)
+      setUnreadCount(countRes.data.count || 0)
+    } catch {
+      setNotifications([])
+      setUnreadCount(0)
+    }
+  }
+
+  const markAllNotificationsRead = async () => {
+    const token = localStorage.getItem('lesnaya_token')
+    if (!token) return
+    try {
+      await axios.post(`${API_URL}/api/notifications/read-all`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })))
+      setUnreadCount(0)
+    } catch {}
+  }
+
+  const handleNotificationClick = async (item: NotificationItem) => {
+    const token = localStorage.getItem('lesnaya_token')
+    if (token && !item.is_read) {
+      try {
+        await axios.post(`${API_URL}/api/notifications/${item.id}/read`, {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        setNotifications((prev) => prev.map((entry) => entry.id === item.id ? { ...entry, is_read: true } : entry))
+        setUnreadCount((prev) => Math.max(0, prev - 1))
+      } catch {}
+    }
+
+    setNotificationsOpen(false)
+    if (item.link) {
+      router.push(item.link)
+    }
+  }
 
   const handleProfileClick = async () => {
     try {
@@ -48,29 +115,19 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
           if (canonicalIdentifier) {
             profileIdentifier = canonicalIdentifier
           }
-        } catch {
-          // Use token fallback when canonical profile lookup fails.
-        }
+        } catch {}
       }
 
       if (profileIdentifier) {
         router.push(`/profile/${encodeURIComponent(profileIdentifier)}`)
         return
       }
-    } catch {
-      // Fall back to generic profile route.
-    }
+    } catch {}
 
     router.push('/profile')
   }
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(prev => !prev)
-  }
-
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false)
-  }
+  const closeMobileMenu = () => setMobileMenuOpen(false)
 
   const handleStreamsClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -82,25 +139,27 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
     }
   }
 
-  const handleLoginSuccess = () => {
-    setLoginModalOpen(false)
-    window.location.reload()
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      void loadNotifications()
+    } else {
+      setNotifications([])
+      setUnreadCount(0)
+    }
+  }, [isAuthenticated, pathname])
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (loginModalOpen) {
-          setLoginModalOpen(false)
-        } else if (mobileMenuOpen) {
-          closeMobileMenu()
-        }
+        if (loginModalOpen) setLoginModalOpen(false)
+        if (mobileMenuOpen) closeMobileMenu()
+        if (notificationsOpen) setNotificationsOpen(false)
       }
     }
 
     document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
-  }, [mobileMenuOpen, loginModalOpen])
+  }, [mobileMenuOpen, loginModalOpen, notificationsOpen])
 
   useEffect(() => {
     document.body.style.overflow = mobileMenuOpen ? 'hidden' : ''
@@ -111,14 +170,15 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
 
   useEffect(() => {
     const handlePointerOutside = (e: PointerEvent) => {
-      if (mobileMenuOpen && navRef.current && !navRef.current.contains(e.target as Node)) {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
         closeMobileMenu()
+        setNotificationsOpen(false)
       }
     }
 
     document.addEventListener('pointerdown', handlePointerOutside)
     return () => document.removeEventListener('pointerdown', handlePointerOutside)
-  }, [mobileMenuOpen])
+  }, [])
 
   return (
     <>
@@ -130,33 +190,72 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
             </Link>
 
             <div className={styles.navLinks}>
-              {NAV_ITEMS.map(item =>
+              {NAV_ITEMS.map((item) =>
                 item.label === 'Стримы' ? (
-                  <a
-                    key="streams"
-                    href="#"
-                    className={styles.link}
-                    onClick={handleStreamsClick}
-                  >
+                  <a key="streams" href="#" className={styles.link} onClick={handleStreamsClick}>
                     {item.label}
                   </a>
                 ) : (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={styles.link}
-                    onClick={closeMobileMenu}
-                  >
+                  <Link key={item.href} href={item.href} className={styles.link} onClick={closeMobileMenu}>
                     {item.label}
                   </Link>
-                )
+                ),
               )}
             </div>
 
             <div className={styles.headerBtns}>
               {isAuthenticated ? (
                 <>
-                  <button onClick={handleProfileClick} className={`${styles.btn} ${styles.linkButton}`}>
+                  <div className={styles.notificationWrap}>
+                    <button
+                      type="button"
+                      className={`${styles.notificationBtn} ${unreadCount > 0 ? styles.notificationBtnActive : ''}`}
+                      onClick={() => setNotificationsOpen((prev) => !prev)}
+                      aria-label="Уведомления"
+                    >
+                      <Bell size={18} />
+                      {unreadCount > 0 && <span className={styles.notificationDot} />}
+                    </button>
+                    {notificationsOpen && (
+                      <div className={styles.notificationPanel}>
+                        <div className={styles.notificationHeader}>
+                          <strong>Уведомления</strong>
+                          {unreadCount > 0 && (
+                            <button type="button" className={styles.notificationAction} onClick={() => void markAllNotificationsRead()}>
+                              Прочитать все
+                            </button>
+                          )}
+                        </div>
+                        <div className={styles.notificationList}>
+                          {notifications.length === 0 ? (
+                            <div className={styles.notificationEmpty}>Пока ничего нет.</div>
+                          ) : (
+                            notifications.map((item) => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                className={`${styles.notificationItem} ${!item.is_read ? styles.notificationItemUnread : ''}`}
+                                onClick={() => void handleNotificationClick(item)}
+                              >
+                                <div className={styles.notificationAvatar}>
+                                  {item.actor_avatar_url ? (
+                                    <img src={getImageUrl(item.actor_avatar_url) || ''} alt={item.actor_name || item.title} />
+                                  ) : (
+                                    <Bell size={14} />
+                                  )}
+                                </div>
+                                <div className={styles.notificationContent}>
+                                  <strong>{item.title}</strong>
+                                  {item.body && <span>{item.body}</span>}
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => void handleProfileClick()} className={`${styles.btn} ${styles.linkButton}`}>
                     Профиль
                   </button>
                   <button onClick={onLogout} className={`${styles.btn} ${styles.loginButton}`}>
@@ -168,10 +267,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
                   <Link href="/register" className={`${styles.btn} ${styles.linkButton}`}>
                     Регистрация
                   </Link>
-                  <button
-                    onClick={() => setLoginModalOpen(true)}
-                    className={`${styles.btn} ${styles.loginButton}`}
-                  >
+                  <button onClick={() => setLoginModalOpen(true)} className={`${styles.btn} ${styles.loginButton}`}>
                     Войти
                   </button>
                 </>
@@ -180,7 +276,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
 
             <button
               className={styles.mobileMenuButton}
-              onClick={toggleMobileMenu}
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label="Toggle menu"
               aria-expanded={mobileMenuOpen}
             >
@@ -192,32 +288,31 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
         {mobileMenuOpen && (
           <div className={styles.mobileMenu}>
             <div className={styles.mobileNavLinks}>
-              {NAV_ITEMS.map(item =>
+              {NAV_ITEMS.map((item) =>
                 item.label === 'Стримы' ? (
-                  <a
-                    key="mobile-streams"
-                    href="#"
-                    className={styles.mobileLink}
-                    onClick={handleStreamsClick}
-                  >
+                  <a key="mobile-streams" href="#" className={styles.mobileLink} onClick={handleStreamsClick}>
                     {item.label}
                   </a>
                 ) : (
-                  <Link
-                    key={`mobile-${item.href}`}
-                    href={item.href}
-                    className={styles.mobileLink}
-                    onClick={closeMobileMenu}
-                  >
+                  <Link key={`mobile-${item.href}`} href={item.href} className={styles.mobileLink} onClick={closeMobileMenu}>
                     {item.label}
                   </Link>
-                )
+                ),
               )}
             </div>
 
             <div className={styles.mobileAuth}>
               {isAuthenticated ? (
                 <>
+                  <button
+                    onClick={() => {
+                      void markAllNotificationsRead()
+                    }}
+                    className={`${styles.btn} ${styles.notificationMobileBtn} ${unreadCount > 0 ? styles.notificationBtnActive : ''}`}
+                  >
+                    <Bell size={18} />
+                    {unreadCount > 0 ? `Уведомления (${unreadCount})` : 'Уведомления'}
+                  </button>
                   <button
                     onClick={() => {
                       closeMobileMenu()
@@ -239,11 +334,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/register"
-                    className={`${styles.btn} ${styles.linkButton}`}
-                    onClick={closeMobileMenu}
-                  >
+                  <Link href="/register" className={`${styles.btn} ${styles.linkButton}`} onClick={closeMobileMenu}>
                     Регистрация
                   </Link>
                   <button
@@ -258,6 +349,33 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
                 </>
               )}
             </div>
+            {isAuthenticated && notifications.length > 0 && (
+              <div className={styles.mobileNotificationList}>
+                {notifications.slice(0, 4).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`${styles.notificationItem} ${!item.is_read ? styles.notificationItemUnread : ''}`}
+                    onClick={() => {
+                      closeMobileMenu()
+                      void handleNotificationClick(item)
+                    }}
+                  >
+                    <div className={styles.notificationAvatar}>
+                      {item.actor_avatar_url ? (
+                        <img src={getImageUrl(item.actor_avatar_url) || ''} alt={item.actor_name || item.title} />
+                      ) : (
+                        <Bell size={14} />
+                      )}
+                    </div>
+                    <div className={styles.notificationContent}>
+                      <strong>{item.title}</strong>
+                      {item.body && <span>{item.body}</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -265,7 +383,10 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
       <LoginModal
         isOpen={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}
-        onSuccess={handleLoginSuccess}
+        onSuccess={() => {
+          setLoginModalOpen(false)
+          window.location.reload()
+        }}
       />
     </>
   )

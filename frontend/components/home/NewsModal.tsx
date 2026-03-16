@@ -1,7 +1,10 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import axios from 'axios'
+import { CornerDownRight } from 'lucide-react'
+import { getImageUrl } from '../../lib/imageUtils'
 import styles from './NewsModal.module.css'
 
 interface NewsModalProps {
@@ -17,11 +20,16 @@ interface NewsModalProps {
   } | null
 }
 
-interface Comment {
+interface CommentItem {
   id: number
+  user_id: number
   user_name: string
+  user_avatar_url: string | null
+  user_profile_identifier: string | null
   content: string
+  parent_comment_id: number | null
   created_at: string
+  replies: CommentItem[]
 }
 
 const RIGHT_PANEL_W = 380
@@ -31,8 +39,9 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
   const [likes, setLikes] = useState(0)
   const [dislikes, setDislikes] = useState(0)
   const [userReaction, setUserReaction] = useState<'like' | 'dislike' | null>(null)
-  const [comments, setComments] = useState<Comment[]>([])
+  const [comments, setComments] = useState<CommentItem[]>([])
   const [newComment, setNewComment] = useState('')
+  const [replyTo, setReplyTo] = useState<CommentItem | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null)
@@ -41,29 +50,48 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
     setIsAuthenticated(!!localStorage.getItem('lesnaya_token'))
   }, [])
 
-  // Reset image size when news changes
   useEffect(() => {
     setImgSize(null)
+    setReplyTo(null)
+    setNewComment('')
   }, [news?.id])
 
   useEffect(() => {
     if (isOpen && news) {
-      loadReactions()
-      loadComments()
+      void loadReactions()
+      void loadComments()
     }
   }, [isOpen, news])
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : 'unset'
-    return () => { document.body.style.overflow = 'unset' }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
   }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [isOpen, onClose])
+
+  const formatDate = useCallback(
+    (value: string, mode: 'date' | 'datetime' = 'date') =>
+      new Date(value)[mode === 'date' ? 'toLocaleDateString' : 'toLocaleString']('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: mode === 'datetime' ? '2-digit' : undefined,
+        minute: mode === 'datetime' ? '2-digit' : undefined,
+      }),
+    [],
+  )
+
+  const initials = useCallback((name: string) => name.trim().slice(0, 2).toUpperCase(), [])
 
   const loadReactions = async () => {
     if (!news) return
@@ -78,7 +106,7 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
   const loadComments = async () => {
     if (!news) return
     try {
-      const res = await axios.get(`${API_URL}/api/news/${news.id}/comments`)
+      const res = await axios.get<CommentItem[]>(`${API_URL}/api/news/${news.id}/comments`)
       setComments(res.data || [])
     } catch {}
   }
@@ -87,18 +115,21 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
     if (!news || !isAuthenticated) return
     const token = localStorage.getItem('lesnaya_token')
     if (!token) return
+
     try {
-      await axios.post(`${API_URL}/api/news/${news.id}/react`, { reaction: type }, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await axios.post(
+        `${API_URL}/api/news/${news.id}/react`,
+        { reaction: type },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
       if (userReaction === type) {
         setUserReaction(null)
-        type === 'like' ? setLikes(l => l - 1) : setDislikes(d => d - 1)
+        type === 'like' ? setLikes((v) => v - 1) : setDislikes((v) => v - 1)
       } else {
-        if (userReaction === 'like') setLikes(l => l - 1)
-        if (userReaction === 'dislike') setDislikes(d => d - 1)
+        if (userReaction === 'like') setLikes((v) => v - 1)
+        if (userReaction === 'dislike') setDislikes((v) => v - 1)
         setUserReaction(type)
-        type === 'like' ? setLikes(l => l + 1) : setDislikes(d => d + 1)
+        type === 'like' ? setLikes((v) => v + 1) : setDislikes((v) => v + 1)
       }
     } catch {}
   }
@@ -108,19 +139,23 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
     if (!news || !newComment.trim() || !isAuthenticated) return
     const token = localStorage.getItem('lesnaya_token')
     if (!token) return
+
     setIsSubmitting(true)
     try {
-      await axios.post(`${API_URL}/api/news/${news.id}/comments`, { content: newComment }, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await axios.post(
+        `${API_URL}/api/news/${news.id}/comments`,
+        { content: newComment, parent_comment_id: replyTo?.id ?? null },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
       setNewComment('')
-      loadComments()
-    } catch {} finally {
+      setReplyTo(null)
+      await loadComments()
+    } catch {
+    } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Compute modal & image panel dimensions based on natural image size
   const computeLayout = useCallback((natW: number, natH: number) => {
     const vw = window.innerWidth
     const vh = window.innerHeight
@@ -130,19 +165,16 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
     let imgW = natW
     let imgH = natH
 
-    // Scale down to fit height
     if (imgH > maxH) {
-      imgW = imgW * (maxH / imgH)
+      imgW *= maxH / imgH
       imgH = maxH
     }
-    // Scale down to fit max width
     if (imgW > maxImgW) {
-      imgH = imgH * (maxImgW / imgW)
+      imgH *= maxImgW / imgW
       imgW = maxImgW
     }
-    // Scale up tiny images to at least 300px wide
     if (imgW < 300) {
-      imgH = imgH * (300 / imgW)
+      imgH *= 300 / imgW
       imgW = 300
     }
 
@@ -154,37 +186,85 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
     computeLayout(img.naturalWidth, img.naturalHeight)
   }
 
+  const renderComment = (comment: CommentItem, depth = 0) => {
+    const profileHref = comment.user_profile_identifier
+      ? `/profile/${encodeURIComponent(comment.user_profile_identifier)}`
+      : null
+
+    return (
+      <div key={comment.id} className={styles.commentThread}>
+        <div className={styles.comment} style={{ marginLeft: depth > 0 ? Math.min(depth, 3) * 18 : 0 }}>
+          {profileHref ? (
+            <Link href={profileHref} className={styles.commentAvatarLink} onClick={onClose}>
+              {comment.user_avatar_url ? (
+                <img
+                  src={getImageUrl(comment.user_avatar_url) || ''}
+                  alt={comment.user_name}
+                  className={styles.commentAvatarImage}
+                />
+              ) : (
+                <div className={styles.commentAvatar}>{initials(comment.user_name)}</div>
+              )}
+            </Link>
+          ) : (
+            comment.user_avatar_url ? (
+              <img src={getImageUrl(comment.user_avatar_url) || ''} alt={comment.user_name} className={styles.commentAvatarImage} />
+            ) : (
+              <div className={styles.commentAvatar}>{initials(comment.user_name)}</div>
+            )
+          )}
+          <div className={styles.commentBody}>
+            <div className={styles.commentHeader}>
+              {profileHref ? (
+                <Link href={profileHref} className={styles.commentAuthorLink} onClick={onClose}>
+                  {comment.user_name}
+                </Link>
+              ) : (
+                <span className={styles.commentAuthor}>{comment.user_name}</span>
+              )}
+              <span className={styles.commentDate}>{formatDate(comment.created_at, 'datetime')}</span>
+            </div>
+            <p className={styles.commentContent}>{comment.content}</p>
+            {isAuthenticated && (
+              <button
+                type="button"
+                className={styles.replyButton}
+                onClick={() => {
+                  setReplyTo(comment)
+                  setNewComment(`@${comment.user_name}, `)
+                }}
+              >
+                <CornerDownRight size={14} />
+                Ответить
+              </button>
+            )}
+          </div>
+        </div>
+        {comment.replies?.length > 0 && (
+          <div className={styles.replyList}>
+            {comment.replies.map((reply) => renderComment(reply, depth + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const hasImage = !!news?.image_url
+  const modalStyle = hasImage && imgSize ? { width: imgSize.w + RIGHT_PANEL_W, height: imgSize.h } : undefined
+  const imagePanelStyle = hasImage && imgSize ? { width: imgSize.w, height: imgSize.h, flex: 'none' } : undefined
+  const replyTitle = useMemo(() => (replyTo ? `Ответ для ${replyTo.user_name}` : null), [replyTo])
+
   if (!isOpen || !news) return null
-
-  const formatDate = (s: string) =>
-    new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
-
-  const initials = (name: string) => name.slice(0, 2).toUpperCase()
-
-  const hasImage = !!news.image_url
-
-  // Dynamic modal style when image dimensions are known
-  const modalStyle = hasImage && imgSize
-    ? { width: imgSize.w + RIGHT_PANEL_W, height: imgSize.h }
-    : undefined
-
-  const imagePanelStyle = hasImage && imgSize
-    ? { width: imgSize.w, height: imgSize.h, flex: 'none' }
-    : undefined
 
   return (
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div
-        className={`${styles.modal} ${!hasImage ? styles.modalNoImage : ''}`}
-        style={modalStyle}
-      >
+      <div className={`${styles.modal} ${!hasImage ? styles.modalNoImage : ''}`} style={modalStyle}>
         <button className={styles.closeBtn} onClick={onClose} aria-label="Закрыть">×</button>
 
-        {/* Left: image */}
         {hasImage && (
           <div className={styles.imagePanel} style={imagePanelStyle}>
             <img
-              src={news.image_url!}
+              src={getImageUrl(news.image_url!) || news.image_url!}
               alt={news.title}
               onLoad={handleImageLoad}
               className={imgSize ? styles.imgLoaded : styles.imgLoading}
@@ -192,7 +272,6 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
           </div>
         )}
 
-        {/* Right: content */}
         <div className={styles.rightPanel}>
           <div className={styles.rightHeader}>
             <h2 className={styles.title}>{news.title}</h2>
@@ -200,8 +279,8 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
               <span className={styles.date}>{formatDate(news.created_at)}</span>
               {news.tags?.length > 0 && (
                 <div className={styles.tags}>
-                  {news.tags.map((tag, i) => (
-                    <span key={i} className={styles.tag}>{tag}</span>
+                  {news.tags.map((tag) => (
+                    <span key={tag} className={styles.tag}>{tag}</span>
                   ))}
                 </div>
               )}
@@ -216,20 +295,24 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
 
               {isAuthenticated ? (
                 <form onSubmit={handleSubmitComment} className={styles.commentForm}>
+                  {replyTitle && (
+                    <div className={styles.replyTarget}>
+                      <span>{replyTitle}</span>
+                      <button type="button" className={styles.replyCancel} onClick={() => { setReplyTo(null); setNewComment('') }}>
+                        Отменить
+                      </button>
+                    </div>
+                  )}
                   <textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Написать комментарий..."
+                    placeholder={replyTo ? 'Напиши ответ...' : 'Написать комментарий...'}
                     className={styles.commentInput}
-                    rows={2}
+                    rows={replyTo ? 3 : 2}
                     disabled={isSubmitting}
                   />
-                  <button
-                    type="submit"
-                    className={styles.commentSubmit}
-                    disabled={!newComment.trim() || isSubmitting}
-                  >
-                    {isSubmitting ? 'Отправка...' : 'Отправить'}
+                  <button type="submit" className={styles.commentSubmit} disabled={!newComment.trim() || isSubmitting}>
+                    {isSubmitting ? 'Отправка...' : (replyTo ? 'Ответить' : 'Отправить')}
                   </button>
                 </form>
               ) : (
@@ -237,21 +320,13 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
               )}
 
               <div className={styles.commentsList}>
-                {comments.map((c) => (
-                  <div key={c.id} className={styles.comment}>
-                    <div className={styles.commentAvatar}>{initials(c.user_name)}</div>
-                    <div className={styles.commentBody}>
-                      <span className={styles.commentAuthor}>{c.user_name}</span>
-                      <span className={styles.commentDate}>{formatDate(c.created_at)}</span>
-                      <p className={styles.commentContent}>{c.content}</p>
-                    </div>
-                  </div>
-                ))}
+                {comments.length > 0 ? comments.map((comment) => renderComment(comment)) : (
+                  <p className={styles.authPrompt}>Комментариев пока нет. Будь первым.</p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Reactions pinned at bottom */}
           <div className={styles.reactions}>
             <button
               className={`${styles.reactionBtn} ${userReaction === 'like' ? styles.active : ''}`}

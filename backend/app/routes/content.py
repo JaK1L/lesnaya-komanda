@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from ..database import get_db
 from ..services.achievements_auto import check_comments, check_likes
+from ..services.notifications_service import create_notification, ensure_notifications_schema
 
 
 router = APIRouter()
@@ -434,9 +435,17 @@ async def react_to_news(
 
 class NewsComment(BaseModel):
     id: int
+    user_id: int
     user_name: str
+    user_avatar_url: Optional[str] = None
+    user_profile_identifier: Optional[str] = None
     content: str
+    parent_comment_id: Optional[int] = None
     created_at: datetime
+    replies: List["NewsComment"] = []
+
+
+NewsComment.model_rebuild()
 
 
 @router.get("/news/{news_id}/comments", response_model=List[NewsComment])
@@ -447,26 +456,42 @@ async def get_news_comments(
     """
     Получить комментарии к новости
     """
+    await ensure_notifications_schema(db)
+    await db.execute(
+        "ALTER TABLE news_comments ADD COLUMN IF NOT EXISTS parent_comment_id BIGINT REFERENCES news_comments(id) ON DELETE CASCADE"
+    )
     rows = await db.fetch(
         """
         SELECT 
             nc.id,
-            COALESCE(u.discord_username, u.email) as user_name,
+            nc.user_id,
+            COALESCE(u.site_nickname, u.discord_username, u.email) as user_name,
+            u.avatar_url as user_avatar_url,
+            COALESCE(u.user_tag, u.discord_id::text, u.id::text) as user_profile_identifier,
             nc.content,
+            nc.parent_comment_id,
             nc.created_at
         FROM news_comments nc
         JOIN users u ON nc.user_id = u.id
         WHERE nc.news_id = $1
-        ORDER BY nc.created_at DESC
+        ORDER BY nc.created_at ASC
         """,
         news_id
     )
-    
-    return [NewsComment(**dict(row)) for row in rows]
+    items = [NewsComment(**dict(row)) for row in rows]
+    by_id = {item.id: item for item in items}
+    root_items: List[NewsComment] = []
+    for item in items:
+        if item.parent_comment_id and item.parent_comment_id in by_id:
+            by_id[item.parent_comment_id].replies.append(item)
+        else:
+            root_items.append(item)
+    return list(reversed(root_items))
 
 
 class NewsCommentRequest(BaseModel):
     content: str
+    parent_comment_id: Optional[int] = None
 
 
 @router.post("/news/{news_id}/comments")
@@ -479,6 +504,10 @@ async def add_news_comment(
     """
     Добавить комментарий к новости
     """
+    await ensure_notifications_schema(db)
+    await db.execute(
+        "ALTER TABLE news_comments ADD COLUMN IF NOT EXISTS parent_comment_id BIGINT REFERENCES news_comments(id) ON DELETE CASCADE"
+    )
     if not request.content or len(request.content.strip()) == 0:
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail="Comment cannot be empty")
@@ -495,16 +524,42 @@ async def add_news_comment(
     if not news_exists:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="News not found")
+
+    parent_comment = None
+    if request.parent_comment_id is not None:
+        parent_comment = await db.fetchrow(
+            """
+            SELECT nc.id, nc.user_id, nc.news_id, COALESCE(u.user_tag, u.discord_id::text, u.id::text) AS profile_identifier
+            FROM news_comments nc
+            JOIN users u ON u.id = nc.user_id
+            WHERE nc.id = $1
+            """,
+            request.parent_comment_id,
+        )
+        if not parent_comment or int(parent_comment["news_id"]) != news_id:
+            raise HTTPException(status_code=404, detail="Parent comment not found")
     
     # Добавляем комментарий
     comment_id = await db.fetchval(
         """
-        INSERT INTO news_comments (news_id, user_id, content)
-        VALUES ($1, $2, $3)
+        INSERT INTO news_comments (news_id, user_id, content, parent_comment_id)
+        VALUES ($1, $2, $3, $4)
         RETURNING id
         """,
-        news_id, current_user.id, request.content.strip()
+        news_id, current_user.id, request.content.strip(), request.parent_comment_id
     )
+
+    if parent_comment and int(parent_comment["user_id"]) != current_user.id:
+        await create_notification(
+            db,
+            recipient_user_id=int(parent_comment["user_id"]),
+            actor_user_id=current_user.id,
+            kind="comment_reply",
+            title="Новый ответ на комментарий",
+            body=f"{current_user.username} ответил на твой комментарий.",
+            link="/",
+            metadata={"news_id": news_id, "comment_id": comment_id},
+        )
     
     try:
         await check_comments(db, current_user.id)

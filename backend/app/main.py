@@ -9,7 +9,7 @@ import signal
 from .config import settings
 from .database import database, get_db
 from .db_init import init_db
-from .routes import users, auth, discord_oauth, twitch_oauth, content, websocket, discord, profile, migration, game_preferences, admin, achievements, events, game_stats, tournaments, media, bracket, friends
+from .routes import users, auth, discord_oauth, twitch_oauth, content, websocket, discord, profile, migration, game_preferences, admin, achievements, events, game_stats, tournaments, media, bracket, friends, notifications
 from .rate_limit import setup_rate_limiting
 
 # Настройка логирования
@@ -185,6 +185,7 @@ app.include_router(tournaments.router, prefix="/api", tags=["tournaments"])  # T
 app.include_router(media.router, prefix="/api", tags=["media"])  # Media gallery
 app.include_router(bracket.router, prefix="/api", tags=["bracket"])  # Bracket system
 app.include_router(friends.router, prefix="/api", tags=["friends"])  # Friends system
+app.include_router(notifications.router, prefix="/api", tags=["notifications"])  # User notifications
 app.include_router(migration.router, tags=["migration"])  # Temporary migration endpoint
 
 # Health check endpoints

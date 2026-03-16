@@ -346,10 +346,23 @@ async def get_public_registrations(
     meta = await _ensure_profile_visible(db, profile_identifier, current_user)
 
     try:
+        await db.execute("ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS final_place INTEGER")
+        await db.execute("ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS result_note TEXT")
         rows = await db.fetch(
             """
-            SELECT t.id, t.title, t.game, t.status, t.start_date, t.prize,
-                   tr.nickname, tr.team_name, tr.registered_at
+            SELECT
+                t.id,
+                t.title,
+                t.game,
+                t.status,
+                t.start_date,
+                t.prize,
+                t.winner,
+                tr.nickname,
+                tr.team_name,
+                tr.registered_at,
+                tr.final_place,
+                tr.result_note
             FROM tournament_registrations tr
             JOIN tournaments t ON t.id = tr.tournament_id
             WHERE tr.user_id = $1
@@ -357,7 +370,26 @@ async def get_public_registrations(
             """,
             meta["id"],
         )
-        return [dict(r) for r in rows]
+        result = []
+        for row in rows:
+            item = dict(row)
+            is_winner = bool(
+                item.get("status") == "completed"
+                and item.get("winner")
+                and item["winner"] in {item.get("nickname"), item.get("team_name")}
+            )
+            item["is_winner"] = is_winner
+            item["is_in_progress"] = item.get("status") != "completed"
+            if is_winner:
+                item["result_label"] = "Победитель турнира"
+            elif item.get("status") != "completed":
+                item["result_label"] = "Турнир еще идет"
+            elif item.get("final_place"):
+                item["result_label"] = f"Занятое место: {item['final_place']}"
+            else:
+                item["result_label"] = item.get("result_note") or "Турнир завершен"
+            result.append(item)
+        return result
     except (asyncpg.UndefinedTableError, asyncpg.UndefinedColumnError):
         return []
 

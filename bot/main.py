@@ -3,16 +3,24 @@ from discord.ext import commands
 import os
 from dotenv import load_dotenv
 import asyncpg
-import aiohttp
 from datetime import datetime, timezone
 import asyncio
 import json
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 load_dotenv()
 
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 GUILD_ID = int(os.getenv('DISCORD_GUILD_ID', '236652227060563969'))
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/lesnaya')
+
+
+def normalize_database_url(url: str) -> str:
+    parts = urlsplit(url)
+    query = [(key, value) for key, value in parse_qsl(parts.query, keep_blank_values=True) if key != 'channel_binding']
+    if parts.scheme.startswith('postgres') and 'sslmode' not in dict(query):
+        query.append(('sslmode', 'require'))
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
 
 intents = discord.Intents.default()
 intents.members = True
@@ -26,7 +34,76 @@ class StatsCollector:
         self.db_pool = None
     
     async def init_db(self):
-        self.db_pool = await asyncpg.create_pool(DATABASE_URL)
+        if not TOKEN:
+            raise RuntimeError('DISCORD_BOT_TOKEN is not configured')
+
+        normalized_url = normalize_database_url(DATABASE_URL)
+        last_error = None
+        for attempt in range(1, 6):
+            try:
+                self.db_pool = await asyncpg.create_pool(normalized_url, min_size=1, max_size=5)
+                await self.ensure_schema()
+                return
+            except Exception as exc:
+                last_error = exc
+                print(f"[bot] DB connect attempt {attempt}/5 failed: {exc}")
+                await asyncio.sleep(min(attempt * 2, 10))
+        raise RuntimeError(f"Database connection failed after retries: {last_error}")
+
+    async def ensure_schema(self):
+        async with self.db_pool.acquire() as conn:
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS users (
+                    id BIGSERIAL PRIMARY KEY,
+                    discord_id BIGINT UNIQUE NOT NULL,
+                    discord_username TEXT,
+                    joined_at TIMESTAMP,
+                    avatar_url TEXT,
+                    last_seen TIMESTAMP,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                )
+                """
+            )
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS discord_presence (
+                    discord_id BIGINT PRIMARY KEY,
+                    status TEXT,
+                    activity_name TEXT,
+                    activity_type TEXT,
+                    roles JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    activity_started_at TIMESTAMP,
+                    game_icon_url TEXT,
+                    custom_status TEXT,
+                    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+                )
+                """
+            )
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS activity_log (
+                    id BIGSERIAL PRIMARY KEY,
+                    discord_id BIGINT NOT NULL,
+                    username TEXT,
+                    type TEXT,
+                    channel TEXT,
+                    content TEXT,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                )
+                """
+            )
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS voice_sessions (
+                    id BIGSERIAL PRIMARY KEY,
+                    discord_id BIGINT NOT NULL,
+                    channel TEXT,
+                    joined_at TIMESTAMP NOT NULL,
+                    left_at TIMESTAMP
+                )
+                """
+            )
 
     async def upsert_presence(self, member: discord.Member):
         """Сохранить статус/активность участника (для сайта)."""
@@ -261,12 +338,18 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    await stats.log_message(message)
+    try:
+        await stats.log_message(message)
+    except Exception as exc:
+        print(f"[bot] log_message failed: {exc}")
     await bot.process_commands(message)
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    await stats.log_voice_state(member, before, after)
+    try:
+        await stats.log_voice_state(member, before, after)
+    except Exception as exc:
+        print(f"[bot] log_voice_state failed: {exc}")
 
 
 @bot.event
@@ -375,5 +458,8 @@ async def leaderboard(ctx, limit: int = 10):
         embed.add_field(name=f"{i}. {row['username']}", value=f"{row['msg_count']} сообщений", inline=False)
     
     await ctx.send(embed=embed)
+
+if not TOKEN:
+    raise RuntimeError('DISCORD_BOT_TOKEN is required')
 
 bot.run(TOKEN)

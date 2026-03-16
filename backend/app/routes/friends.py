@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from ..auth import User, get_current_user, get_optional_current_user
 from ..database import get_db
+from ..services.notifications_service import create_notification, ensure_notifications_schema
 from ..services.user_identity import resolve_user_by_identifier
 
 router = APIRouter(prefix="/friends", tags=["friends"])
@@ -78,6 +79,7 @@ async def send_request(
     current_user: User = Depends(get_current_user),
     db: asyncpg.Connection = Depends(get_db),
 ):
+    await ensure_notifications_schema(db)
     target_user_id = await _resolve_target_user_id(db, target_identifier)
     if not target_user_id:
         raise HTTPException(status_code=404, detail="User not found")
@@ -116,6 +118,20 @@ async def send_request(
         current_user.id,
         target_user_id,
     )
+    sender_identifier = await db.fetchval(
+        "SELECT COALESCE(user_tag, discord_id::text, id::text) FROM users WHERE id = $1",
+        current_user.id,
+    )
+    await create_notification(
+        db,
+        recipient_user_id=target_user_id,
+        actor_user_id=current_user.id,
+        kind="friend_request",
+        title="Новая заявка в друзья",
+        body=f"{current_user.username} хочет добавить тебя в друзья.",
+        link=f"/profile/{sender_identifier}" if sender_identifier else "/profile",
+        metadata={"sender_user_id": current_user.id},
+    )
     return {"status": "sent"}
 
 
@@ -125,6 +141,7 @@ async def accept_request(
     current_user: User = Depends(get_current_user),
     db: asyncpg.Connection = Depends(get_db),
 ):
+    await ensure_notifications_schema(db)
     row = await db.fetchrow(
         "SELECT id FROM friendships WHERE id = $1 AND friend_id = $2 AND status = 'pending'",
         request_id,
@@ -137,6 +154,22 @@ async def accept_request(
         "UPDATE friendships SET status = 'accepted', accepted_at = NOW() WHERE id = $1",
         request_id,
     )
+    sender_id = await db.fetchval("SELECT user_id FROM friendships WHERE id = $1", request_id)
+    current_identifier = await db.fetchval(
+        "SELECT COALESCE(user_tag, discord_id::text, id::text) FROM users WHERE id = $1",
+        current_user.id,
+    )
+    if sender_id:
+        await create_notification(
+            db,
+            recipient_user_id=int(sender_id),
+            actor_user_id=current_user.id,
+            kind="friend_accept",
+            title="Заявка в друзья принята",
+            body=f"{current_user.username} принял заявку в друзья.",
+            link=f"/profile/{current_identifier}" if current_identifier else "/profile",
+            metadata={"friend_user_id": current_user.id},
+        )
     return {"status": "accepted"}
 
 
@@ -146,6 +179,7 @@ async def accept_request_from_user(
     current_user: User = Depends(get_current_user),
     db: asyncpg.Connection = Depends(get_db),
 ):
+    await ensure_notifications_schema(db)
     target_user_id = await _resolve_target_user_id(db, target_identifier)
     if not target_user_id:
         raise HTTPException(status_code=404, detail="User not found")
@@ -165,6 +199,20 @@ async def accept_request_from_user(
     await db.execute(
         "UPDATE friendships SET status = 'accepted', accepted_at = NOW() WHERE id = $1",
         row["id"],
+    )
+    current_identifier = await db.fetchval(
+        "SELECT COALESCE(user_tag, discord_id::text, id::text) FROM users WHERE id = $1",
+        current_user.id,
+    )
+    await create_notification(
+        db,
+        recipient_user_id=target_user_id,
+        actor_user_id=current_user.id,
+        kind="friend_accept",
+        title="Заявка в друзья принята",
+        body=f"{current_user.username} принял заявку в друзья.",
+        link=f"/profile/{current_identifier}" if current_identifier else "/profile",
+        metadata={"friend_user_id": current_user.id},
     )
     return {"status": "accepted"}
 
