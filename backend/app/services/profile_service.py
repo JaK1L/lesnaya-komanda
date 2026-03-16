@@ -6,7 +6,7 @@ import asyncpg
 from pathlib import Path
 import uuid
 from datetime import datetime
-from PIL import Image
+from PIL import Image, ImageOps
 import io
 import os
 import base64
@@ -16,12 +16,18 @@ from fastapi import UploadFile, HTTPException
 from ..schemas import ProfileResponse, ProfileUpdate
 from .verification_service import ensure_verification_schema, get_user_verification_request
 
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except Exception:
+    register_heif_opener = None
+
 
 class ProfileService:
     """Service for managing user profiles"""
     
     # Supported image formats
-    ALLOWED_FORMATS = {'JPEG', 'PNG', 'GIF', 'WEBP'}
+    ALLOWED_FORMATS = {'JPEG', 'PNG', 'GIF', 'WEBP', 'HEIF', 'HEIC'}
     MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB in bytes
     
     MAX_BANNER_SIZE = 8 * 1024 * 1024  # 8MB
@@ -36,15 +42,9 @@ class ProfileService:
         self.banner_dir.mkdir(parents=True, exist_ok=True)
 
     def _validate_image_content(self, content: bytes, max_size: int, label: str) -> Tuple[bytes, str]:
-        if len(content) > max_size:
-            raise HTTPException(
-                status_code=400,
-                detail=f"{label} file must be under {max_size / 1024 / 1024}MB"
-            )
-
         try:
-            image = Image.open(io.BytesIO(content))
-            image_format = image.format
+            original_image = Image.open(io.BytesIO(content))
+            image_format = (original_image.format or "").upper()
 
             if image_format not in self.ALLOWED_FORMATS:
                 raise HTTPException(
@@ -52,10 +52,52 @@ class ProfileService:
                     detail=f"{label} must be {', '.join(self.ALLOWED_FORMATS)}"
                 )
 
-            ext = image_format.lower()
-            if ext == 'jpeg':
-                ext = 'jpg'
-            return content, ext
+            if image_format == 'GIF':
+                if len(content) > max_size:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"{label} GIF must be under {max_size / 1024 / 1024}MB"
+                    )
+                return content, 'gif'
+
+            image = ImageOps.exif_transpose(original_image)
+
+            max_dimensions = (2048, 2048) if label == "Avatar" else (2560, 1440)
+            if image.width > max_dimensions[0] or image.height > max_dimensions[1]:
+                image.thumbnail(max_dimensions, Image.Resampling.LANCZOS)
+
+            if image.mode not in ('RGB', 'L'):
+                flattened = Image.new('RGB', image.size, (12, 12, 12))
+                flattened.paste(image.convert('RGBA'), mask=image.convert('RGBA').getchannel('A') if 'A' in image.getbands() else None)
+                image = flattened
+            else:
+                image = image.convert('RGB')
+
+            if len(content) <= max_size and image_format in {'JPEG', 'JPG', 'PNG', 'WEBP'}:
+                ext = 'jpg' if image_format in {'JPEG', 'JPG'} else image_format.lower()
+                return content, ext
+
+            working_image = image
+            for _ in range(5):
+                for quality in (88, 82, 76, 70, 64):
+                    buffer = io.BytesIO()
+                    working_image.save(buffer, format='JPEG', quality=quality, optimize=True)
+                    normalized = buffer.getvalue()
+                    if len(normalized) <= max_size:
+                        return normalized, 'jpg'
+
+                new_size = (
+                    max(320, int(working_image.width * 0.82)),
+                    max(320, int(working_image.height * 0.82)),
+                )
+                if new_size == working_image.size:
+                    break
+                working_image = working_image.resize(new_size, Image.Resampling.LANCZOS)
+
+            raise HTTPException(
+                status_code=400,
+                detail=f"{label} file is too large even after optimization. Try a smaller image."
+            )
         except HTTPException:
             raise
         except Exception:
