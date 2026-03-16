@@ -72,6 +72,7 @@ interface DotaStats {
 interface DotaRecentMatch {
   match_id: number
   hero_id: number | null
+  hero_name?: string | null
   kills: number
   deaths: number
   assists: number
@@ -628,7 +629,7 @@ export default function PublicProfilePage() {
                     </div>
                     {gameStats.dota2.match_history?.length ? <><div className={styles.gameSectionTitle}>Последние матчи</div><div className={styles.matchHistoryList}>{gameStats.dota2.match_history.map((match) => <div key={match.match_id} className={styles.matchHistoryItem}>
                       <div className={styles.matchHistoryTop}><strong>{match.won ? 'Победа' : 'Поражение'}</strong><span className={`${styles.matchResult} ${match.won ? styles.matchResultWin : styles.matchResultLoss}`}>{match.kills}/{match.deaths}/{match.assists}</span></div>
-                      <div className={styles.matchHistoryMeta}><span>Матч #{match.match_id}</span><span>Герой: #{match.hero_id ?? '—'}</span><span>{formatDuration(match.duration)}</span>{match.start_time ? <span>{new Date(match.start_time * 1000).toLocaleDateString('ru-RU')}</span> : null}</div>
+                      <div className={styles.matchHistoryMeta}><span>Матч #{match.match_id}</span><span>Герой: {match.hero_name || (match.hero_id ? `#${match.hero_id}` : '—')}</span><span>{formatDuration(match.duration)}</span>{match.start_time ? <span>{new Date(match.start_time * 1000).toLocaleDateString('ru-RU')}</span> : null}</div>
                     </div>)}</div></> : <div className={styles.gameHint}>История матчей Dota 2 пока пуста.</div>}
                   </article>}
                   {gameStats.valorant && <article className={styles.gameCard}>

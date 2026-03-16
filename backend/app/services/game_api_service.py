@@ -24,6 +24,7 @@ class GameAPIService:
     def __init__(self) -> None:
         self.steam_api_key = os.getenv("STEAM_API_KEY")
         self.riot_api_key = os.getenv("RIOT_API_KEY")
+        self._dota_heroes_cache: Dict[int, str] = {}
 
     async def get_steam_profile(self, steam_id: str) -> Optional[Dict[str, Any]]:
         """Return a Steam public profile."""
@@ -80,12 +81,14 @@ class GameAPIService:
 
         kills = self._stat_value(stats_dict, "total_kills")
         deaths = self._stat_value(stats_dict, "total_deaths")
-        wins = self._stat_value(stats_dict, "total_wins")
+        wins = self._stat_value(stats_dict, "total_matches_won")
         matches_played = self._stat_value(
             stats_dict,
             "total_matches_played",
             "total_matches_won",
         )
+        if not wins:
+            wins = min(self._stat_value(stats_dict, "total_wins"), matches_played) if matches_played else 0
         if wins > matches_played:
             matches_played = wins
         headshots = self._stat_value(stats_dict, "total_kills_headshot")
@@ -505,6 +508,33 @@ class GameAPIService:
                 exc_info=True,
             )
             return []
+
+    async def get_dota_hero_name(self, hero_id: Optional[int]) -> Optional[str]:
+        if not hero_id:
+            return None
+
+        if not self._dota_heroes_cache:
+            await self._load_dota_heroes()
+
+        return self._dota_heroes_cache.get(int(hero_id))
+
+    async def _load_dota_heroes(self) -> None:
+        url = "https://api.opendota.com/api/heroes"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status != 200:
+                        logger.warning("OpenDota heroes request failed (%s)", response.status)
+                        return
+
+                    data = await response.json()
+                    self._dota_heroes_cache = {
+                        int(hero.get("id")): str(hero.get("localized_name"))
+                        for hero in data
+                        if hero.get("id") is not None and hero.get("localized_name")
+                    }
+        except Exception as exc:
+            logger.error("Error fetching Dota hero names: %s", exc, exc_info=True)
 
     async def _get_game_user_stats(
         self,

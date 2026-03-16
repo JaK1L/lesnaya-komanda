@@ -56,10 +56,16 @@ async def _build_game_stats_payload(accounts) -> dict:
                         **(stats or {}),
                         "average_kd": average_kd,
                     } if stats or average_kd is not None else stats,
-                    "match_history": [
+                    "match_history": [],
+                }
+
+                for match in recent_matches:
+                    hero_id = match.get("hero_id")
+                    result["dota2"]["match_history"].append(
                         {
                             "match_id": match.get("match_id"),
-                            "hero_id": match.get("hero_id"),
+                            "hero_id": hero_id,
+                            "hero_name": await game_api_service.get_dota_hero_name(hero_id),
                             "kills": match.get("kills", 0),
                             "deaths": match.get("deaths", 0),
                             "assists": match.get("assists", 0),
@@ -67,9 +73,7 @@ async def _build_game_stats_payload(accounts) -> dict:
                             "start_time": match.get("start_time"),
                             "won": bool(match.get("won")),
                         }
-                        for match in recent_matches
-                    ],
-                }
+                    )
 
             elif game == "valorant":
                 riot_id = account_id
