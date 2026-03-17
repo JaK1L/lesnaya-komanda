@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import axios from 'axios'
-import { ChevronLeft, Trophy } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
+import { TournamentBracket } from '../../../../components/tournament'
+import type { BracketSectionData } from '../../../../components/tournament'
 import styles from './page.module.css'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -23,67 +24,101 @@ interface Match {
   status: string
 }
 
-function groupMatches(matches: Match[]) {
-  const sections: Record<string, Record<number, Match[]>> = {}
-  for (const m of matches) {
-    if (!sections[m.section]) sections[m.section] = {}
-    if (!sections[m.section][m.round]) sections[m.section][m.round] = []
-    sections[m.section][m.round].push(m)
-  }
-  // Sort matches within each round by match_index
-  for (const sec of Object.values(sections)) {
-    for (const rnd of Object.values(sec)) {
-      rnd.sort((a, b) => a.match_index - b.match_index)
-    }
-  }
-  return sections
-}
-
-function MatchCard({ match }: { match: Match }) {
-  const p1Won = match.winner_name && match.winner_name === match.player1_name
-  const p2Won = match.winner_name && match.winner_name === match.player2_name
-
-  return (
-    <div className={`${styles.match} ${match.status === 'completed' ? styles.completed : ''} ${match.is_bye ? styles.bye : ''}`}>
-      <div className={`${styles.player} ${p1Won ? styles.winner : ''} ${match.status !== 'bye' && !match.player1_name ? styles.tbd : ''}`}>
-        <span className={styles.playerName}>{match.player1_name || 'TBD'}</span>
-        {match.score1 !== null && <span className={styles.score}>{match.score1}</span>}
-        {p1Won && <Trophy size={12} className={styles.trophy} />}
-      </div>
-      <div className={`${styles.player} ${p2Won ? styles.winner : ''} ${match.status !== 'bye' && !match.player2_name ? styles.tbd : ''}`}>
-        <span className={styles.playerName}>{match.is_bye ? 'BYE' : (match.player2_name || 'TBD')}</span>
-        {match.score2 !== null && <span className={styles.score}>{match.score2}</span>}
-        {p2Won && <Trophy size={12} className={styles.trophy} />}
-      </div>
-    </div>
-  )
-}
-
-function BracketSection({ title, rounds }: { title: string; rounds: Record<number, Match[]> }) {
-  const roundNums = Object.keys(rounds).map(Number).sort((a, b) => a - b)
-  return (
-    <div className={styles.section}>
-      <h3 className={styles.sectionTitle}>{title}</h3>
-      <div className={styles.rounds}>
-        {roundNums.map(r => (
-          <div key={r} className={styles.round}>
-            <div className={styles.roundLabel}>Раунд {r}</div>
-            <div className={styles.matchList}>
-              {rounds[r].filter(m => !m.is_bye).map(m => (
-                <MatchCard key={m.id} match={m} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 const SECTION_LABELS: Record<string, string> = {
   winners: 'Сетка победителей',
   losers: 'Сетка проигравших',
   grand_final: 'Гранд-финал',
+}
+
+function normalizeStatus(match: Match) {
+  if (match.is_bye) return 'bye'
+  if (match.status === 'completed') return 'finished'
+  if (match.status === 'cancelled') return 'cancelled'
+  if (match.status === 'live') return 'live'
+  if (!match.player1_name || !match.player2_name) return 'pending'
+  return 'upcoming'
+}
+
+function getRoundTitle(round: number, totalRounds: number) {
+  if (round === totalRounds) return totalRounds > 1 ? 'Финал' : 'Матч'
+  if (round === totalRounds - 1 && totalRounds > 2) return 'Полуфинал'
+  return `Раунд ${round}`
+}
+
+function buildSections(matches: Match[]): BracketSectionData[] {
+  const grouped = new Map<string, Match[]>()
+
+  matches.forEach(match => {
+    const list = grouped.get(match.section) ?? []
+    list.push(match)
+    grouped.set(match.section, list)
+  })
+
+  return ['winners', 'losers', 'grand_final']
+    .filter(section => grouped.has(section))
+    .map(section => {
+      const scopedMatches = (grouped.get(section) ?? []).sort((left, right) => {
+        if (left.round !== right.round) return left.round - right.round
+        return left.match_index - right.match_index
+      })
+
+      const maxRound = Math.max(...scopedMatches.map(match => match.round))
+
+      return {
+        id: section,
+        title: SECTION_LABELS[section] ?? section,
+        kind: section === 'grand_final' ? 'grand-final' : (section as 'winners' | 'losers'),
+        rounds: Array.from({ length: maxRound }, (_, roundIndex) => {
+          const round = roundIndex + 1
+          const roundMatches = scopedMatches
+            .filter(match => match.round === round)
+            .sort((left, right) => left.match_index - right.match_index)
+            .map(match => ({
+              id: String(match.id),
+              round,
+              position: match.match_index + 1,
+              status: normalizeStatus(match) as 'upcoming' | 'live' | 'finished' | 'cancelled' | 'pending' | 'bye',
+              winnerName: match.winner_name,
+              participants: [
+                {
+                  name: match.player1_name ?? 'TBD',
+                  score: match.score1,
+                  isWinner: !!match.player1_name && match.winner_name === match.player1_name,
+                  isTBD: !match.player1_name,
+                },
+                {
+                  name: match.is_bye && !match.player2_name ? 'BYE' : (match.player2_name ?? 'TBD'),
+                  score: match.score2,
+                  isWinner: !!match.player2_name && match.winner_name === match.player2_name,
+                  isTBD: !match.player2_name && !match.is_bye,
+                  isBye: match.is_bye && !match.player2_name,
+                },
+              ] as [
+                {
+                  name: string
+                  score: number | null
+                  isWinner: boolean
+                  isTBD: boolean
+                },
+                {
+                  name: string
+                  score: number | null
+                  isWinner: boolean
+                  isTBD: boolean
+                  isBye: boolean
+                },
+              ],
+            }))
+
+          return {
+            id: `${section}-round-${round}`,
+            title: getRoundTitle(round, maxRound),
+            round,
+            matches: roundMatches,
+          }
+        }),
+      }
+    })
 }
 
 export default function BracketPage() {
@@ -91,20 +126,37 @@ export default function BracketPage() {
   const router = useRouter()
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
-  const [empty, setEmpty] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    axios.get<Match[]>(`${API_URL}/api/tournaments/${id}/bracket`)
-      .then(r => {
-        if (r.data.length === 0) setEmpty(true)
-        else setMatches(r.data)
+    let active = true
+
+    fetch(`${API_URL}/api/tournaments/${id}/bracket`)
+      .then(async response => {
+        if (!response.ok) throw new Error('Не удалось получить турнирную сетку.')
+        return response.json()
       })
-      .catch(() => setEmpty(true))
-      .finally(() => setLoading(false))
+      .then(data => {
+        if (!active) return
+        setMatches(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {
+        if (!active) return
+        setError('Не удалось загрузить сетку. Попробуйте обновить страницу позже.')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
   }, [id])
 
-  const sections = groupMatches(matches)
-  const sectionOrder = ['winners', 'losers', 'grand_final']
+  const sections = buildSections(matches)
+  const format = sections.some(section => section.id === 'losers' || section.id === 'grand_final')
+    ? 'double-elimination'
+    : 'single-elimination'
 
   return (
     <div className={styles.page}>
@@ -115,24 +167,15 @@ export default function BracketPage() {
         <h1 className={styles.title}>Турнирная сетка</h1>
       </div>
 
-      {loading && <div className={styles.loading}><div className={styles.spinner} /></div>}
-
-      {empty && !loading && (
-        <div className={styles.empty}>
-          <p>Сетка ещё не сформирована.</p>
-          <p>Организаторы запустят её после окончания регистрации.</p>
-        </div>
-      )}
-
-      {!loading && !empty && (
-        <div className={styles.bracket}>
-          {sectionOrder
-            .filter(s => sections[s])
-            .map(s => (
-              <BracketSection key={s} title={SECTION_LABELS[s] || s} rounds={sections[s]} />
-            ))}
-        </div>
-      )}
+      <TournamentBracket
+        title={`Турнир #${id}`}
+        format={format}
+        sections={sections}
+        loading={loading}
+        error={error}
+        emptyMessage="Сетка еще не сформирована. Организаторы опубликуют ее после завершения регистрации."
+        sectionMode="tabs"
+      />
     </div>
   )
 }
