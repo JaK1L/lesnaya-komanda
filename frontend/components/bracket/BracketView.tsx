@@ -217,14 +217,15 @@ export default function BracketView({
   const totalRounds = rounds.length
   const finalMatch = rounds[rounds.length - 1]?.[0]
   const champion = finalMatch?.winner_name ?? null
-  const lastUnit = getUnit(rounds.length)
+  const compactUnit = CARD_H + GAP_R1
+  const lastUnit = isCompactBracket ? compactUnit : getUnit(rounds.length)
   const showChampion = Boolean(champion)
 
   return (
     <div className={[styles.bracket, isCompactBracket ? styles.compactBracket : ''].filter(Boolean).join(' ')}>
       {rounds.map((roundMatches, roundIndex) => {
         const round = roundIndex + 1
-        const unit = getUnit(round)
+        const unit = isCompactBracket ? compactUnit : getUnit(round)
         const isLastRound = roundIndex === rounds.length - 1
         const label = getRoundLabel(round, totalRounds, isLastRound)
 
