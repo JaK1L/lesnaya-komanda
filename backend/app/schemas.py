@@ -226,6 +226,25 @@ class VerificationRequestResponse(BaseModel):
     reviewed_by_name: Optional[str] = None
 
 
+class GameProfileValue(BaseModel):
+    game: str
+    value: str
+    displayValue: str
+    linkedAt: Optional[datetime] = None
+
+
+class GameProfilesResponse(BaseModel):
+    dota2: Optional[GameProfileValue] = None
+    cs2: Optional[GameProfileValue] = None
+    valorant: Optional[GameProfileValue] = None
+
+
+class GameProfilesUpdate(BaseModel):
+    dota2: Optional[str] = None
+    cs2: Optional[str] = None
+    valorant: Optional[str] = None
+
+
 class XPTransaction(BaseModel):
     """Model for XP/Points transaction"""
     id: int

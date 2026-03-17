@@ -118,20 +118,6 @@ async def send_request(
         current_user.id,
         target_user_id,
     )
-    sender_identifier = await db.fetchval(
-        "SELECT COALESCE(user_tag, discord_id::text, id::text) FROM users WHERE id = $1",
-        current_user.id,
-    )
-    await create_notification(
-        db,
-        recipient_user_id=target_user_id,
-        actor_user_id=current_user.id,
-        kind="friend_request",
-        title="Новая заявка в друзья",
-        body=f"{current_user.username} хочет добавить тебя в друзья.",
-        link=f"/profile/{sender_identifier}" if sender_identifier else "/profile",
-        metadata={"sender_user_id": current_user.id},
-    )
     return {"status": "sent"}
 
 

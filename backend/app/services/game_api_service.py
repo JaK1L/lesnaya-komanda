@@ -58,6 +58,26 @@ class GameAPIService:
             ),
         }
 
+    async def resolve_steam_vanity_url(self, vanity: str) -> Optional[str]:
+        """Resolve a Steam vanity URL slug to a SteamID64."""
+        if not self.steam_api_key:
+            logger.warning("Steam API key not configured")
+            return None
+
+        data = await self._steam_api_get(
+            "ISteamUser/ResolveVanityURL/v1/",
+            {"vanityurl": vanity},
+        )
+        if not data:
+            return None
+
+        response = data.get("response", {})
+        if response.get("success") != 1:
+            return None
+
+        steam_id = response.get("steamid")
+        return str(steam_id) if steam_id else None
+
     def _get_steam_status(self, state: int) -> str:
         statuses = {
             0: "Offline",

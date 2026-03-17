@@ -10,10 +10,18 @@ from datetime import datetime, timezone
 
 from ..database import get_db
 from ..schemas import (
+    GameProfilesResponse,
+    GameProfilesUpdate,
+    GameProfileValue,
     ProfileResponse,
     ProfileUpdate,
     VerificationRequestCreate,
     VerificationRequestResponse,
+)
+from ..services.game_profiles_service import (
+    PROFILE_KEY_TO_GAME,
+    normalize_game_profile_input,
+    serialize_game_profile_row,
 )
 from ..services.profile_service import ProfileService
 from ..services.user_identity import resolve_user_by_identifier
@@ -45,6 +53,28 @@ async def _ensure_profile_visible(
         raise HTTPException(status_code=403, detail="This profile is hidden")
 
     return dict(row)
+
+
+async def _load_game_profiles(
+    db: asyncpg.Connection,
+    user_id: int,
+) -> dict[str, Optional[dict]]:
+    rows = await db.fetch(
+        """
+        SELECT game, account_id, account_tag, region, linked_at
+        FROM game_accounts
+        WHERE user_id = $1
+        ORDER BY linked_at DESC
+        """,
+        user_id,
+    )
+    result = {"dota2": None, "cs2": None, "valorant": None}
+    for row in rows:
+        serialized = serialize_game_profile_row(row)
+        if not serialized:
+            continue
+        result[serialized["game"]] = serialized
+    return result
 
 
 @router.get("/profile/public/{profile_identifier}")
@@ -453,6 +483,80 @@ async def get_profile(
             status_code=500,
             detail=f"Error fetching profile: {str(e)}"
         )    
+
+
+@router.get("/profile/game-profiles", response_model=GameProfilesResponse)
+async def get_my_game_profiles(
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    profiles = await _load_game_profiles(db, current_user.id)
+    return GameProfilesResponse(
+        dota2=GameProfileValue(**profiles["dota2"]) if profiles["dota2"] else None,
+        cs2=GameProfileValue(**profiles["cs2"]) if profiles["cs2"] else None,
+        valorant=GameProfileValue(**profiles["valorant"]) if profiles["valorant"] else None,
+    )
+
+
+@router.patch("/profile/game-profiles", response_model=GameProfilesResponse)
+async def update_my_game_profiles(
+    payload: GameProfilesUpdate,
+    current_user: User = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db),
+):
+    for profile_key in ("dota2", "cs2", "valorant"):
+        raw_value = getattr(payload, profile_key)
+        storage_game = PROFILE_KEY_TO_GAME[profile_key]
+
+        if raw_value is None:
+            continue
+
+        normalized = await normalize_game_profile_input(profile_key, raw_value)
+        if normalized is None:
+            await db.execute(
+                "DELETE FROM game_accounts WHERE user_id = $1 AND game = $2",
+                current_user.id,
+                storage_game,
+            )
+            continue
+
+        existing = await db.fetchval(
+            "SELECT id FROM game_accounts WHERE user_id = $1 AND game = $2",
+            current_user.id,
+            storage_game,
+        )
+        if existing:
+            await db.execute(
+                """
+                UPDATE game_accounts
+                SET account_id = $1, account_tag = $2, region = $3, linked_at = NOW()
+                WHERE user_id = $4 AND game = $5
+                """,
+                normalized.account_id,
+                normalized.account_tag,
+                normalized.region,
+                current_user.id,
+                storage_game,
+            )
+        else:
+            await db.execute(
+                """
+                INSERT INTO game_accounts (user_id, game, account_id, account_tag, region)
+                VALUES ($1, $2, $3, $4, $5)
+                """,
+                current_user.id,
+                storage_game,
+                normalized.account_id,
+                normalized.account_tag,
+                normalized.region,
+            )
+
+    profiles = await _load_game_profiles(db, current_user.id)
+    return GameProfilesResponse(
+        dota2=GameProfileValue(**profiles["dota2"]) if profiles["dota2"] else None,
+        cs2=GameProfileValue(**profiles["cs2"]) if profiles["cs2"] else None,
+        valorant=GameProfileValue(**profiles["valorant"]) if profiles["valorant"] else None,
+    )
 
 
 @router.get("/profile/verification-request", response_model=Optional[VerificationRequestResponse])

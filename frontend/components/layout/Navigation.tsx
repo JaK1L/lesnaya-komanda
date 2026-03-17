@@ -27,6 +27,10 @@ interface NotificationItem {
   created_at: string
   actor_name: string | null
   actor_avatar_url: string | null
+  actor_user_id?: number | null
+  friend_request_id?: number | null
+  actions_available?: boolean
+  metadata?: Record<string, unknown>
 }
 
 const NAV_ITEMS = [
@@ -46,6 +50,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [friendRequestActionId, setFriendRequestActionId] = useState<number | null>(null)
   const navRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const router = useRouter()
@@ -78,12 +83,19 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
       await axios.post(`${API_URL}/api/notifications/read-all`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })))
-      setUnreadCount(0)
+      await loadNotifications()
     } catch {}
   }
 
   const handleNotificationClick = async (item: NotificationItem) => {
+    if (item.kind === 'friend_request' && item.friend_request_id) {
+      setNotificationsOpen(false)
+      if (item.link) {
+        router.push(item.link)
+      }
+      return
+    }
+
     const token = localStorage.getItem('lesnaya_token')
     if (token && !item.is_read) {
       try {
@@ -98,6 +110,25 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
     setNotificationsOpen(false)
     if (item.link) {
       router.push(item.link)
+    }
+  }
+
+  const handleFriendRequestAction = async (item: NotificationItem, action: 'accept' | 'decline') => {
+    const token = localStorage.getItem('lesnaya_token')
+    if (!token || !item.friend_request_id) return
+
+    setFriendRequestActionId(item.friend_request_id)
+    try {
+      await axios.post(
+        `${API_URL}/api/friends/${action}/${item.friend_request_id}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      await loadNotifications()
+    } catch {
+      // ignore, dropdown remains open with the same notification
+    } finally {
+      setFriendRequestActionId(null)
     }
   }
 
@@ -128,6 +159,58 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   }
 
   const closeMobileMenu = () => setMobileMenuOpen(false)
+
+  const renderNotificationItem = (item: NotificationItem, options?: { closeMenu?: boolean }) => (
+    <div
+      key={`${item.kind}-${item.id}`}
+      role="button"
+      tabIndex={0}
+      className={`${styles.notificationItem} ${!item.is_read ? styles.notificationItemUnread : ''}`}
+      onClick={() => {
+        if (options?.closeMenu) closeMobileMenu()
+        void handleNotificationClick(item)
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          if (options?.closeMenu) closeMobileMenu()
+          void handleNotificationClick(item)
+        }
+      }}
+    >
+      <div className={styles.notificationAvatar}>
+        {item.actor_avatar_url ? (
+          <img src={getImageUrl(item.actor_avatar_url) || ''} alt={item.actor_name || item.title} />
+        ) : (
+          <Bell size={14} />
+        )}
+      </div>
+      <div className={styles.notificationContent}>
+        <strong>{item.title}</strong>
+        {item.body && <span>{item.body}</span>}
+        {item.actions_available && item.friend_request_id && (
+          <div className={styles.notificationActions} onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className={styles.notificationAccept}
+              onClick={() => void handleFriendRequestAction(item, 'accept')}
+              disabled={friendRequestActionId === item.friend_request_id}
+            >
+              Принять
+            </button>
+            <button
+              type="button"
+              className={styles.notificationDecline}
+              onClick={() => void handleFriendRequestAction(item, 'decline')}
+              disabled={friendRequestActionId === item.friend_request_id}
+            >
+              Отклонить
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 
   const handleStreamsClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -230,26 +313,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
                           {notifications.length === 0 ? (
                             <div className={styles.notificationEmpty}>Пока ничего нет.</div>
                           ) : (
-                            notifications.map((item) => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                className={`${styles.notificationItem} ${!item.is_read ? styles.notificationItemUnread : ''}`}
-                                onClick={() => void handleNotificationClick(item)}
-                              >
-                                <div className={styles.notificationAvatar}>
-                                  {item.actor_avatar_url ? (
-                                    <img src={getImageUrl(item.actor_avatar_url) || ''} alt={item.actor_name || item.title} />
-                                  ) : (
-                                    <Bell size={14} />
-                                  )}
-                                </div>
-                                <div className={styles.notificationContent}>
-                                  <strong>{item.title}</strong>
-                                  {item.body && <span>{item.body}</span>}
-                                </div>
-                              </button>
-                            ))
+                            notifications.map((item) => renderNotificationItem(item))
                           )}
                         </div>
                       </div>
@@ -351,29 +415,7 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
             </div>
             {isAuthenticated && notifications.length > 0 && (
               <div className={styles.mobileNotificationList}>
-                {notifications.slice(0, 4).map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`${styles.notificationItem} ${!item.is_read ? styles.notificationItemUnread : ''}`}
-                    onClick={() => {
-                      closeMobileMenu()
-                      void handleNotificationClick(item)
-                    }}
-                  >
-                    <div className={styles.notificationAvatar}>
-                      {item.actor_avatar_url ? (
-                        <img src={getImageUrl(item.actor_avatar_url) || ''} alt={item.actor_name || item.title} />
-                      ) : (
-                        <Bell size={14} />
-                      )}
-                    </div>
-                    <div className={styles.notificationContent}>
-                      <strong>{item.title}</strong>
-                      {item.body && <span>{item.body}</span>}
-                    </div>
-                  </button>
-                ))}
+                {notifications.slice(0, 4).map((item) => renderNotificationItem(item, { closeMenu: true }))}
               </div>
             )}
           </div>

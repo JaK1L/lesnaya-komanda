@@ -11,6 +11,12 @@ from ..database import get_db
 from ..auth import get_current_user
 from ..models import User
 from ..services.game_api_service import game_api_service
+from ..services.game_profiles_service import (
+    PROFILE_KEY_TO_GAME,
+    normalize_game_profile_input,
+    serialize_game_profile_row,
+    validate_profile_key,
+)
 from ..services.user_identity import resolve_user_by_identifier
 
 logger = logging.getLogger(__name__)
@@ -127,7 +133,7 @@ async def test_game_stats_api():
 
 # Модели
 class GameAccountLink(BaseModel):
-    game: str = Field(..., pattern="^(steam|dota2|valorant)$")
+    game: str = Field(..., pattern="^(steam|cs2|dota2|valorant)$")
     account_id: str
     account_tag: Optional[str] = None  # Для Valorant
     region: Optional[str] = "eu"  # Для Valorant
@@ -146,37 +152,53 @@ async def link_game_account(
     db: asyncpg.Connection = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Привязать игровой аккаунт к профилю"""
-    
-    # Проверяем не привязан ли уже
+    """Привязать игровой аккаунт к профилю."""
+    normalized = await normalize_game_profile_input(
+        payload.game,
+        payload.account_id if payload.game != "valorant" else f"{payload.account_id}#{payload.account_tag or ''}",
+    )
+    if normalized is None:
+        raise HTTPException(status_code=400, detail="Account value is required")
+
     existing = await db.fetchrow(
         "SELECT id FROM game_accounts WHERE user_id = $1 AND game = $2",
-        current_user.id, payload.game
+        current_user.id, normalized.storage_game
     )
-    
+
     if existing:
-        # Обновляем существующий
         await db.execute(
             """
             UPDATE game_accounts
             SET account_id = $1, account_tag = $2, region = $3
             WHERE user_id = $4 AND game = $5
             """,
-            payload.account_id, payload.account_tag, payload.region,
-            current_user.id, payload.game
+            normalized.account_id,
+            normalized.account_tag,
+            normalized.region,
+            current_user.id,
+            normalized.storage_game,
         )
     else:
-        # Создаем новый
         await db.execute(
             """
             INSERT INTO game_accounts (user_id, game, account_id, account_tag, region)
             VALUES ($1, $2, $3, $4, $5)
             """,
-            current_user.id, payload.game, payload.account_id,
-            payload.account_tag, payload.region
+            current_user.id,
+            normalized.storage_game,
+            normalized.account_id,
+            normalized.account_tag,
+            normalized.region,
         )
-    
-    return {"message": "Аккаунт привязан"}
+
+    return {
+        "message": "Аккаунт привязан",
+        "profile": {
+            "game": normalized.profile_key,
+            "value": normalized.account_id,
+            "displayValue": normalized.display_value,
+        },
+    }
 
 
 @router.get("/public/{profile_identifier}/accounts")
@@ -193,7 +215,7 @@ async def get_public_game_accounts(
         "SELECT game, account_id, account_tag, region, linked_at FROM game_accounts WHERE user_id = $1 ORDER BY linked_at DESC",
         user_id
     )
-    return [dict(row) for row in rows]
+    return [serialize_game_profile_row(row) for row in rows]
 
 
 @router.get("/public/{profile_identifier}/stats")
@@ -233,8 +255,8 @@ async def get_my_game_accounts(
         """,
         current_user.id
     )
-    
-    return [dict(row) for row in rows]
+
+    return [serialize_game_profile_row(row) for row in rows]
 
 
 @router.delete("/{game}")
@@ -244,10 +266,12 @@ async def unlink_game_account(
     current_user: User = Depends(get_current_user),
 ):
     """Отвязать игровой аккаунт"""
-    
+    profile_key = validate_profile_key(game)
+    storage_game = PROFILE_KEY_TO_GAME[profile_key]
+
     result = await db.execute(
         "DELETE FROM game_accounts WHERE user_id = $1 AND game = $2",
-        current_user.id, game
+        current_user.id, storage_game
     )
     
     if result == "DELETE 0":

@@ -37,6 +37,7 @@ const TOKEN_KEY = 'lesnaya_token'
 export default function Home() {
   // State
   const [token, setToken] = useState<string | null>(null)
+  const [authResolved, setAuthResolved] = useState(false)
   const [showGamePreferencesModal, setShowGamePreferencesModal] = useState(false)
   const [streamers, setStreamers] = useState<Streamer[]>([])
 
@@ -60,6 +61,7 @@ export default function Home() {
         checkGamePreferences(storedToken)
       }
     }
+    setAuthResolved(true)
   }, [])
 
   // Загрузка данных при монтировании
@@ -129,7 +131,7 @@ export default function Home() {
       <main>
         {/* Hero секция */}
         <SectionErrorBoundary sectionName="Hero">
-          <HeroSection />
+          <HeroSection isAuthenticated={!!token} authResolved={authResolved} />
         </SectionErrorBoundary>
 
         {/* Секция новостей */}

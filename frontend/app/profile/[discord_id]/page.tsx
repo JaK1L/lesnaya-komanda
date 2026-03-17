@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { Navigation } from '../../../components/layout/Navigation'
 import { Footer } from '../../../components/layout/Footer'
+import { GameProfilesSettings } from '../../../components/profile/GameProfilesSettings'
 import { getImageUrl } from '../../../lib/imageUtils'
 import { uploadImage } from '../../../lib/imageUpload'
 import { getAuthIdentityFromToken } from '../../../lib/profileIdentifier'
@@ -40,7 +41,7 @@ type Tab = 'stats' | 'accounts' | 'games' | 'media' | 'tournaments' | 'activity'
 type FriendStatus = 'none' | 'pending' | 'incoming' | 'friends'
 type UploadKind = 'avatar' | 'banner' | null
 interface Role { id: number; name: string; color: string }
-interface GameAccount { game: string; account_id: string; account_tag: string | null }
+interface GameAccount { game: string; value: string; displayValue: string; linkedAt?: string | null }
 interface SteamProfile { username: string | null; avatar_url: string | null; profile_url: string | null; status: string | null }
 interface CS2Stats {
   kills: number
@@ -190,9 +191,9 @@ interface PublicProfile {
 }
 const formatDate = (value?: string | null, mode: 'date' | 'datetime' = 'date') =>
   value ? new Date(value)[mode === 'date' ? 'toLocaleDateString' : 'toLocaleString']('ru-RU') : null
-const gameLabel = (game: string) => (game === 'steam' ? 'Steam' : game === 'dota2' ? 'Dota 2' : game === 'valorant' ? 'Valorant' : game)
+const gameLabel = (game: string) => (game === 'steam' || game === 'cs2' ? 'CS2' : game === 'dota2' ? 'Dota 2' : game === 'valorant' ? 'Valorant' : game)
 const gameAccountIcon = (game: string) => {
-  if (game === 'steam') return <Gamepad2 size={18} />
+  if (game === 'steam' || game === 'cs2') return <Gamepad2 size={18} />
   if (game === 'dota2') return <Swords size={18} />
   if (game === 'valorant') return <Sparkles size={18} />
   return <Link2 size={18} />
@@ -537,7 +538,7 @@ export default function PublicProfilePage() {
       setGameStats((prev) => {
         if (!prev) return prev
         const next = { ...prev }
-        delete next[game as keyof PublicGameStats]
+        delete next[(game === 'cs2' ? 'steam' : game) as keyof PublicGameStats]
         return next
       })
       setLoaded((prev) => ({ ...prev, games: false }))
@@ -621,7 +622,88 @@ export default function PublicProfilePage() {
             <div className={styles.tabs} ref={tabsRef}>{tabs.map((item) => <button key={item.id} ref={(node) => { tabRefs.current[item.id] = node }} className={`${styles.tab} ${tab === item.id ? styles.tabActive : ''}`} onClick={() => setTab(item.id)}>{item.icon}<span>{item.label}</span></button>)}</div>
             <div className={styles.tabPanel}>
               {tab === 'stats' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Р С›РЎРѓР Р…Р С•Р Р†Р Р…РЎвЂ№Р Вµ Р Т‘Р В°Р Р…Р Р…РЎвЂ№Р Вµ</h3></div><div className={styles.infoGrid}><div className={styles.infoRow}><span>Р СњР С‘Р С”Р Р…Р ВµР в„–Р С Р Р…Р В° РЎРѓР В°Р в„–РЎвЂљР Вµ</span><strong>{profile.site_nickname || 'Р СњР Вµ РЎС“Р С”Р В°Р В·Р В°Р Р…'}</strong></div><div className={styles.infoRow}><span>Discord</span><strong>@{profile.discord_username}</strong></div><div className={styles.infoRow}><span>Р В Р В°Р Р…Р С– Р вЂєР ВµРЎРѓР Р…Р С•Р в„– Р С™Р С•Р СР В°Р Р…Р Т‘РЎвЂ№</span><strong>{profile.forest_rank || 'Р СњР Вµ Р Р…Р В°Р В·Р Р…Р В°РЎвЂЎР ВµР Р…'}</strong></div><div className={styles.infoRow}><span>Р С›Р В±РЎвЂ°Р С‘Р в„– Р С•Р С—РЎвЂ№РЎвЂљ</span><strong>{profile.total_xp} XP</strong></div></div></div></div>}
-              {tab === 'accounts' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Р СџРЎР‚Р С‘Р Р†РЎРЏР В·Р В°Р Р…Р Р…РЎвЂ№Р Вµ Р В°Р С”Р С”Р В°РЎС“Р Р…РЎвЂљРЎвЂ№</h3></div>{profile.twitch_username || accounts.length > 0 ? <div className={styles.accountList}>{profile.twitch_username && <a href={`https://twitch.tv/${profile.twitch_username}`} target="_blank" rel="noreferrer" className={styles.accountCard}><span className={`${styles.accountIcon} ${styles.accountIconTwitch}`}><Twitch size={18} /></span><div className={styles.accountMeta}><strong>Twitch</strong><span>{profile.twitch_username}</span></div><span className={styles.accountExternal}><ExternalLink size={14} /></span></a>}{accounts.map((account) => <div key={`${account.game}-${account.account_id}`} className={styles.accountCard}><span className={`${styles.accountIcon} ${styles[`accountIcon${gameLabel(account.game).replace(/[^a-zA-Z0-9]/g, '')}`] || ''}`}>{gameAccountIcon(account.game)}</span><div className={styles.accountMeta}><strong>{gameLabel(account.game)}</strong><span>{account.account_tag ? `${account.account_id}#${account.account_tag}` : account.account_id}</span></div>{isOwnProfile && <button className={styles.accountDetachBtn} onClick={() => unlinkGameAccount(account.game)} disabled={unlinkingGame === account.game}>{unlinkingGame === account.game ? 'Р С›РЎвЂљР Р†РЎРЏР В·Р С”Р В°...' : 'Р С›РЎвЂљР Р†РЎРЏР В·Р В°РЎвЂљРЎРЉ'}</button>}</div>)}</div> : <p className={styles.emptyText}>{isOwnProfile ? 'Р СџР С•Р Т‘Р С”Р В»РЎР‹РЎвЂЎР С‘ Р С‘Р С–РЎР‚Р С•Р Р†РЎвЂ№Р Вµ Р В°Р С”Р С”Р В°РЎС“Р Р…РЎвЂљРЎвЂ№ Р С‘ Twitch Р Р† Р Р…Р В°РЎРѓРЎвЂљРЎР‚Р С•Р в„–Р С”Р В°РЎвЂ¦ Р С—РЎР‚Р С•РЎвЂћР С‘Р В»РЎРЏ.' : 'Р СџРЎР‚Р С‘Р Р†РЎРЏР В·Р В°Р Р…Р Р…РЎвЂ№Р Вµ Р В°Р С”Р С”Р В°РЎС“Р Р…РЎвЂљРЎвЂ№ Р С—Р С•Р С”Р В° Р Р…Р Вµ РЎС“Р С”Р В°Р В·Р В°Р Р…РЎвЂ№.'}</p>}{isOwnProfile && accounts.length > 0 && <div className={styles.accountHint}>Р ВР С–РЎР‚Р С•Р Р†РЎвЂ№Р Вµ Р В°Р С”Р С”Р В°РЎС“Р Р…РЎвЂљРЎвЂ№ Р СР С•Р В¶Р Р…Р С• Р С•РЎвЂљР Р†РЎРЏР В·Р В°РЎвЂљРЎРЉ Р В·Р Т‘Р ВµРЎРѓРЎРЉ, Р В° Twitch РЎР‚Р ВµР Т‘Р В°Р С”РЎвЂљР С‘РЎР‚РЎС“Р ВµРЎвЂљРЎРѓРЎРЏ Р Р† Р СР С•Р Т‘Р В°Р В»Р С”Р Вµ Р С—РЎР‚Р С•РЎвЂћР С‘Р В»РЎРЏ.</div>}</div></div>}
+{tab === 'accounts' && (
+  <div className={styles.sectionStack}>
+    {isOwnProfile && (
+      <div className={styles.panelCard}>
+        <GameProfilesSettings
+          apiUrl={API_URL}
+          token={token}
+          enabled={isOwnProfile}
+          onProfilesChange={(nextProfiles) => {
+            const nextAccounts = (['dota2', 'cs2', 'valorant'] as const)
+              .map((game) => nextProfiles[game])
+              .filter(Boolean) as GameAccount[]
+            setAccounts(nextAccounts)
+          }}
+        />
+      </div>
+    )}
+
+    <div className={styles.panelCard}>
+      <div className={styles.panelHeader}>
+        <h3>Привязанные аккаунты</h3>
+      </div>
+
+      {profile.twitch_username || accounts.length > 0 ? (
+        <div className={styles.accountList}>
+          {profile.twitch_username && (
+            <a
+              href={`https://twitch.tv/${profile.twitch_username}`}
+              target="_blank"
+              rel="noreferrer"
+              className={styles.accountCard}
+            >
+              <span className={`${styles.accountIcon} ${styles.accountIconTwitch}`}>
+                <Twitch size={18} />
+              </span>
+              <div className={styles.accountMeta}>
+                <strong>Twitch</strong>
+                <span>{profile.twitch_username}</span>
+              </div>
+              <span className={styles.accountExternal}>
+                <ExternalLink size={14} />
+              </span>
+            </a>
+          )}
+
+          {accounts.map((account) => (
+            <div key={`${account.game}-${account.value}`} className={styles.accountCard}>
+              <span className={`${styles.accountIcon} ${styles[`accountIcon${gameLabel(account.game).replace(/[^a-zA-Z0-9]/g, '')}`] || ''}`}>
+                {gameAccountIcon(account.game)}
+              </span>
+              <div className={styles.accountMeta}>
+                <strong>{gameLabel(account.game)}</strong>
+                <span>{account.displayValue}</span>
+              </div>
+              {isOwnProfile && (
+                <button
+                  className={styles.accountDetachBtn}
+                  onClick={() => unlinkGameAccount(account.game)}
+                  disabled={unlinkingGame === account.game}
+                >
+                  {unlinkingGame === account.game ? 'Отвязка...' : 'Отвязать'}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className={styles.emptyText}>
+          {isOwnProfile
+            ? 'Пока нет привязанных игровых аккаунтов или Twitch. Добавьте их в блоке выше.'
+            : 'Привязанные аккаунты пока не указаны.'}
+        </p>
+      )}
+
+      {isOwnProfile && accounts.length > 0 && (
+        <div className={styles.accountHint}>
+          Здесь можно быстро проверить текущие игровые привязки и при необходимости отвязать их.
+        </div>
+      )}
+    </div>
+  </div>
+)}
               {tab === 'games' && <div className={styles.sectionStack}>
                 {!gameStats || Object.keys(gameStats).length === 0 ? <p className={styles.emptyText}>Р ВР С–РЎР‚Р С•Р Р†Р В°РЎРЏ РЎРѓРЎвЂљР В°РЎвЂљР С‘РЎРѓРЎвЂљР С‘Р С”Р В° Р С—Р С•Р С”Р В° Р Р…Р ВµР Т‘Р С•РЎРѓРЎвЂљРЎС“Р С—Р Р…Р В°. Р РЋР Р…Р В°РЎвЂЎР В°Р В»Р В° Р Р…РЎС“Р В¶Р Р…Р С• Р С—РЎР‚Р С‘Р Р†РЎРЏР В·Р В°РЎвЂљРЎРЉ Р С‘Р С–РЎР‚Р С•Р Р†РЎвЂ№Р Вµ Р В°Р С”Р С”Р В°РЎС“Р Р…РЎвЂљРЎвЂ№.</p> : <div className={styles.gameCards}>
                   {(gameStats.steam?.cs2_stats || gameStats.steam?.faceit) && <article className={styles.gameCard}>

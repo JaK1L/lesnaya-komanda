@@ -21,7 +21,12 @@ interface Event {
   button_label: string | null
 }
 
-export function HeroSection() {
+interface HeroSectionProps {
+  isAuthenticated?: boolean
+  authResolved?: boolean
+}
+
+export function HeroSection({ isAuthenticated = false, authResolved = true }: HeroSectionProps) {
   const telegramWidgetRef = useRef<HTMLDivElement>(null)
   const [telegramPost, setTelegramPost] = useState<string>('lesnayakomanda/2')
   const [events, setEvents] = useState<Event[]>([])
@@ -95,12 +100,14 @@ export function HeroSection() {
           </p>
 
           <div className={styles.heroActions}>
-            <Link href="/register" className={styles.btnHero}>
-              Вступить в лес
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z" />
-              </svg>
-            </Link>
+            {authResolved && (
+              <Link href={isAuthenticated ? "/profile" : "/register"} className={styles.btnHero}>
+                {isAuthenticated ? 'Мой профиль' : 'Вступить в лес'}
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z" />
+                </svg>
+              </Link>
+            )}
 
             <div className={styles.socialButtons}>
               <a href="https://twitch.tv/lesnayakomanda" target="_blank" rel="noopener noreferrer" className={styles.socialBtn} aria-label="Twitch">
