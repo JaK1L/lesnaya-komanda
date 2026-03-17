@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import { Check, Gamepad2, Link2, Loader2, Swords, Unlink, WifiOff } from 'lucide-react'
 import styles from './GameProfilesSettings.module.css'
@@ -61,18 +61,25 @@ const INITIAL_FIELDS: Record<GameKey, FieldState> = {
   valorant: { value: '', saving: false, status: 'idle', message: null },
 }
 
+const EMPTY_PROFILES: GameProfilesResponse = { dota2: null, cs2: null, valorant: null }
 const STEAM_INPUT_RE = /^(?:\d{17}|https?:\/\/(?:www\.)?steamcommunity\.com\/(?:profiles\/\d{17}|id\/[A-Za-z0-9_-]{2,64})\/?)$/i
 const VALORANT_INPUT_RE = /^[^#\s]{2,24}#[^#\s]{2,10}$/
 
 export function GameProfilesSettings({ apiUrl, token, enabled, onProfilesChange }: Props) {
   const [loading, setLoading] = useState(false)
   const [fields, setFields] = useState<Record<GameKey, FieldState>>(INITIAL_FIELDS)
-  const [profiles, setProfiles] = useState<GameProfilesResponse>({ dota2: null, cs2: null, valorant: null })
+  const [profiles, setProfiles] = useState<GameProfilesResponse>(EMPTY_PROFILES)
+  const onProfilesChangeRef = useRef<Props['onProfilesChange']>(onProfilesChange)
+
+  useEffect(() => {
+    onProfilesChangeRef.current = onProfilesChange
+  }, [onProfilesChange])
 
   useEffect(() => {
     if (!enabled || !token) return
 
     let cancelled = false
+
     const run = async () => {
       setLoading(true)
       try {
@@ -87,17 +94,18 @@ export function GameProfilesSettings({ apiUrl, token, enabled, onProfilesChange 
           cs2: { value: data.cs2?.displayValue ?? '', saving: false, status: 'idle', message: null },
           valorant: { value: data.valorant?.displayValue ?? '', saving: false, status: 'idle', message: null },
         })
-        onProfilesChange?.(data)
+        onProfilesChangeRef.current?.(data)
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
 
     void run()
+
     return () => {
       cancelled = true
     }
-  }, [apiUrl, enabled, onProfilesChange, token])
+  }, [apiUrl, enabled, token])
 
   const validators = useMemo(
     () => ({
@@ -122,6 +130,7 @@ export function GameProfilesSettings({ apiUrl, token, enabled, onProfilesChange 
     if (!token) return
 
     updateField(game, { saving: true, status: 'idle', message: null })
+
     try {
       const payload = { [game]: rawValue.trim() || '' }
       const { data } = await axios.patch<GameProfilesResponse>(`${apiUrl}/api/profile/game-profiles`, payload, {
@@ -138,7 +147,7 @@ export function GameProfilesSettings({ apiUrl, token, enabled, onProfilesChange 
           message: rawValue.trim() ? 'Сохранено' : 'Отвязано',
         },
       }))
-      onProfilesChange?.(data)
+      onProfilesChangeRef.current?.(data)
     } catch (error: any) {
       updateField(game, {
         saving: false,
