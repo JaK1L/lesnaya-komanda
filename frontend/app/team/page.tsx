@@ -76,7 +76,7 @@ export default function TeamPage() {
                 <div className={styles.cardInfo}>
                   <h3 className={styles.cardName}>{member.real_name || member.discord_username}</h3>
                   {member.real_name && <p className={styles.cardNickname}>@{member.discord_username}</p>}
-                  <p className={styles.cardRole}>{member.team_role || member.forest_rank}</p>
+                  <p className={styles.cardRole}>{member.team_role || 'Участник команды'}</p>
                 </div>
               </div>
 

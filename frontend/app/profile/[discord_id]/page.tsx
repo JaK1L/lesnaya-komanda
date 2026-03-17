@@ -21,7 +21,6 @@ import {
   Link2,
   Shield,
   Sparkles,
-  Star,
   Swords,
   Trophy,
   Twitch,
@@ -203,14 +202,6 @@ const verificationStatusLabel = (status?: string | null) =>
   status === 'approved' ? 'Верифицирован' : status === 'pending' ? 'На рассмотрении' : status === 'rejected' ? 'Отклонена' : 'Подать заявку'
 const formatNumber = (value?: number | null) => (typeof value === 'number' ? value.toLocaleString('ru-RU') : '—')
 const formatPercent = (value?: number | null, digits = 1) => (typeof value === 'number' ? `${value.toFixed(digits)}%` : '—')
-const formatDotaRank = (rankTier?: number | null, leaderboardRank?: number | null) => {
-  if (typeof leaderboardRank === 'number') return `Топ #${leaderboardRank}`
-  if (!rankTier) return 'Не определён'
-  const medals = ['Рекрут', 'Страж', 'Рыцарь', 'Герой', 'Легенда', 'Властелин', 'Божество', 'Титан']
-  const medalIndex = Math.max(0, Math.min(medals.length - 1, Math.floor(rankTier / 10) - 1))
-  const stars = rankTier % 10
-  return stars > 0 ? `${medals[medalIndex]} ${stars}` : medals[medalIndex]
-}
 export default function PublicProfilePage() {
   const { discord_id } = useParams<{ discord_id: string }>()
   const router = useRouter()
@@ -271,7 +262,6 @@ export default function PublicProfilePage() {
   const publicIdentifier = profile?.user_tag || profile?.discord_id || profile?.user_id || profileIdentifier
   const sharePath = `/profile/${encodeURIComponent(String(publicIdentifier))}`
   const shareUrl = typeof window === 'undefined' ? sharePath : `${window.location.origin}${sharePath}`
-  const xpPercent = profile ? Math.min(100, (profile.current_xp / Math.max(1, profile.level * 100)) * 100) : 0
   const showcaseItems = showcase.length ? showcase : achievements.slice(0, 3)
   const setSuccess = (text: string) => setToast({ type: 'success', text })
   const setFailure = (text: string) => setToast({ type: 'error', text })
@@ -585,13 +575,11 @@ export default function PublicProfilePage() {
               <div className={styles.headingBlock}>
                 <div className={styles.titleRow}>
                   <h1 className={styles.name}>{displayName}</h1>
-                  <span className={styles.levelBadge}><Star size={12} />Уровень {profile.level}</span>
                   {profile.is_verified && <span className={styles.verifiedBadge}><BadgeCheck size={13} />{profile.verification_badge || 'Верифицирован'}</span>}
                   {profile.is_hidden && isOwnProfile && <span className={styles.hiddenBadge}><Shield size={12} />Профиль скрыт</span>}
                 </div>
                 <div className={styles.handleRow}>
                   <span>@{profile.discord_username}</span>
-                  {profile.forest_rank && <span className={styles.metaPill}>{profile.forest_rank}</span>}
                   <span className={styles.metaPill}>ID: {String(publicIdentifier)}</span>
                   {profile.joined_at && <span className={styles.metaPill}><Calendar size={12} />На сайте с {new Date(profile.joined_at).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long' })}</span>}
                 </div>
@@ -612,17 +600,17 @@ export default function PublicProfilePage() {
             </div>
           </div>
           <div className={styles.overviewGrid}>
-            <div className={styles.overviewCard}><div className={styles.overviewLabel}>Рейтинг</div><div className={styles.overviewValue}>{profile.rating}</div></div>
             <div className={styles.overviewCard}><div className={styles.overviewLabel}>Турниров сыграно</div><div className={styles.overviewValue}>{profile.tourney_stats?.played ?? 0}</div></div>
             <div className={styles.overviewCard}><div className={styles.overviewLabel}>Побед</div><div className={styles.overviewValue}>{profile.tourney_stats?.wins ?? 0}</div></div>
-            <div className={styles.overviewCard}><div className={styles.overviewLabel}>Прогресс уровня</div><div className={styles.progressMeta}><span>{profile.current_xp} / {profile.level * 100} XP</span><span>{Math.round(xpPercent)}%</span></div><div className={styles.progressBar}><div className={styles.progressFill} style={{ width: `${xpPercent}%` }} /></div></div>
+            <div className={styles.overviewCard}><div className={styles.overviewLabel}>Общий опыт</div><div className={styles.overviewValue}>{profile.total_xp} XP</div></div>
+            <div className={styles.overviewCard}><div className={styles.overviewLabel}>Привязок</div><div className={styles.overviewValue}>{accounts.length + (profile.twitch_username ? 1 : 0)}</div></div>
           </div>
         </section>
         <section className={styles.contentGrid}>
           <div className={styles.mainColumn}>
             <div className={styles.tabs} ref={tabsRef}>{tabs.map((item) => <button key={item.id} ref={(node) => { tabRefs.current[item.id] = node }} className={`${styles.tab} ${tab === item.id ? styles.tabActive : ''}`} onClick={() => setTab(item.id)}>{item.icon}<span>{item.label}</span></button>)}</div>
             <div className={styles.tabPanel}>
-              {tab === 'stats' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Основные данные</h3></div><div className={styles.infoGrid}><div className={styles.infoRow}><span>Никнейм на сайте</span><strong>{profile.site_nickname || 'Не указан'}</strong></div><div className={styles.infoRow}><span>Discord</span><strong>@{profile.discord_username}</strong></div><div className={styles.infoRow}><span>Ранг Лесной Команды</span><strong>{profile.forest_rank || 'Не назначен'}</strong></div><div className={styles.infoRow}><span>Общий опыт</span><strong>{profile.total_xp} XP</strong></div></div></div></div>}
+              {tab === 'stats' && <div className={styles.sectionStack}><div className={styles.panelCard}><div className={styles.panelHeader}><h3>Основные данные</h3></div><div className={styles.infoGrid}><div className={styles.infoRow}><span>Никнейм на сайте</span><strong>{profile.site_nickname || 'Не указан'}</strong></div><div className={styles.infoRow}><span>Discord</span><strong>@{profile.discord_username}</strong></div><div className={styles.infoRow}><span>Общий опыт</span><strong>{profile.total_xp} XP</strong></div><div className={styles.infoRow}><span>Статус профиля</span><strong>{profile.is_hidden ? 'Скрыт' : 'Публичный'}</strong></div></div></div></div>}
               {tab === 'accounts' && (
                 <div className={styles.sectionStack}>
                   {isOwnProfile && (
@@ -726,8 +714,6 @@ export default function PublicProfilePage() {
                     </div>
                     {cs2View === 'faceit' && gameStats.steam.faceit ? <>
                     <div className={styles.gameMetricsGrid}>
-                      <div className={styles.gameMetric}><span>Уровень</span><strong>{formatNumber(gameStats.steam.faceit.profile?.skill_level)}</strong></div>
-                      <div className={styles.gameMetric}><span>ELO</span><strong>{formatNumber(gameStats.steam.faceit.profile?.elo)}</strong></div>
                       <div className={styles.gameMetric}><span>K/D</span><strong>{gameStats.steam.faceit.stats?.kd_ratio?.toFixed(2) || '—'}</strong></div>
                       <div className={styles.gameMetric}><span>Винрейт</span><strong>{formatPercent(gameStats.steam.faceit.stats?.win_rate)}</strong></div>
                       <div className={styles.gameMetric}><span>Матчей</span><strong>{formatNumber(gameStats.steam.faceit.stats?.matches)}</strong></div>
@@ -759,13 +745,11 @@ export default function PublicProfilePage() {
                       <div>
                         <div className={styles.gameCardEyebrow}>Dota 2</div>
                         <h3 className={styles.gameCardTitle}>{gameStats.dota2.profile?.username || 'Dota 2 аккаунт'}</h3>
-                        <div className={styles.gameCardSubtext}>Матчи: Steam API · Ранг и MMR: OpenDota</div>
+                        <div className={styles.gameCardSubtext}>Источник: Steam API + OpenDota</div>
                       </div>
-                      <div className={styles.gameCardBadge}>{gameStats.dota2.profile?.mmr_estimate ? `MMR ~${gameStats.dota2.profile.mmr_estimate}` : 'MMR скрыт'}</div>
                     </div>
                     <div className={styles.gameMetricsGrid}>
                       <div className={styles.gameMetric}><span>K/D</span><strong>{gameStats.dota2.stats?.average_kd?.toFixed(2) || '0.00'}</strong></div>
-                      <div className={styles.gameMetric}><span>Рейтинг</span><strong>{formatDotaRank(gameStats.dota2.profile?.rank_tier, gameStats.dota2.profile?.leaderboard_rank)}</strong></div>
                       <div className={styles.gameMetric}><span>Матчей</span><strong>{formatNumber(gameStats.dota2.stats?.total_matches)}</strong></div>
                       <div className={styles.gameMetric}><span>Побед / поражений</span><strong>{formatNumber(gameStats.dota2.stats?.wins)} / {formatNumber(gameStats.dota2.stats?.losses)}</strong></div>
                       <div className={styles.gameMetric}><span>Винрейт</span><strong>{formatPercent(gameStats.dota2.stats?.win_rate)}</strong></div>
@@ -782,15 +766,15 @@ export default function PublicProfilePage() {
                         <h3 className={styles.gameCardTitle}>{gameStats.valorant.profile?.username || 'Valorant аккаунт'}</h3>
                         <div className={styles.gameCardSubtext}>Источник: Henrik / Riot data</div>
                       </div>
-                      <div className={styles.gameCardBadge}>{gameStats.valorant.mmr?.current_tier || 'Unranked'}</div>
+                      <div className={styles.gameCardBadge}>{gameStats.valorant.profile?.region || 'Riot'}</div>
                     </div>
                     <div className={styles.gameMetricsGrid}>
-                      <div className={styles.gameMetric}><span>K/D</span><strong>Нет данных</strong></div>
-                      <div className={styles.gameMetric}><span>Рейтинг</span><strong>{gameStats.valorant.mmr?.elo || gameStats.valorant.mmr?.ranking_in_tier || 'Нет'}</strong></div>
-                      <div className={styles.gameMetric}><span>Матчей</span><strong>{gameStats.valorant.mmr?.games_needed_for_rating ? `Калибровка: ${gameStats.valorant.mmr.games_needed_for_rating}` : 'Нет данных'}</strong></div>
-                      <div className={styles.gameMetric}><span>Побед / поражений</span><strong>Нет данных</strong></div>
+                      <div className={styles.gameMetric}><span>Аккаунт</span><strong>{gameStats.valorant.profile?.username || 'Не указан'}</strong></div>
+                      <div className={styles.gameMetric}><span>Регион</span><strong>{gameStats.valorant.profile?.region || 'Нет данных'}</strong></div>
+                      <div className={styles.gameMetric}><span>Калибровка</span><strong>{gameStats.valorant.mmr?.games_needed_for_rating ? `${gameStats.valorant.mmr.games_needed_for_rating} матч.` : 'Завершена'}</strong></div>
+                      <div className={styles.gameMetric}><span>История матчей</span><strong>Недоступна</strong></div>
                     </div>
-                    <div className={styles.gameHint}>Текущий источник Valorant отдает рейтинг и MMR, но не возвращает публичную историю матчей и W/L.</div>
+                    <div className={styles.gameHint}>Публичный источник Valorant сейчас не отдает полноценную матчевую статистику, поэтому в профиле остаются только базовые данные аккаунта.</div>
                   </article>}
                 </div>}
               </div>}
@@ -802,7 +786,7 @@ export default function PublicProfilePage() {
           </div>
           <aside className={styles.sidebar}>
             <div className={styles.sideCard}><div className={styles.sideCardHeader}><span className={styles.sideCardTitle}><Award size={14} />Витрина достижений</span>{isOwnProfile && <button className={styles.sideActionBtn} onClick={() => { void loadOnce('achievements', () => axios.get<Achievement[]>(`${API_URL}/api/achievements/user/${encodedProfileIdentifier}?completed_only=true`).then((r) => r.data), setAchievements); setAchievementsOpen(true) }} title="Редактировать витрину достижений" aria-label="Редактировать витрину достижений"><Edit2 size={14} /></button>}</div>{showcaseItems.length === 0 ? <p className={styles.sideEmpty}>Выбранных достижений пока нет.</p> : <div className={styles.showcaseGrid}>{showcaseItems.map((item) => <div key={item.id} className={styles.showcaseBadge} title={item.name}><span className={styles.showcaseIcon}>{item.icon}</span><span className={styles.showcaseName}>{item.name}</span></div>)}</div>}</div>
-            <div className={styles.sideCard}><div className={styles.sideCardHeader}><span className={styles.sideCardTitle}><Users size={14} />Друзья</span></div>{friends.length === 0 ? <p className={styles.sideEmpty}>Пока нет добавленных друзей.</p> : <div className={styles.friendList}>{friends.slice(0, 6).map((friend) => { const friendIdentifier = friend.profile_identifier || friend.discord_id || friend.id; return <Link key={friend.id} href={`/profile/${encodeURIComponent(String(friendIdentifier))}`} className={styles.friendLink}>{friend.avatar_url ? <img src={getImageUrl(friend.avatar_url) || ''} alt={friend.username} className={styles.friendAvatar} /> : <div className={styles.friendAvatarPlaceholder}>{friend.username.charAt(0).toUpperCase()}</div>}<div className={styles.friendMeta}><strong>{friend.username}</strong><span>{friend.forest_rank || 'Участник'}</span></div></Link> })}</div>}</div>
+            <div className={styles.sideCard}><div className={styles.sideCardHeader}><span className={styles.sideCardTitle}><Users size={14} />Друзья</span></div>{friends.length === 0 ? <p className={styles.sideEmpty}>Пока нет добавленных друзей.</p> : <div className={styles.friendList}>{friends.slice(0, 6).map((friend) => { const friendIdentifier = friend.profile_identifier || friend.discord_id || friend.id; return <Link key={friend.id} href={`/profile/${encodeURIComponent(String(friendIdentifier))}`} className={styles.friendLink}>{friend.avatar_url ? <img src={getImageUrl(friend.avatar_url) || ''} alt={friend.username} className={styles.friendAvatar} /> : <div className={styles.friendAvatarPlaceholder}>{friend.username.charAt(0).toUpperCase()}</div>}<div className={styles.friendMeta}><strong>{friend.username}</strong></div></Link> })}</div>}</div>
           </aside>
         </section>
       </main>

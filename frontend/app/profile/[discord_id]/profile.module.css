@@ -204,7 +204,6 @@
   color: #f7fbff;
 }
 
-.levelBadge,
 .hiddenBadge,
 .metaPill {
   display: inline-flex;
@@ -213,12 +212,6 @@
   padding: 0.45rem 0.75rem;
   border-radius: 999px;
   font-size: 0.82rem;
-}
-
-.levelBadge {
-  background: rgba(145, 71, 255, 0.14);
-  color: #dbc2ff;
-  border: 1px solid rgba(145, 71, 255, 0.24);
 }
 
 .verifiedBadge {
@@ -1125,19 +1118,12 @@
   min-width: 0;
 }
 
-.friendMeta strong,
-.friendMeta span {
+.friendMeta strong {
   display: block;
 }
 
 .friendMeta strong {
   color: #fff;
-}
-
-.friendMeta span {
-  margin-top: 0.2rem;
-  color: rgba(240, 247, 255, 0.6);
-  font-size: 0.85rem;
 }
 
 .sideEmpty,
