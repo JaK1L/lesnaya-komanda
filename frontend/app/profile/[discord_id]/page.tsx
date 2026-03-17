@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import axios from 'axios'
@@ -150,7 +151,7 @@ interface TournamentRegistration {
   is_in_progress?: boolean
   result_label?: string | null
 }
-interface FriendItem { id: number; username: string; avatar_url: string | null; forest_rank: string }
+interface FriendItem { id: number; discord_id?: number | null; profile_identifier?: string | null; username: string; avatar_url: string | null; forest_rank: string }
 interface VerificationRequest {
   id: number
   user_id: number
@@ -801,7 +802,7 @@ export default function PublicProfilePage() {
           </div>
           <aside className={styles.sidebar}>
             <div className={styles.sideCard}><div className={styles.sideCardHeader}><span className={styles.sideCardTitle}><Award size={14} />Витрина достижений</span>{isOwnProfile && <button className={styles.sideActionBtn} onClick={() => { void loadOnce('achievements', () => axios.get<Achievement[]>(`${API_URL}/api/achievements/user/${encodedProfileIdentifier}?completed_only=true`).then((r) => r.data), setAchievements); setAchievementsOpen(true) }} title="Редактировать витрину достижений" aria-label="Редактировать витрину достижений"><Edit2 size={14} /></button>}</div>{showcaseItems.length === 0 ? <p className={styles.sideEmpty}>Выбранных достижений пока нет.</p> : <div className={styles.showcaseGrid}>{showcaseItems.map((item) => <div key={item.id} className={styles.showcaseBadge} title={item.name}><span className={styles.showcaseIcon}>{item.icon}</span><span className={styles.showcaseName}>{item.name}</span></div>)}</div>}</div>
-            <div className={styles.sideCard}><div className={styles.sideCardHeader}><span className={styles.sideCardTitle}><Users size={14} />Друзья</span></div>{friends.length === 0 ? <p className={styles.sideEmpty}>Пока нет добавленных друзей.</p> : <div className={styles.friendList}>{friends.slice(0, 6).map((friend) => <div key={friend.id} className={styles.friendItem}>{friend.avatar_url ? <img src={getImageUrl(friend.avatar_url) || ''} alt={friend.username} className={styles.friendAvatar} /> : <div className={styles.friendAvatarPlaceholder}>{friend.username.charAt(0).toUpperCase()}</div>}<div className={styles.friendMeta}><strong>{friend.username}</strong><span>{friend.forest_rank || 'Участник'}</span></div></div>)}</div>}</div>
+            <div className={styles.sideCard}><div className={styles.sideCardHeader}><span className={styles.sideCardTitle}><Users size={14} />Друзья</span></div>{friends.length === 0 ? <p className={styles.sideEmpty}>Пока нет добавленных друзей.</p> : <div className={styles.friendList}>{friends.slice(0, 6).map((friend) => { const friendIdentifier = friend.profile_identifier || friend.discord_id || friend.id; return <Link key={friend.id} href={`/profile/${encodeURIComponent(String(friendIdentifier))}`} className={styles.friendLink}>{friend.avatar_url ? <img src={getImageUrl(friend.avatar_url) || ''} alt={friend.username} className={styles.friendAvatar} /> : <div className={styles.friendAvatarPlaceholder}>{friend.username.charAt(0).toUpperCase()}</div>}<div className={styles.friendMeta}><strong>{friend.username}</strong><span>{friend.forest_rank || 'Участник'}</span></div></Link> })}</div>}</div>
           </aside>
         </section>
       </main>

@@ -19,6 +19,7 @@ router = APIRouter(prefix="/friends", tags=["friends"])
 class FriendOut(BaseModel):
     id: int
     discord_id: Optional[int]
+    profile_identifier: Optional[str] = None
     username: str
     avatar_url: Optional[str]
     forest_rank: str
@@ -252,6 +253,7 @@ async def list_friends(
         SELECT
             u.id,
             u.discord_id,
+            COALESCE(u.user_tag, u.discord_id::text, u.id::text) AS profile_identifier,
             COALESCE(u.site_nickname, u.discord_username) AS username,
             u.avatar_url,
             u.forest_rank,
@@ -285,6 +287,7 @@ async def list_public_friends(
         SELECT
             u.id,
             u.discord_id,
+            COALESCE(u.user_tag, u.discord_id::text, u.id::text) AS profile_identifier,
             COALESCE(u.site_nickname, u.discord_username) AS username,
             u.avatar_url,
             u.forest_rank,

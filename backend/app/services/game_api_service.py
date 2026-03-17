@@ -130,14 +130,15 @@ class GameAPIService:
     async def get_dota2_profile(self, account_id: str) -> Optional[Dict[str, Any]]:
         """Resolve Dota profile using Steam identity plus OpenDota rank/MMR."""
         steam_id = self._dota_account_to_steam_id(account_id)
+        dota_account_id = self._dota_account_to_account32(account_id)
         if not steam_id:
             return None
 
         steam_profile = await self.get_steam_profile(steam_id)
-        opendota_profile = await self._get_opendota_player_profile(account_id)
+        opendota_profile = await self._get_opendota_player_profile(dota_account_id) if dota_account_id else None
 
         return {
-            "account_id": account_id,
+            "account_id": dota_account_id or account_id,
             "username": (
                 steam_profile.get("username")
                 if steam_profile
@@ -156,6 +157,7 @@ class GameAPIService:
     async def get_dota2_stats(self, account_id: str) -> Optional[Dict[str, Any]]:
         """Return Dota 2 stats using Steam-backed sources only."""
         steam_id = self._dota_account_to_steam_id(account_id)
+        dota_account_id = self._dota_account_to_account32(account_id)
         if not steam_id:
             return None
 
@@ -186,7 +188,7 @@ class GameAPIService:
             losses = total_matches - wins
 
         if not total_matches and not wins and not losses:
-            opendota_stats = await self._get_opendota_wl(account_id)
+            opendota_stats = await self._get_opendota_wl(dota_account_id) if dota_account_id else None
             if opendota_stats:
                 return opendota_stats
 
@@ -208,12 +210,13 @@ class GameAPIService:
 
     async def get_dota2_recent_matches(self, account_id: str, limit: int = 10) -> Optional[list]:
         """Return recent Dota 2 matches via Steam match history APIs."""
+        dota_account_id = self._dota_account_to_account32(account_id)
         if not self.steam_api_key:
             logger.warning("Steam API key not configured")
-            return await self._get_opendota_recent_matches(account_id, limit)
+            return await self._get_opendota_recent_matches(dota_account_id or account_id, limit)
 
         try:
-            numeric_account_id = int(account_id)
+            numeric_account_id = int(dota_account_id or account_id)
         except (TypeError, ValueError):
             logger.warning("Invalid Dota account id: %s", account_id)
             return None
@@ -227,7 +230,7 @@ class GameAPIService:
         )
         matches = history.get("result", {}).get("matches", []) if history else []
         if not matches:
-            return await self._get_opendota_recent_matches(account_id, limit)
+            return await self._get_opendota_recent_matches(dota_account_id or account_id, limit)
 
         detailed_matches: list[Dict[str, Any]] = []
         async with aiohttp.ClientSession() as session:
@@ -269,7 +272,7 @@ class GameAPIService:
                     }
                 )
 
-        return detailed_matches or await self._get_opendota_recent_matches(account_id, limit)
+        return detailed_matches or await self._get_opendota_recent_matches(dota_account_id or account_id, limit)
 
     async def get_faceit_cs2_data(self, steam_id: str, limit: int = 5) -> Optional[Dict[str, Any]]:
         player = await self._get_faceit_player_by_steam_id(steam_id)
@@ -693,6 +696,17 @@ class GameAPIService:
         if value > STEAM_ID64_BASE:
             return str(value)
         return str(STEAM_ID64_BASE + value)
+
+    def _dota_account_to_account32(self, account_id: str) -> Optional[str]:
+        try:
+            value = int(account_id)
+        except (TypeError, ValueError):
+            logger.warning("Invalid Dota account id for account32 conversion: %s", account_id)
+            return None
+
+        if value > STEAM_ID64_BASE:
+            return str(value - STEAM_ID64_BASE)
+        return str(value)
 
     def _coerce_faceit_number(self, payload: Dict[str, Any], *keys: str) -> int:
         value = self._coerce_faceit_float(payload, *keys)
