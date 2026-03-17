@@ -52,7 +52,7 @@ def next_power_of_2(n: int) -> int:
 
 
 def _generate_single(players: List[str]) -> List[dict]:
-    size = next_power_of_2(len(players))
+    size = max(2, next_power_of_2(len(players)))
     seeded = players + ["BYE"] * (size - len(players))
     random.shuffle(seeded)
     matches: List[dict] = []
@@ -91,7 +91,7 @@ def _generate_single(players: List[str]) -> List[dict]:
 
 
 def _generate_double(players: List[str]) -> List[dict]:
-    size = next_power_of_2(len(players))
+    size = max(2, next_power_of_2(len(players)))
     seeded = players + ["BYE"] * (size - len(players))
     random.shuffle(seeded)
     matches: List[dict] = []
@@ -197,8 +197,8 @@ async def generate_bracket(
         )
         players = [r["name"] for r in regs if r["name"]]
 
-    if len(players) < 8:
-        raise HTTPException(400, "Нужно минимум 8 участников. Добавьте участников вручную или через регистрацию.")
+    if len(players) < 1:
+        raise HTTPException(400, "Добавьте хотя бы одного участника, чтобы сформировать сетку.")
     if len(players) > 32:
         raise HTTPException(400, "Максимум 32 участника")
 
