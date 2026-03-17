@@ -196,53 +196,45 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
   }
 
   const randomizeBracket = async () => {
-    const firstRoundMatches = matches
-      .filter(match => match.section === 'winners' && match.round === 1)
-      .sort((a, b) => a.match_index - b.match_index)
-
-    if (firstRoundMatches.length === 0) {
+    if (matches.length === 0) {
       setGenError('Сначала сформируйте сетку, а потом используйте рандом.')
       return
     }
 
-    if (registrations.length === 0) {
+    const sourcePlayers = customPlayers
+      .split('\n')
+      .map(player => player.trim())
+      .filter(Boolean)
+
+    const playersToShuffle = sourcePlayers.length > 0 ? sourcePlayers : registrations
+
+    if (playersToShuffle.length === 0) {
       setGenError('Нет заявок для случайного распределения.')
       return
     }
 
-    if (!confirm('Случайно распределить участников по слотам первого раунда? Текущие пары будут перезаписаны.')) return
+    if (!confirm('Случайно пересобрать сетку турнира? Текущая сетка будет пересоздана.')) return
 
     setRandomizing(true)
     setGenError('')
 
-    const shuffledPlayers = [...registrations]
+    const shuffledPlayers = [...playersToShuffle]
     for (let i = shuffledPlayers.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[shuffledPlayers[i], shuffledPlayers[j]] = [shuffledPlayers[j], shuffledPlayers[i]]
     }
 
-    const slotValues = [...shuffledPlayers]
-    while (slotValues.length < firstRoundMatches.length * 2) {
-      slotValues.push('')
-    }
-
     try {
-      const responses = await Promise.all(
-        firstRoundMatches.flatMap((match, index) => ([
-          fetch(`${API_URL}/api/admin/bracket/match/${match.id}/slot`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ slot: 1, player_name: slotValues[index * 2] || '' }),
-          }),
-          fetch(`${API_URL}/api/admin/bracket/match/${match.id}/slot`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ slot: 2, player_name: slotValues[index * 2 + 1] || '' }),
-          }),
-        ]))
-      )
+      const response = await fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/bracket/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          bracket_type: bracketType,
+          custom_players: shuffledPlayers,
+        }),
+      })
 
-      if (responses.some(response => !response.ok)) {
+      if (!response.ok) {
         throw new Error('randomize_failed')
       }
 
