@@ -33,7 +33,7 @@ function getUnit(round: number) {
 }
 
 function getRounds(matches: BracketMatch[], section: string): BracketMatch[][] {
-  const filtered = matches.filter(m => m.section === section && !m.is_bye)
+  const filtered = matches.filter(m => m.section === section)
   if (!filtered.length) return []
   const max = Math.max(...filtered.map(m => m.round))
   const rounds: BracketMatch[][] = []
