@@ -713,7 +713,10 @@ export default function PublicProfilePage() {
                       </div>
                     </div>
                     {cs2View === 'faceit' && gameStats.steam.faceit ? <>
+                    <div className={styles.gameCardBadge}>Level {gameStats.steam.faceit.profile?.skill_level ?? '—'} · {formatNumber(gameStats.steam.faceit.profile?.elo)}</div>
                     <div className={styles.gameMetricsGrid}>
+                      <div className={styles.gameMetric}><span>Уровень FACEIT</span><strong>{formatNumber(gameStats.steam.faceit.profile?.skill_level)}</strong></div>
+                      <div className={styles.gameMetric}><span>ELO</span><strong>{formatNumber(gameStats.steam.faceit.profile?.elo)}</strong></div>
                       <div className={styles.gameMetric}><span>K/D</span><strong>{gameStats.steam.faceit.stats?.kd_ratio?.toFixed(2) || '—'}</strong></div>
                       <div className={styles.gameMetric}><span>Винрейт</span><strong>{formatPercent(gameStats.steam.faceit.stats?.win_rate)}</strong></div>
                       <div className={styles.gameMetric}><span>Матчей</span><strong>{formatNumber(gameStats.steam.faceit.stats?.matches)}</strong></div>
@@ -745,11 +748,13 @@ export default function PublicProfilePage() {
                       <div>
                         <div className={styles.gameCardEyebrow}>Dota 2</div>
                         <h3 className={styles.gameCardTitle}>{gameStats.dota2.profile?.username || 'Dota 2 аккаунт'}</h3>
-                        <div className={styles.gameCardSubtext}>Источник: Steam API + OpenDota</div>
+                        <div className={styles.gameCardSubtext}>Матчи: Steam API · Ранг и MMR: OpenDota</div>
                       </div>
+                      <div className={styles.gameCardBadge}>{typeof gameStats.dota2.profile?.mmr_estimate === 'number' ? `${formatNumber(gameStats.dota2.profile?.mmr_estimate)} MMR` : 'MMR скрыт'}</div>
                     </div>
                     <div className={styles.gameMetricsGrid}>
                       <div className={styles.gameMetric}><span>K/D</span><strong>{gameStats.dota2.stats?.average_kd?.toFixed(2) || '0.00'}</strong></div>
+                      <div className={styles.gameMetric}><span>Ранг</span><strong>{gameStats.dota2.profile?.rank_tier ? String(gameStats.dota2.profile.rank_tier) : 'Не определён'}</strong></div>
                       <div className={styles.gameMetric}><span>Матчей</span><strong>{formatNumber(gameStats.dota2.stats?.total_matches)}</strong></div>
                       <div className={styles.gameMetric}><span>Побед / поражений</span><strong>{formatNumber(gameStats.dota2.stats?.wins)} / {formatNumber(gameStats.dota2.stats?.losses)}</strong></div>
                       <div className={styles.gameMetric}><span>Винрейт</span><strong>{formatPercent(gameStats.dota2.stats?.win_rate)}</strong></div>
@@ -766,11 +771,13 @@ export default function PublicProfilePage() {
                         <h3 className={styles.gameCardTitle}>{gameStats.valorant.profile?.username || 'Valorant аккаунт'}</h3>
                         <div className={styles.gameCardSubtext}>Источник: Henrik / Riot data</div>
                       </div>
-                      <div className={styles.gameCardBadge}>{gameStats.valorant.profile?.region || 'Riot'}</div>
+                      <div className={styles.gameCardBadge}>{gameStats.valorant.mmr?.current_tier || gameStats.valorant.profile?.region || 'Riot'}</div>
                     </div>
                     <div className={styles.gameMetricsGrid}>
                       <div className={styles.gameMetric}><span>Аккаунт</span><strong>{gameStats.valorant.profile?.username || 'Не указан'}</strong></div>
                       <div className={styles.gameMetric}><span>Регион</span><strong>{gameStats.valorant.profile?.region || 'Нет данных'}</strong></div>
+                      <div className={styles.gameMetric}><span>Ранг</span><strong>{gameStats.valorant.mmr?.current_tier || 'Не определён'}</strong></div>
+                      <div className={styles.gameMetric}><span>ELO</span><strong>{formatNumber(gameStats.valorant.mmr?.elo)}</strong></div>
                       <div className={styles.gameMetric}><span>Калибровка</span><strong>{gameStats.valorant.mmr?.games_needed_for_rating ? `${gameStats.valorant.mmr.games_needed_for_rating} матч.` : 'Завершена'}</strong></div>
                       <div className={styles.gameMetric}><span>История матчей</span><strong>Недоступна</strong></div>
                     </div>
