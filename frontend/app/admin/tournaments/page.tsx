@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trophy, Pencil, Trash2, Calendar, Crown, Plus, X, Users, Network, Shuffle } from 'lucide-react'
+import { Trophy, Pencil, Trash2, Calendar, Crown, Plus, X, Users, Network, Shuffle, Maximize2, Minimize2 } from 'lucide-react'
 import BracketView, { BracketMatch } from '../../../components/bracket/BracketView'
 import styles from '../news/page.module.css'
 import modalStyles from './modal.module.css'
@@ -104,7 +104,7 @@ function RegViewer({ tournamentId, token, onClose }: { tournamentId: number; tok
       <div className={modalStyles.modal}>
         <div className={modalStyles.modalHeader}>
           <h2>Заявки</h2>
-          <button className={modalStyles.close} onClick={onClose}><X size={16} /></button>
+          <button className={modalStyles.close} onClick={onClose} aria-label="Close"><X size={16} /></button>
         </div>
         <div className={modalStyles.body}>
           {loading ? (
@@ -159,6 +159,7 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
   const [score1, setScore1] = useState(0)
   const [score2, setScore2] = useState(0)
   const [winner, setWinner] = useState('')
+  const [expanded, setExpanded] = useState(false)
 
   const loadRegs = () => {
     fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/registrations`, {
@@ -326,10 +327,19 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
 
   return (
     <div className={modalStyles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className={modalStyles.modal} style={{ maxWidth: '95vw', width: 1200, maxHeight: '95vh', display: 'flex', flexDirection: 'column' }}>
+      <div className={modalStyles.modal} style={{ maxWidth: expanded ? '98vw' : '95vw', width: expanded ? 'min(98vw, 1680px)' : 1200, maxHeight: expanded ? '98vh' : '95vh', height: expanded ? '98vh' : 'auto', display: 'flex', flexDirection: 'column' }}>
         <div className={modalStyles.modalHeader}>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Network size={18} /> Сетка турнира</h2>
-          <button className={modalStyles.close} onClick={onClose}><X size={16} /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              className={modalStyles.close}
+              onClick={() => setExpanded(current => !current)}
+              title={expanded ? 'Collapse bracket' : 'Expand bracket'}
+            >
+              {expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+            <button className={modalStyles.close} onClick={onClose}><X size={16} /></button>
+          </div>
         </div>
 
         {/* Controls bar */}
@@ -369,9 +379,9 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
         </div>
 
         {/* Two-panel body */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
           {/* Left: participant list */}
-          <div style={{ width: 180, flexShrink: 0, borderRight: '1px solid #2a2f36', padding: '12px 10px', overflowY: 'auto', background: '#0f1218' }}>
+          <div style={{ width: expanded ? 220 : 180, flexShrink: 0, borderRight: '1px solid #2a2f36', padding: '12px 10px', overflowY: 'auto', background: '#0f1218' }}>
             <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Участники</div>
             {registrations.length === 0 && (
               <p style={{ fontSize: 12, color: '#555' }}>Нет заявок</p>
@@ -389,7 +399,7 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
           </div>
 
           {/* Right: bracket view */}
-          <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: '16px' }}>
+          <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: expanded ? '20px' : '16px', minHeight: 0 }}>
             {loading && <p style={{ color: '#888' }}>Загрузка...</p>}
             {!loading && matches.length === 0 && (
               <p style={{ color: '#888' }}>Сетка не сформирована. Введите участников и нажмите "Сформировать".</p>
