@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trophy, Pencil, Trash2, Calendar, Crown, Plus, X, Users, Network } from 'lucide-react'
+import { Trophy, Pencil, Trash2, Calendar, Crown, Plus, X, Users, Network, Shuffle } from 'lucide-react'
 import BracketView, { BracketMatch } from '../../../components/bracket/BracketView'
 import styles from '../news/page.module.css'
 import modalStyles from './modal.module.css'
@@ -135,6 +135,7 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
   const [loading, setLoading] = useState(true)
   const [bracketType, setBracketType] = useState<'single' | 'double'>('single')
   const [generating, setGenerating] = useState(false)
+  const [randomizing, setRandomizing] = useState(false)
   const [genError, setGenError] = useState('')
   const [customPlayers, setCustomPlayers] = useState('')  // one per line
   const [registrations, setRegistrations] = useState<string[]>([])
@@ -194,6 +195,65 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
     load()
   }
 
+  const randomizeBracket = async () => {
+    const firstRoundMatches = matches
+      .filter(match => match.section === 'winners' && match.round === 1)
+      .sort((a, b) => a.match_index - b.match_index)
+
+    if (firstRoundMatches.length === 0) {
+      setGenError('Сначала сформируйте сетку, а потом используйте рандом.')
+      return
+    }
+
+    if (registrations.length === 0) {
+      setGenError('Нет заявок для случайного распределения.')
+      return
+    }
+
+    if (!confirm('Случайно распределить участников по слотам первого раунда? Текущие пары будут перезаписаны.')) return
+
+    setRandomizing(true)
+    setGenError('')
+
+    const shuffledPlayers = [...registrations]
+    for (let i = shuffledPlayers.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffledPlayers[i], shuffledPlayers[j]] = [shuffledPlayers[j], shuffledPlayers[i]]
+    }
+
+    const slotValues = [...shuffledPlayers]
+    while (slotValues.length < firstRoundMatches.length * 2) {
+      slotValues.push('')
+    }
+
+    try {
+      const responses = await Promise.all(
+        firstRoundMatches.flatMap((match, index) => ([
+          fetch(`${API_URL}/api/admin/bracket/match/${match.id}/slot`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ slot: 1, player_name: slotValues[index * 2] || '' }),
+          }),
+          fetch(`${API_URL}/api/admin/bracket/match/${match.id}/slot`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ slot: 2, player_name: slotValues[index * 2 + 1] || '' }),
+          }),
+        ]))
+      )
+
+      if (responses.some(response => !response.ok)) {
+        throw new Error('randomize_failed')
+      }
+
+      load()
+    } catch {
+      setGenError('Не удалось случайно распределить участников.')
+    } finally {
+      setRandomizing(false)
+    }
+  }
+
   const saveMatch = async () => {
     if (!editMatch || !winner) return
     await fetch(`${API_URL}/api/admin/bracket/match/${editMatch.id}`, {
@@ -242,6 +302,16 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
           {matches.length > 0 && (
             <button onClick={reset} style={{ padding: '6px 14px', background: '#c0392b', border: 'none', color: '#fff', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
               Сбросить
+            </button>
+          )}
+          {matches.length > 0 && (
+            <button
+              onClick={randomizeBracket}
+              disabled={randomizing}
+              style={{ padding: '6px 14px', background: '#8b5cf6', border: 'none', color: '#fff', borderRadius: 8, cursor: randomizing ? 'default' : 'pointer', fontWeight: 600, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: randomizing ? 0.7 : 1 }}
+            >
+              <Shuffle size={14} />
+              {randomizing ? 'Рандом...' : 'Рандом'}
             </button>
           )}
           <div style={{ flex: 1, minWidth: 200 }}>
