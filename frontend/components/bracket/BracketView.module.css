@@ -9,10 +9,20 @@
   background: transparent;
 }
 
+.compactBracket {
+  min-width: 0;
+  justify-content: center;
+  padding: 8px 12px;
+}
+
 .roundCol {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+}
+
+.compactRoundCol {
+  width: 168px;
 }
 
 .roundLabel {
@@ -34,6 +44,7 @@
 
 /* ── Match card ─────────────────────────────────────────────── */
 .matchCard {
+  position: relative;
   width: 168px;
   flex-shrink: 0;
   border: 1px solid #2a2f36;
@@ -43,8 +54,32 @@
   transition: border-color 0.15s;
 }
 
+.autoAdvanceCard {
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.15);
+}
+
 .matchCard:hover {
   border-color: #3a4452;
+}
+
+.matchBadge {
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  border-radius: 999px;
+  background: rgba(76, 29, 149, 0.92);
+  color: #e9ddff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .divider {
@@ -68,7 +103,7 @@
 }
 
 .slot.empty {
-  color: #3a4452;
+  color: #69758a;
   font-style: italic;
 }
 
