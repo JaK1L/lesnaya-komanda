@@ -218,13 +218,66 @@ async def _advance_winner(db: asyncpg.Connection, match_row) -> None:
     if not refreshed_next:
         return
 
+    feeder_matches = await db.fetch(
+        """
+        SELECT *
+        FROM bracket_matches
+        WHERE next_winner_match_id=$1
+        ORDER BY match_index
+        """,
+        next_match_id,
+    )
+
+    expected_player1 = next(
+        (
+            feeder["winner_name"]
+            for feeder in feeder_matches
+            if feeder["match_index"] % 2 == 0 and feeder["winner_name"]
+        ),
+        None,
+    )
+    expected_player2 = next(
+        (
+            feeder["winner_name"]
+            for feeder in feeder_matches
+            if feeder["match_index"] % 2 == 1 and feeder["winner_name"]
+        ),
+        None,
+    )
+
+    if expected_player1 and refreshed_next["player1_name"] != expected_player1:
+      await db.execute(
+          "UPDATE bracket_matches SET player1_name=$1 WHERE id=$2",
+          expected_player1,
+          next_match_id,
+      )
+    if expected_player2 and refreshed_next["player2_name"] != expected_player2:
+      await db.execute(
+          "UPDATE bracket_matches SET player2_name=$1 WHERE id=$2",
+          expected_player2,
+          next_match_id,
+      )
+
+    refreshed_next = await db.fetchrow("SELECT * FROM bracket_matches WHERE id=$1", next_match_id)
+    if not refreshed_next:
+        return
+
     player1_name = refreshed_next["player1_name"]
     player2_name = refreshed_next["player2_name"]
     auto_winner = None
 
-    if player1_name and not player2_name:
+    missing_slot_is_player2 = bool(player1_name and not player2_name)
+    missing_slot_is_player1 = bool(player2_name and not player1_name)
+
+    if missing_slot_is_player2:
+        missing_feeder = next((feeder for feeder in feeder_matches if feeder["match_index"] % 2 == 1), None)
+        if missing_feeder and missing_feeder["status"] == "pending":
+            return
         auto_winner = player1_name
-    elif player2_name and not player1_name:
+    elif missing_slot_is_player1:
+        missing_feeder = next((feeder for feeder in feeder_matches if feeder["match_index"] % 2 == 0), None)
+        if missing_feeder and missing_feeder["status"] == "pending":
+            return
         auto_winner = player2_name
 
     if not auto_winner:
