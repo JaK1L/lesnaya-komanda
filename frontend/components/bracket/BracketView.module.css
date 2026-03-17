@@ -1,40 +1,49 @@
 .bracket {
+  --card-width: 184px;
+  --card-height: 90px;
+  --round-gap: 16px;
   display: flex;
-  flex-direction: row;
   align-items: flex-start;
-  overflow-x: auto;
-  padding: 16px 24px;
   gap: 0;
   min-width: max-content;
+  padding: 20px 24px;
+  overflow-x: auto;
+  overflow-y: visible;
   background: transparent;
 }
 
 .compactBracket {
-  min-width: 0;
   justify-content: center;
-  padding: 8px 12px;
+  min-width: 0;
+}
+
+.roundGroup {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
 }
 
 .roundCol {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  width: var(--card-width);
 }
 
 .compactRoundCol {
-  width: 168px;
+  width: var(--card-width);
 }
 
 .roundLabel {
-  text-align: center;
+  width: var(--card-width);
+  height: 28px;
+  padding-bottom: 8px;
+  color: #94a3b8;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #8899aa;
-  padding-bottom: 8px;
-  width: 168px;
-  height: 28px;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .matchesCol {
@@ -42,46 +51,75 @@
   flex-direction: column;
 }
 
-/* ── Match card ─────────────────────────────────────────────── */
-.matchCard {
-  position: relative;
-  width: 168px;
-  flex-shrink: 0;
-  border: 1px solid #2a2f36;
-  border-radius: 6px;
-  overflow: hidden;
-  background: #1a1e24;
-  transition: border-color 0.15s;
+.matchSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.autoAdvanceCard {
-  border-color: rgba(139, 92, 246, 0.45);
-  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.15);
-  padding-top: 24px;
+.connectorWrap {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 28px;
+}
+
+.connector {
+  display: block;
+  flex-shrink: 0;
+}
+
+.matchCard {
+  box-sizing: border-box;
+  width: var(--card-width);
+  min-height: var(--card-height);
+  border: 1px solid #2a2f36;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1a1f28 0%, #171b23 100%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .matchCard:hover {
   border-color: #3a4452;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.2);
+}
+
+.autoAdvanceCard {
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.12), 0 14px 32px rgba(0, 0, 0, 0.16);
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 24px;
+  padding: 6px 8px 0;
 }
 
 .matchBadge {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  z-index: 1;
   display: inline-flex;
   align-items: center;
-  height: 20px;
+  justify-content: center;
+  height: 18px;
   padding: 0 8px;
   border: 1px solid rgba(139, 92, 246, 0.45);
   border-radius: 999px;
-  background: rgba(76, 29, 149, 0.92);
-  color: #e9ddff;
+  background: rgba(91, 33, 182, 0.18);
+  color: #dccbff;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  pointer-events: none;
+  white-space: nowrap;
+}
+
+.matchMetaSpacer {
+  display: block;
+  width: 1px;
+  height: 18px;
+  opacity: 0;
 }
 
 .divider {
@@ -93,75 +131,74 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px;
-  height: 32px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #e0e6ee;
-  background: #1a1e24;
-  gap: 4px;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 12px;
+  background: transparent;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
   user-select: none;
-  transition: background 0.15s;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .slot.empty {
-  color: #69758a;
+  color: #64748b;
   font-style: italic;
 }
 
 .slot.winner {
-  background: rgba(39, 174, 96, 0.15);
-  color: #2ecc71;
-  font-weight: 700;
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
 }
 
 .slot.loser {
-  background: rgba(192, 57, 43, 0.08);
-  color: #e74c3c;
-  opacity: 0.6;
+  background: rgba(239, 68, 68, 0.08);
+  color: #f87171;
+  opacity: 0.7;
 }
 
 .slotName {
   flex: 1;
-  white-space: nowrap;
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .slotScore {
-  font-weight: 700;
-  font-size: 13px;
-  min-width: 16px;
-  text-align: right;
   flex-shrink: 0;
-  color: #4f9fff;
+  min-width: 18px;
+  color: #60a5fa;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
 }
 
-.empty {
-  color: #8899aa;
-  padding: 2rem;
-  text-align: center;
-  font-size: 14px;
-}
-
-/* ── Champion card ─────────────────────────────────────────── */
 .championCard {
-  width: 168px;
-  height: 68px;
+  box-sizing: border-box;
+  width: var(--card-width);
+  min-height: calc(var(--card-height) - 2px);
   border: 2px solid #fbbf24;
-  border-radius: 6px;
-  background: rgba(251, 191, 36, 0.08);
-  box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.12) 0%, rgba(251, 191, 36, 0.05) 100%);
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.14);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 12px 14px;
   text-align: center;
 }
 
 .championName {
-  font-size: 14px;
-  font-weight: 700;
   color: #fbbf24;
+  font-size: 15px;
+  font-weight: 800;
   word-break: break-word;
+}
+
+.empty {
+  padding: 2rem;
+  color: #94a3b8;
+  font-size: 14px;
+  text-align: center;
 }

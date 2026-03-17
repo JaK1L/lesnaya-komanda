@@ -24,9 +24,9 @@ interface Props {
   adminMode?: boolean
 }
 
-const CARD_H = 68
-const GAP_R1 = 16
-const CONN_W = 32
+const CARD_H = 90
+const GAP_R1 = 20
+const CONN_W = 36
 
 function getUnit(round: number) {
   return (CARD_H + GAP_R1) * Math.pow(2, round - 1)
@@ -57,6 +57,12 @@ function getDisplayName(match: BracketMatch, slot: 1 | 2) {
   return 'TBD'
 }
 
+function getRoundLabel(round: number, totalRounds: number, isLastRound: boolean) {
+  if (isLastRound && totalRounds > 1) return 'Финал'
+  if (round === totalRounds - 1 && totalRounds > 2) return 'Полуфинал'
+  return `Раунд ${round}`
+}
+
 function MatchCard({
   match,
   adminMode,
@@ -68,8 +74,8 @@ function MatchCard({
   onSelectWinner?: (match: BracketMatch, winner: string) => void
   onDropPlayer?: (match: BracketMatch, slot: 1 | 2, player: string) => void
 }) {
-  const p1Won = !!match.player1_name && match.winner_name === match.player1_name
-  const p2Won = !!match.player2_name && match.winner_name === match.player2_name
+  const player1Won = !!match.player1_name && match.winner_name === match.player1_name
+  const player2Won = !!match.player2_name && match.winner_name === match.player2_name
   const completed = match.status === 'completed'
   const canClick = adminMode && !completed
   const showAutoAdvance = match.is_bye && !!match.winner_name
@@ -82,7 +88,7 @@ function MatchCard({
     if (player && onDropPlayer) onDropPlayer(match, slot, player)
   }
 
-  const slotClassName = (won: boolean, isLoser: boolean, hasPlayer: boolean) =>
+  const getSlotClassName = (won: boolean, isLoser: boolean, hasPlayer: boolean) =>
     [
       styles.slot,
       won ? styles.winner : '',
@@ -94,13 +100,15 @@ function MatchCard({
 
   return (
     <div className={[styles.matchCard, showAutoAdvance ? styles.autoAdvanceCard : ''].filter(Boolean).join(' ')}>
-      {showAutoAdvance && <div className={styles.matchBadge}>Автопроход</div>}
+      <div className={styles.cardMeta}>
+        {showAutoAdvance ? <span className={styles.matchBadge}>Автопроход</span> : <span className={styles.matchMetaSpacer} />}
+      </div>
       <div
-        className={slotClassName(p1Won, p2Won, !!match.player1_name)}
+        className={getSlotClassName(player1Won, player2Won, !!match.player1_name)}
         onDragOver={adminMode ? event => event.preventDefault() : undefined}
         onDrop={adminMode ? handleDrop(1) : undefined}
         onClick={canClick && match.player1_name ? () => onSelectWinner?.(match, match.player1_name as string) : undefined}
-        style={canClick && match.player1_name ? { cursor: 'pointer' } : {}}
+        style={canClick && match.player1_name ? { cursor: 'pointer' } : undefined}
         title={canClick && match.player1_name ? 'Нажми, чтобы выбрать победителя' : undefined}
       >
         <span className={styles.slotName}>{player1Display}</span>
@@ -108,11 +116,11 @@ function MatchCard({
       </div>
       <div className={styles.divider} />
       <div
-        className={slotClassName(p2Won, p1Won, !!match.player2_name)}
+        className={getSlotClassName(player2Won, player1Won, !!match.player2_name)}
         onDragOver={adminMode ? event => event.preventDefault() : undefined}
         onDrop={adminMode ? handleDrop(2) : undefined}
         onClick={canClick && match.player2_name ? () => onSelectWinner?.(match, match.player2_name as string) : undefined}
-        style={canClick && match.player2_name ? { cursor: 'pointer' } : {}}
+        style={canClick && match.player2_name ? { cursor: 'pointer' } : undefined}
         title={canClick && match.player2_name ? 'Нажми, чтобы выбрать победителя' : undefined}
       >
         <span className={styles.slotName}>{player2Display}</span>
@@ -122,13 +130,17 @@ function MatchCard({
   )
 }
 
-function ConnectorSvg({ fromCount, toCount, fromUnit }: {
+function ConnectorSvg({
+  fromCount,
+  toCount,
+  fromUnit,
+}: {
   fromCount: number
   toCount: number
   fromUnit: number
 }) {
   const svgHeight = fromUnit * fromCount
-  const stroke = '#3a4452'
+  const stroke = '#364152'
   const lines: React.ReactNode[] = []
 
   for (let index = 0; index < toCount; index += 1) {
@@ -149,7 +161,6 @@ function ConnectorSvg({ fromCount, toCount, fromUnit }: {
         strokeLinejoin="round"
       />
     )
-
     lines.push(
       <polyline
         key={`bottom-${index}`}
@@ -161,7 +172,6 @@ function ConnectorSvg({ fromCount, toCount, fromUnit }: {
         strokeLinejoin="round"
       />
     )
-
     lines.push(
       <line
         key={`mid-${index}`}
@@ -177,7 +187,7 @@ function ConnectorSvg({ fromCount, toCount, fromUnit }: {
   }
 
   return (
-    <svg width={CONN_W * 2} height={svgHeight} style={{ flexShrink: 0, display: 'block' }} overflow="visible">
+    <svg className={styles.connector} width={CONN_W * 2} height={svgHeight} overflow="visible">
       {lines}
     </svg>
   )
@@ -186,8 +196,8 @@ function ConnectorSvg({ fromCount, toCount, fromUnit }: {
 function FinalConnector({ unit }: { unit: number }) {
   const centerY = unit / 2
   return (
-    <svg width={CONN_W} height={unit} style={{ flexShrink: 0, display: 'block' }} overflow="visible">
-      <line x1={0} y1={centerY} x2={CONN_W} y2={centerY} stroke="#3a4452" strokeWidth="1.5" strokeLinecap="round" />
+    <svg className={styles.connector} width={CONN_W} height={unit} overflow="visible">
+      <line x1={0} y1={centerY} x2={CONN_W} y2={centerY} stroke="#364152" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   )
 }
@@ -216,21 +226,15 @@ export default function BracketView({
         const round = roundIndex + 1
         const unit = getUnit(round)
         const isLastRound = roundIndex === rounds.length - 1
-
-        const label =
-          isLastRound && totalRounds > 1
-            ? 'Финал'
-            : round === totalRounds - 1 && totalRounds > 2
-              ? 'Полуфинал'
-              : `Раунд ${round}`
+        const label = getRoundLabel(round, totalRounds, isLastRound)
 
         return (
-          <div key={round} style={{ display: 'flex', alignItems: 'flex-start' }}>
+          <div key={round} className={styles.roundGroup}>
             <div className={[styles.roundCol, isCompactBracket ? styles.compactRoundCol : ''].filter(Boolean).join(' ')}>
               <div className={styles.roundLabel}>{label}</div>
               <div className={styles.matchesCol}>
                 {roundMatches.map(match => (
-                  <div key={match.id} style={{ height: unit, display: 'flex', alignItems: 'center' }}>
+                  <div key={match.id} className={styles.matchSlot} style={{ height: unit }}>
                     <MatchCard
                       match={match}
                       {...(adminMode ? { adminMode: true } : {})}
@@ -243,7 +247,7 @@ export default function BracketView({
             </div>
 
             {!isLastRound && (
-              <div style={{ marginTop: 28 }}>
+              <div className={styles.connectorWrap}>
                 <ConnectorSvg
                   fromCount={roundMatches.length}
                   toCount={Math.ceil(roundMatches.length / 2)}
@@ -253,7 +257,7 @@ export default function BracketView({
             )}
 
             {isLastRound && showChampion && (
-              <div style={{ marginTop: 28 }}>
+              <div className={styles.connectorWrap}>
                 <FinalConnector unit={lastUnit} />
               </div>
             )}
@@ -264,7 +268,7 @@ export default function BracketView({
       {showChampion && (
         <div className={styles.roundCol}>
           <div className={styles.roundLabel}>Победитель</div>
-          <div style={{ height: lastUnit, display: 'flex', alignItems: 'center' }}>
+          <div className={styles.matchSlot} style={{ height: lastUnit }}>
             <div className={styles.championCard}>
               <span className={styles.championName}>{champion}</span>
             </div>
