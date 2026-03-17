@@ -202,6 +202,74 @@ function FinalConnector({ unit }: { unit: number }) {
   )
 }
 
+function CompactBracket({
+  rounds,
+  totalRounds,
+  champion,
+  showChampion,
+  adminMode,
+  onSelectWinner,
+  onDropPlayer,
+}: {
+  rounds: BracketMatch[][]
+  totalRounds: number
+  champion: string | null
+  showChampion: boolean
+  adminMode?: boolean
+  onSelectWinner?: (match: BracketMatch, winner: string) => void
+  onDropPlayer?: (match: BracketMatch, slot: 1 | 2, player: string) => void
+}) {
+  return (
+    <div className={styles.compactBracketBoard}>
+      {rounds.map((roundMatches, roundIndex) => {
+        const round = roundIndex + 1
+        const isLastRound = roundIndex === rounds.length - 1
+        const label = getRoundLabel(round, totalRounds, isLastRound)
+
+        return (
+          <div key={round} className={styles.compactGroup}>
+            <div className={styles.compactColumn}>
+              <div className={styles.roundLabel}>{label}</div>
+              <div className={styles.compactMatches}>
+                {roundMatches.map(match => (
+                  <div key={match.id} className={styles.compactMatchSlot}>
+                    <MatchCard
+                      match={match}
+                      {...(adminMode ? { adminMode: true } : {})}
+                      {...(onSelectWinner ? { onSelectWinner } : {})}
+                      {...(onDropPlayer ? { onDropPlayer } : {})}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {(roundIndex < rounds.length - 1 || showChampion) && (
+              <div className={styles.compactArrow} aria-hidden="true">
+                <span className={styles.compactArrowLine} />
+                <span className={styles.compactArrowHead} />
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      {showChampion && (
+        <div className={styles.compactColumn}>
+          <div className={styles.roundLabel}>Победитель</div>
+          <div className={styles.compactMatches}>
+            <div className={styles.compactMatchSlot}>
+              <div className={styles.championCard}>
+                <span className={styles.championName}>{champion}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function BracketView({
   matches,
   section = 'winners',
@@ -221,11 +289,25 @@ export default function BracketView({
   const lastUnit = isCompactBracket ? compactUnit : getUnit(rounds.length)
   const showChampion = Boolean(champion)
 
+  if (isCompactBracket) {
+    return (
+      <CompactBracket
+        rounds={rounds}
+        totalRounds={totalRounds}
+        champion={champion}
+        showChampion={showChampion}
+        {...(adminMode ? { adminMode: true } : {})}
+        {...(onSelectWinner ? { onSelectWinner } : {})}
+        {...(onDropPlayer ? { onDropPlayer } : {})}
+      />
+    )
+  }
+
   return (
-    <div className={[styles.bracket, isCompactBracket ? styles.compactBracket : ''].filter(Boolean).join(' ')}>
+    <div className={styles.bracket}>
       {rounds.map((roundMatches, roundIndex) => {
         const round = roundIndex + 1
-        const unit = isCompactBracket ? compactUnit : getUnit(round)
+        const unit = getUnit(round)
         const isLastRound = roundIndex === rounds.length - 1
         const label = getRoundLabel(round, totalRounds, isLastRound)
 

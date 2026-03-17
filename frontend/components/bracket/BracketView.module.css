@@ -17,6 +17,65 @@
   min-width: 0;
 }
 
+.compactBracketBoard {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 12px 8px;
+  overflow-x: auto;
+}
+
+.compactGroup {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.compactColumn {
+  display: flex;
+  flex-direction: column;
+  width: var(--card-width);
+  flex-shrink: 0;
+}
+
+.compactMatches {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.compactMatchSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--card-height);
+}
+
+.compactArrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  min-height: calc(var(--card-height) + 28px);
+  flex-shrink: 0;
+}
+
+.compactArrowLine {
+  width: 28px;
+  height: 2px;
+  background: linear-gradient(90deg, #334155 0%, #64748b 100%);
+  border-radius: 999px;
+}
+
+.compactArrowHead {
+  width: 9px;
+  height: 9px;
+  margin-left: -2px;
+  border-top: 2px solid #64748b;
+  border-right: 2px solid #64748b;
+  transform: rotate(45deg);
+}
+
 .roundGroup {
   display: flex;
   align-items: flex-start;
