@@ -9,6 +9,12 @@ import modalStyles from './modal.module.css'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+function handleAdminAuthError() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('admin_token')
+  window.location.href = '/admin'
+}
+
 interface Tournament {
   id: number
   title: string
@@ -67,7 +73,13 @@ function RegViewer({ tournamentId, token, onClose }: { tournamentId: number; tok
     fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/registrations`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(r => r.json())
+      .then(async r => {
+        if (r.status === 401) {
+          handleAdminAuthError()
+          throw new Error('unauthorized')
+        }
+        return r.json()
+      })
       .then(data => { setRegs(data); setLoading(false) })
       .catch(() => setLoading(false))
   }
@@ -76,10 +88,14 @@ function RegViewer({ tournamentId, token, onClose }: { tournamentId: number; tok
 
   const handleDelete = async (regId: number) => {
     if (!confirm('Удалить заявку?')) return
-    await fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/registrations/${regId}`, {
+    const response = await fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/registrations/${regId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })
+    if (response.status === 401) {
+      handleAdminAuthError()
+      return
+    }
     loadRegs()
   }
 
@@ -148,7 +164,13 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
     fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/registrations`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(r => r.json())
+      .then(async r => {
+        if (r.status === 401) {
+          handleAdminAuthError()
+          throw new Error('unauthorized')
+        }
+        return r.json()
+      })
       .then((data: Registration[]) => {
         setRegistrations(data.map(r => r.nickname || r.team_name || '').filter(Boolean))
       })
@@ -158,7 +180,15 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
   const load = () => {
     setLoading(true)
     fetch(`${API_URL}/api/tournaments/${tournamentId}/bracket`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json()).then(d => { setMatches(Array.isArray(d) ? d : []); setLoading(false) }).catch(() => setLoading(false))
+      .then(async r => {
+        if (r.status === 401) {
+          handleAdminAuthError()
+          throw new Error('unauthorized')
+        }
+        return r.json()
+      })
+      .then(d => { setMatches(Array.isArray(d) ? d : []); setLoading(false) })
+      .catch(() => setLoading(false))
   }
 
   useEffect(() => { load(); loadRegs() }, [tournamentId])
@@ -176,6 +206,10 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       })
+      if (res.status === 401) {
+        handleAdminAuthError()
+        return
+      }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         setGenError(data.detail || `Ошибка ${res.status}`)
@@ -191,7 +225,11 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
 
   const reset = async () => {
     if (!confirm('Удалить сетку полностью?')) return
-    await fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/bracket`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+    const response = await fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/bracket`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+    if (response.status === 401) {
+      handleAdminAuthError()
+      return
+    }
     load()
   }
 
@@ -233,6 +271,10 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
           custom_players: shuffledPlayers,
         }),
       })
+      if (response.status === 401) {
+        handleAdminAuthError()
+        return
+      }
 
       if (!response.ok) {
         throw new Error('randomize_failed')
@@ -248,21 +290,29 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
 
   const saveMatch = async () => {
     if (!editMatch || !winner) return
-    await fetch(`${API_URL}/api/admin/bracket/match/${editMatch.id}`, {
+    const response = await fetch(`${API_URL}/api/admin/bracket/match/${editMatch.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ winner_name: winner, score1, score2 })
     })
+    if (response.status === 401) {
+      handleAdminAuthError()
+      return
+    }
     setEditMatch(null)
     load()
   }
 
   const handleDropPlayer = async (match: BracketMatch, slot: 1 | 2, player: string) => {
-    await fetch(`${API_URL}/api/admin/bracket/match/${match.id}/slot`, {
+    const response = await fetch(`${API_URL}/api/admin/bracket/match/${match.id}/slot`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ slot, player_name: player }),
     })
+    if (response.status === 401) {
+      handleAdminAuthError()
+      return
+    }
     load()
   }
 
@@ -424,6 +474,10 @@ export default function AdminTournamentsPage() {
       const res = await fetch(`${API_URL}/api/admin/tournaments`, {
         headers: { Authorization: `Bearer ${t}` },
       })
+      if (res.status === 401) {
+        handleAdminAuthError()
+        return
+      }
       setItems(await res.json())
     } finally {
       setLoading(false)
@@ -482,6 +536,10 @@ export default function AdminTournamentsPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       })
+      if (res.status === 401) {
+        handleAdminAuthError()
+        return
+      }
       if (!res.ok) { setError('Ошибка сохранения'); return }
       setShowModal(false)
       fetch_()
@@ -493,10 +551,14 @@ export default function AdminTournamentsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('Удалить турнир?')) return
     const token = localStorage.getItem('admin_token')
-    await fetch(`${API_URL}/api/admin/tournaments/${id}`, {
+    const response = await fetch(`${API_URL}/api/admin/tournaments/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })
+    if (response.status === 401) {
+      handleAdminAuthError()
+      return
+    }
     fetch_()
   }
 
