@@ -1,8 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState, useCallback } from 'react'
 import { Calendar, Trophy, Crown, ChevronDown, X, Users, Network } from 'lucide-react'
-import BracketView, { BracketMatch } from '../../components/bracket/BracketView'
 import { Navigation } from '../../components/layout'
 import { Footer } from '../../components/layout'
 import styles from './page.module.css'
@@ -187,26 +187,10 @@ export default function TournamentsPage() {
   const [descExpanded, setDescExpanded] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [regTarget, setRegTarget] = useState<Tournament | null>(null)
-  const [bracketTarget, setBracketTarget] = useState<Tournament | null>(null)
-  const [bracketMatches, setBracketMatches] = useState<BracketMatch[]>([])
-  const [bracketLoading, setBracketLoading] = useState(false)
 
   useEffect(() => {
     setToken(localStorage.getItem(TOKEN_KEY))
   }, [])
-
-  const openBracket = async (t: Tournament) => {
-    setBracketTarget(t)
-    setBracketLoading(true)
-    setBracketMatches([])
-    try {
-      const res = await fetch(`${API_URL}/api/tournaments/${t.id}/bracket`)
-      const data = await res.json()
-      setBracketMatches(Array.isArray(data) ? data : [])
-    } catch { /* ignore */ } finally {
-      setBracketLoading(false)
-    }
-  }
 
   const fetchTournaments = useCallback(async () => {
     setLoading(true)
@@ -346,9 +330,9 @@ export default function TournamentsPage() {
                 </div>
 
                 <div className={styles.bracketSection}>
-                  <button className={styles.bracketBtn} onClick={() => openBracket(t)}>
+                  <Link className={styles.bracketBtn} href={`/tournaments/${t.id}/bracket`}>
                     <Network size={15} /> Смотреть сетку
-                  </button>
+                  </Link>
                 </div>
               </article>
             ))
@@ -356,47 +340,6 @@ export default function TournamentsPage() {
         </div>
       </main>
       <Footer />
-
-      {/* Bracket modal */}
-      {bracketTarget && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={() => setBracketTarget(null)}>
-          <div style={{ background: '#1a1e24', borderRadius: 12, width: '100%', maxWidth: 900, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '1px solid #2a2f36' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #2a2f36' }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#fff' }}>
-                <Network size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8 }} />
-                {bracketTarget.title} — Сетка
-              </h3>
-              <button onClick={() => setBracketTarget(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8899aa' }}><X size={18} /></button>
-            </div>
-            <div style={{ overflow: 'auto', flex: 1 }}>
-              {bracketLoading ? (
-                <div style={{ padding: '3rem', textAlign: 'center', color: '#888' }}>Загрузка...</div>
-              ) : bracketMatches.length === 0 ? (
-                <div style={{ padding: '3rem', textAlign: 'center', color: '#888' }}>Сетка ещё не сформирована организаторами</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 32, padding: 16 }}>
-                  {(['winners', 'losers', 'grand_final'] as const)
-                    .filter(s => bracketMatches.some(m => m.section === s))
-                    .map(section => (
-                      <div key={section}>
-                        {bracketMatches.some(m => m.section === 'losers' || m.section === 'grand_final') && (
-                          <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
-                            {{ winners: 'Победители', losers: 'Проигравшие', grand_final: 'Гранд-финал' }[section]}
-                          </div>
-                        )}
-                        <BracketView matches={bracketMatches} section={section} />
-                      </div>
-                    ))
-                  }
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {regTarget && (
         <RegistrationModal
           tournament={regTarget}
@@ -407,3 +350,4 @@ export default function TournamentsPage() {
     </>
   )
 }
+
