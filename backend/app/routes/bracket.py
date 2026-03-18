@@ -4,6 +4,7 @@
 
 import math
 import random
+from datetime import datetime
 from typing import List, Optional
 
 import asyncpg
@@ -31,14 +32,22 @@ class MatchOut(BaseModel):
     score2: Optional[int]
     is_bye: bool
     status: str
+    match_format: Optional[str] = None
+    start_time: Optional[datetime] = None
     next_winner_match_id: Optional[int]
     next_loser_match_id: Optional[int]
 
 
-class MatchResult(BaseModel):
-    winner_name: str
-    score1: int
-    score2: int
+class MatchUpdate(BaseModel):
+    player1_name: Optional[str] = None
+    player2_name: Optional[str] = None
+    winner_name: Optional[str] = None
+    score1: Optional[int] = None
+    score2: Optional[int] = None
+    is_bye: Optional[bool] = None
+    status: Optional[str] = None
+    match_format: Optional[str] = None
+    start_time: Optional[datetime] = None
 
 
 class GenerateRequest(BaseModel):
@@ -48,7 +57,11 @@ class GenerateRequest(BaseModel):
 
 class SlotAssign(BaseModel):
     slot: int
-    player_name: str
+    player_name: Optional[str] = None
+
+
+VALID_STATUSES = {"pending", "upcoming", "live", "completed", "cancelled", "bye"}
+VALID_MATCH_FORMATS = {"BO1", "BO3", "BO5"}
 
 
 def next_power_of_2(value: int) -> int:
@@ -298,6 +311,57 @@ async def _advance_winner(db: asyncpg.Connection, match_row) -> None:
         await _advance_winner(db, advanced_match)
 
 
+async def _reset_match_state(
+    db: asyncpg.Connection,
+    match_id: int,
+    *,
+    clear_players: bool = False,
+) -> None:
+    match = await db.fetchrow("SELECT * FROM bracket_matches WHERE id=$1", match_id)
+    if not match:
+        return
+
+    next_match_id = match["next_winner_match_id"]
+    target_field = "player1_name" if match["match_index"] % 2 == 0 else "player2_name"
+
+    update_fields = [
+        "winner_name=NULL",
+        "score1=NULL",
+        "score2=NULL",
+        "is_bye=FALSE",
+        "status='pending'",
+    ]
+    if clear_players:
+        update_fields.extend(["player1_name=NULL", "player2_name=NULL"])
+
+    await db.execute(f"UPDATE bracket_matches SET {', '.join(update_fields)} WHERE id=$1", match_id)
+
+    if not next_match_id:
+        return
+
+    await db.execute(
+        f"""
+        UPDATE bracket_matches
+        SET {target_field}=NULL,
+            winner_name=NULL,
+            score1=NULL,
+            score2=NULL,
+            is_bye=FALSE,
+            status='pending'
+        WHERE id=$1
+        """,
+        next_match_id,
+    )
+    await _reset_match_state(db, next_match_id)
+
+
+def _normalize_player_name(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
 @router.get("/tournaments/{tournament_id}/bracket", response_model=List[MatchOut])
 async def get_bracket(
     tournament_id: int,
@@ -349,8 +413,8 @@ async def generate_bracket(
             """
             INSERT INTO bracket_matches
               (tournament_id, bracket_type, section, round, match_index,
-               player1_name, player2_name, winner_name, score1, score2, is_bye, status)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+               player1_name, player2_name, winner_name, score1, score2, is_bye, status, match_format, start_time)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
             RETURNING id
             """,
             tournament_id,
@@ -365,6 +429,8 @@ async def generate_bracket(
             match["score2"],
             match["is_bye"],
             match["status"],
+            "BO1",
+            None,
         )
         ids.append((match["section"], match["round"], match["match_index"], match_id))
 
@@ -400,7 +466,7 @@ async def generate_bracket(
 @router.patch("/admin/bracket/match/{match_id}")
 async def update_match(
     match_id: int,
-    result: MatchResult,
+    payload: MatchUpdate,
     db: asyncpg.Connection = Depends(get_db),
     _: User = Depends(get_current_admin_user),
 ):
@@ -408,20 +474,66 @@ async def update_match(
     if not match:
         raise HTTPException(404, "Match not found")
 
+    if payload.status and payload.status not in VALID_STATUSES:
+        raise HTTPException(400, "Invalid match status")
+    if payload.match_format and payload.match_format not in VALID_MATCH_FORMATS:
+        raise HTTPException(400, "match_format must be BO1, BO3 or BO5")
+
+    player1_name = _normalize_player_name(payload.player1_name) if payload.player1_name is not None else match["player1_name"]
+    player2_name = _normalize_player_name(payload.player2_name) if payload.player2_name is not None else match["player2_name"]
+    winner_name = _normalize_player_name(payload.winner_name) if payload.winner_name is not None else match["winner_name"]
+    status = payload.status or match["status"]
+    is_bye = bool(payload.is_bye) if payload.is_bye is not None else bool(match["is_bye"])
+
+    if winner_name and winner_name not in {player1_name, player2_name}:
+        raise HTTPException(400, "winner_name must match one of the participants")
+
+    if is_bye and not winner_name:
+        winner_name = player1_name or player2_name
+
+    if status in {"completed", "bye"} and not winner_name:
+        raise HTTPException(400, "Completed or bye match must have a winner")
+
+    if status == "cancelled":
+        winner_name = None
+
+    next_match_id = match["next_winner_match_id"]
+    if next_match_id and (
+        player1_name != match["player1_name"]
+        or player2_name != match["player2_name"]
+        or (match["winner_name"] and match["winner_name"] not in {player1_name, player2_name})
+        or winner_name != match["winner_name"]
+    ):
+        await _reset_match_state(db, next_match_id)
+
     await db.execute(
         """
         UPDATE bracket_matches
-        SET winner_name=$1, score1=$2, score2=$3, status='completed'
-        WHERE id=$4
+        SET player1_name=$1,
+            player2_name=$2,
+            winner_name=$3,
+            score1=$4,
+            score2=$5,
+            is_bye=$6,
+            status=$7,
+            match_format=$8,
+            start_time=$9
+        WHERE id=$10
         """,
-        result.winner_name,
-        result.score1,
-        result.score2,
+        player1_name,
+        player2_name,
+        winner_name,
+        payload.score1 if payload.score1 is not None else match["score1"],
+        payload.score2 if payload.score2 is not None else match["score2"],
+        is_bye,
+        status,
+        payload.match_format or match["match_format"] or "BO1",
+        payload.start_time if payload.start_time is not None else match["start_time"],
         match_id,
     )
 
     updated_match = await db.fetchrow("SELECT * FROM bracket_matches WHERE id=$1", match_id)
-    if updated_match:
+    if updated_match and updated_match["winner_name"] and updated_match["status"] in {"completed", "bye"}:
         await _advance_winner(db, updated_match)
 
     return {"status": "updated"}
@@ -437,13 +549,60 @@ async def assign_player_slot(
     if body.slot not in (1, 2):
         raise HTTPException(400, "slot must be 1 or 2")
 
+    match = await db.fetchrow("SELECT * FROM bracket_matches WHERE id=$1", match_id)
+    if not match:
+        raise HTTPException(404, "Match not found")
+
     field = "player1_name" if body.slot == 1 else "player2_name"
+    normalized_name = _normalize_player_name(body.player_name)
     await db.execute(
         f"UPDATE bracket_matches SET {field}=$1 WHERE id=$2",
-        body.player_name,
+        normalized_name,
         match_id,
     )
+
+    if match["winner_name"] and match["winner_name"] == match[field]:
+        await db.execute(
+            """
+            UPDATE bracket_matches
+            SET winner_name=NULL, score1=NULL, score2=NULL, is_bye=FALSE, status='pending'
+            WHERE id=$1
+            """,
+            match_id,
+        )
+        if match["next_winner_match_id"]:
+            await _reset_match_state(db, match["next_winner_match_id"])
+
     return {"status": "ok"}
+
+
+@router.post("/admin/bracket/match/{match_id}/reset")
+async def reset_match_progress(
+    match_id: int,
+    db: asyncpg.Connection = Depends(get_db),
+    _: User = Depends(get_current_admin_user),
+):
+    match = await db.fetchrow("SELECT * FROM bracket_matches WHERE id=$1", match_id)
+    if not match:
+        raise HTTPException(404, "Match not found")
+
+    await db.execute(
+        """
+        UPDATE bracket_matches
+        SET winner_name=NULL,
+            score1=NULL,
+            score2=NULL,
+            is_bye=FALSE,
+            status='pending'
+        WHERE id=$1
+        """,
+        match_id,
+    )
+
+    if match["next_winner_match_id"]:
+        await _reset_match_state(db, match["next_winner_match_id"])
+
+    return {"status": "reset"}
 
 
 @router.delete("/admin/tournaments/{tournament_id}/bracket")

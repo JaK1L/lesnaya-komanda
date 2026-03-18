@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -47,9 +47,9 @@ const EMPTY: Omit<Tournament, 'id'> = {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  upcoming: 'Скоро',
-  active: 'Идёт',
-  completed: 'Завершён',
+  upcoming: 'РЎРєРѕСЂРѕ',
+  active: 'РРґС‘С‚',
+  completed: 'Р—Р°РІРµСЂС€С‘РЅ',
 }
 
 interface Registration {
@@ -87,7 +87,7 @@ function RegViewer({ tournamentId, token, onClose }: { tournamentId: number; tok
   useEffect(() => { loadRegs() }, [tournamentId, token])
 
   const handleDelete = async (regId: number) => {
-    if (!confirm('Удалить заявку?')) return
+    if (!confirm('РЈРґР°Р»РёС‚СЊ Р·Р°СЏРІРєСѓ?')) return
     const response = await fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/registrations/${regId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
@@ -103,14 +103,14 @@ function RegViewer({ tournamentId, token, onClose }: { tournamentId: number; tok
     <div className={modalStyles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={modalStyles.modal}>
         <div className={modalStyles.modalHeader}>
-          <h2>Заявки</h2>
+          <h2>Р—Р°СЏРІРєРё</h2>
           <button className={modalStyles.close} onClick={onClose} aria-label="Close"><X size={16} /></button>
         </div>
         <div className={modalStyles.body}>
           {loading ? (
-            <p style={{ color: '#888' }}>Загрузка...</p>
+            <p style={{ color: '#888' }}>Р—Р°РіСЂСѓР·РєР°...</p>
           ) : regs.length === 0 ? (
-            <p style={{ color: '#888' }}>Заявок пока нет</p>
+            <p style={{ color: '#888' }}>Р—Р°СЏРІРѕРє РїРѕРєР° РЅРµС‚</p>
           ) : regs.map(r => (
             <div key={r.id} style={{ padding: '10px 0', borderBottom: '1px solid #333', fontSize: 13 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -122,15 +122,15 @@ function RegViewer({ tournamentId, token, onClose }: { tournamentId: number; tok
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span style={{ color: '#fff', fontWeight: 600 }}>Команда: {r.team_name}</span>
-                    {r.players && <span style={{ color: '#aaa' }}>Игроки: {r.players.join(', ')}</span>}
-                    {r.contact && <span style={{ color: '#888' }}>Контакт: {r.contact}</span>}
+                    <span style={{ color: '#fff', fontWeight: 600 }}>РљРѕРјР°РЅРґР°: {r.team_name}</span>
+                    {r.players && <span style={{ color: '#aaa' }}>РРіСЂРѕРєРё: {r.players.join(', ')}</span>}
+                    {r.contact && <span style={{ color: '#888' }}>РљРѕРЅС‚Р°РєС‚: {r.contact}</span>}
                   </div>
                 )}
                 <button
                   onClick={() => handleDelete(r.id)}
                   style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}
-                  title="Удалить заявку"
+                  title="РЈРґР°Р»РёС‚СЊ Р·Р°СЏРІРєСѓ"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -159,6 +159,15 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
   const [score1, setScore1] = useState(0)
   const [score2, setScore2] = useState(0)
   const [winner, setWinner] = useState('')
+  const [player1Name, setPlayer1Name] = useState('')
+  const [player2Name, setPlayer2Name] = useState('')
+  const [matchStatus, setMatchStatus] = useState<'pending' | 'upcoming' | 'live' | 'completed' | 'cancelled' | 'bye'>('pending')
+  const [matchFormat, setMatchFormat] = useState<'BO1' | 'BO3' | 'BO5'>('BO1')
+  const [matchStartTime, setMatchStartTime] = useState('')
+  const [matchBye, setMatchBye] = useState(false)
+  const [matchSaving, setMatchSaving] = useState(false)
+  const [matchResetting, setMatchResetting] = useState(false)
+  const [matchError, setMatchError] = useState('')
   const [expanded, setExpanded] = useState(false)
 
   const loadRegs = () => {
@@ -188,14 +197,20 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
         }
         return r.json()
       })
-      .then(d => { setMatches(Array.isArray(d) ? d : []); setLoading(false) })
+      .then(d => {
+        const nextMatches = Array.isArray(d) ? d : []
+        setMatches(nextMatches)
+        if (nextMatches[0]?.bracket_type === 'double') setBracketType('double')
+        if (nextMatches[0]?.bracket_type === 'single') setBracketType('single')
+        setLoading(false)
+      })
       .catch(() => setLoading(false))
   }
 
   useEffect(() => { load(); loadRegs() }, [tournamentId])
 
   const generate = async () => {
-    if (!confirm(`Сформировать сетку (${bracketType === 'single' ? 'Single' : 'Double'} Elimination)? Старая сетка будет удалена.`)) return
+    if (!confirm(`РЎС„РѕСЂРјРёСЂРѕРІР°С‚СЊ СЃРµС‚РєСѓ (${bracketType === 'single' ? 'Single' : 'Double'} Elimination)? РЎС‚Р°СЂР°СЏ СЃРµС‚РєР° Р±СѓРґРµС‚ СѓРґР°Р»РµРЅР°.`)) return
     setGenerating(true)
     setGenError('')
     const customList = customPlayers.split('\n').map(s => s.trim()).filter(Boolean)
@@ -213,19 +228,19 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
       }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        setGenError(data.detail || `Ошибка ${res.status}`)
+        setGenError(data.detail || `РћС€РёР±РєР° ${res.status}`)
       } else {
         load()
       }
     } catch {
-      setGenError('Ошибка сети')
+      setGenError('РћС€РёР±РєР° СЃРµС‚Рё')
     } finally {
       setGenerating(false)
     }
   }
 
   const reset = async () => {
-    if (!confirm('Удалить сетку полностью?')) return
+    if (!confirm('РЈРґР°Р»РёС‚СЊ СЃРµС‚РєСѓ РїРѕР»РЅРѕСЃС‚СЊСЋ?')) return
     const response = await fetch(`${API_URL}/api/admin/tournaments/${tournamentId}/bracket`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
     if (response.status === 401) {
       handleAdminAuthError()
@@ -236,7 +251,7 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
 
   const randomizeBracket = async () => {
     if (matches.length === 0) {
-      setGenError('Сначала сформируйте сетку, а потом используйте рандом.')
+      setGenError('РЎРЅР°С‡Р°Р»Р° СЃС„РѕСЂРјРёСЂСѓР№С‚Рµ СЃРµС‚РєСѓ, Р° РїРѕС‚РѕРј РёСЃРїРѕР»СЊР·СѓР№С‚Рµ СЂР°РЅРґРѕРј.')
       return
     }
 
@@ -248,11 +263,11 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
     const playersToShuffle = sourcePlayers.length > 0 ? sourcePlayers : registrations
 
     if (playersToShuffle.length === 0) {
-      setGenError('Нет заявок для случайного распределения.')
+      setGenError('РќРµС‚ Р·Р°СЏРІРѕРє РґР»СЏ СЃР»СѓС‡Р°Р№РЅРѕРіРѕ СЂР°СЃРїСЂРµРґРµР»РµРЅРёСЏ.')
       return
     }
 
-    if (!confirm('Случайно пересобрать сетку турнира? Текущая сетка будет пересоздана.')) return
+    if (!confirm('РЎР»СѓС‡Р°Р№РЅРѕ РїРµСЂРµСЃРѕР±СЂР°С‚СЊ СЃРµС‚РєСѓ С‚СѓСЂРЅРёСЂР°? РўРµРєСѓС‰Р°СЏ СЃРµС‚РєР° Р±СѓРґРµС‚ РїРµСЂРµСЃРѕР·РґР°РЅР°.')) return
 
     setRandomizing(true)
     setGenError('')
@@ -283,24 +298,66 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
 
       load()
     } catch {
-      setGenError('Не удалось случайно распределить участников.')
+      setGenError('РќРµ СѓРґР°Р»РѕСЃСЊ СЃР»СѓС‡Р°Р№РЅРѕ СЂР°СЃРїСЂРµРґРµР»РёС‚СЊ СѓС‡Р°СЃС‚РЅРёРєРѕРІ.')
     } finally {
       setRandomizing(false)
     }
   }
 
   const saveMatch = async () => {
-    if (!editMatch || !winner) return
+    if (!editMatch) return
+    setMatchSaving(true)
+    setMatchError('')
     const response = await fetch(`${API_URL}/api/admin/bracket/match/${editMatch.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ winner_name: winner, score1, score2 })
+      body: JSON.stringify({
+        player1_name: player1Name || null,
+        player2_name: player2Name || null,
+        winner_name: winner || null,
+        score1,
+        score2,
+        status: matchStatus,
+        match_format: matchFormat,
+        start_time: matchStartTime || null,
+        is_bye: matchBye,
+      }),
     })
     if (response.status === 401) {
       handleAdminAuthError()
       return
     }
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}))
+      setMatchError(payload.detail || `РћС€РёР±РєР° ${response.status}`)
+      setMatchSaving(false)
+      return
+    }
     setEditMatch(null)
+    setMatchSaving(false)
+    load()
+  }
+
+  const resetMatchProgress = async () => {
+    if (!editMatch) return
+    setMatchResetting(true)
+    setMatchError('')
+    const response = await fetch(`${API_URL}/api/admin/bracket/match/${editMatch.id}/reset`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (response.status === 401) {
+      handleAdminAuthError()
+      return
+    }
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}))
+      setMatchError(payload.detail || `РћС€РёР±РєР° ${response.status}`)
+      setMatchResetting(false)
+      return
+    }
+    setEditMatch(null)
+    setMatchResetting(false)
     load()
   }
 
@@ -318,18 +375,24 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
   }
 
   const handleSelectWinner = (match: BracketMatch, _winner?: string) => {
-    if (match.status === 'completed') return
     setEditMatch(match)
+    setPlayer1Name(match.player1_name ?? '')
+    setPlayer2Name(match.player2_name ?? '')
     setScore1(match.score1 ?? 0)
     setScore2(match.score2 ?? 0)
     setWinner(match.winner_name ?? _winner ?? '')
+    setMatchStatus((match.status as 'pending' | 'upcoming' | 'live' | 'completed' | 'cancelled' | 'bye') || 'pending')
+    setMatchFormat(match.match_format || 'BO1')
+    setMatchStartTime(match.start_time ? String(match.start_time).slice(0, 16) : '')
+    setMatchBye(Boolean(match.is_bye))
+    setMatchError('')
   }
 
   return (
     <div className={modalStyles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={modalStyles.modal} style={{ maxWidth: expanded ? '98vw' : '95vw', width: expanded ? 'min(98vw, 1680px)' : 1200, maxHeight: expanded ? '98vh' : '95vh', height: expanded ? '98vh' : 'auto', display: 'flex', flexDirection: 'column' }}>
         <div className={modalStyles.modalHeader}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Network size={18} /> Сетка турнира</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Network size={18} /> РЎРµС‚РєР° С‚СѓСЂРЅРёСЂР°</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               className={modalStyles.close}
@@ -349,11 +412,11 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
             <option value="double">Double Elimination</option>
           </select>
           <button onClick={generate} disabled={generating} style={{ padding: '6px 14px', background: '#4f9fff', border: 'none', color: '#fff', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-            {generating ? 'Генерация...' : 'Сформировать'}
+            {generating ? 'Р“РµРЅРµСЂР°С†РёСЏ...' : 'РЎС„РѕСЂРјРёСЂРѕРІР°С‚СЊ'}
           </button>
           {matches.length > 0 && (
             <button onClick={reset} style={{ padding: '6px 14px', background: '#c0392b', border: 'none', color: '#fff', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
-              Сбросить
+              РЎР±СЂРѕСЃРёС‚СЊ
             </button>
           )}
           {matches.length > 0 && (
@@ -363,14 +426,14 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
               style={{ padding: '6px 14px', background: '#8b5cf6', border: 'none', color: '#fff', borderRadius: 8, cursor: randomizing ? 'default' : 'pointer', fontWeight: 600, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: randomizing ? 0.7 : 1 }}
             >
               <Shuffle size={14} />
-              {randomizing ? 'Рандом...' : 'Рандом'}
+              {randomizing ? 'Р Р°РЅРґРѕРј...' : 'Р Р°РЅРґРѕРј'}
             </button>
           )}
           <div style={{ flex: 1, minWidth: 200 }}>
             <textarea
               value={customPlayers}
               onChange={e => setCustomPlayers(e.target.value)}
-              placeholder={'Участники вручную (по одному на строку)'}
+              placeholder={'РЈС‡Р°СЃС‚РЅРёРєРё РІСЂСѓС‡РЅСѓСЋ (РїРѕ РѕРґРЅРѕРјСѓ РЅР° СЃС‚СЂРѕРєСѓ)'}
               rows={2}
               style={{ width: '100%', background: '#111', border: '1px solid #2a2f36', borderRadius: 8, color: '#fff', padding: '6px 8px', fontSize: 12, resize: 'vertical', boxSizing: 'border-box' }}
             />
@@ -382,9 +445,9 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
           {/* Left: participant list */}
           <div style={{ width: expanded ? 220 : 180, flexShrink: 0, borderRight: '1px solid #2a2f36', padding: '12px 10px', overflowY: 'auto', background: '#0f1218' }}>
-            <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Участники</div>
+            <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>РЈС‡Р°СЃС‚РЅРёРєРё</div>
             {registrations.length === 0 && (
-              <p style={{ fontSize: 12, color: '#555' }}>Нет заявок</p>
+              <p style={{ fontSize: 12, color: '#555' }}>РќРµС‚ Р·Р°СЏРІРѕРє</p>
             )}
             {registrations.map((name, i) => (
               <div
@@ -400,16 +463,16 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
 
           {/* Right: bracket view */}
           <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: expanded ? '20px' : '16px', minHeight: 0 }}>
-            {loading && <p style={{ color: '#888' }}>Загрузка...</p>}
+            {loading && <p style={{ color: '#888' }}>Р—Р°РіСЂСѓР·РєР°...</p>}
             {!loading && matches.length === 0 && (
-              <p style={{ color: '#888' }}>Сетка не сформирована. Введите участников и нажмите "Сформировать".</p>
+              <p style={{ color: '#888' }}>РЎРµС‚РєР° РЅРµ СЃС„РѕСЂРјРёСЂРѕРІР°РЅР°. Р’РІРµРґРёС‚Рµ СѓС‡Р°СЃС‚РЅРёРєРѕРІ Рё РЅР°Р¶РјРёС‚Рµ "РЎС„РѕСЂРјРёСЂРѕРІР°С‚СЊ".</p>
             )}
             {!loading && matches.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
                 {['winners', 'losers', 'grand_final'].filter(s => matches.some(m => m.section === s)).map(section => (
                   <div key={section}>
                     <div style={{ fontSize: 11, color: '#4f9fff', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
-                      {{ winners: 'Победители', losers: 'Проигравшие', grand_final: 'Гранд-финал' }[section]}
+                      {{ winners: 'РџРѕР±РµРґРёС‚РµР»Рё', losers: 'РџСЂРѕРёРіСЂР°РІС€РёРµ', grand_final: 'Р“СЂР°РЅРґ-С„РёРЅР°Р»' }[section]}
                     </div>
                     <BracketView
                       matches={matches}
@@ -425,15 +488,34 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
           </div>
         </div>
       </div>
-
       {/* Edit match modal */}
       {editMatch && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={() => setEditMatch(null)}>
-          <div style={{ background: '#1a1e24', border: '1px solid #333', borderRadius: 16, padding: '1.5rem', width: 340 }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: '#1a1e24', border: '1px solid #333', borderRadius: 16, padding: '1.5rem', width: 440, maxWidth: 'calc(100vw - 32px)' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 16px', color: '#fff', fontSize: 15 }}>
               {editMatch.player1_name || 'TBD'} vs {editMatch.player2_name || 'TBD'}
             </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+              <input value={player1Name} onChange={e => setPlayer1Name(e.target.value)} placeholder="Игрок 1" style={{ width: '100%', padding: '8px', background: '#111', border: '1px solid #444', borderRadius: 8, color: '#fff', boxSizing: 'border-box' }} />
+              <input value={player2Name} onChange={e => setPlayer2Name(e.target.value)} placeholder="Игрок 2" style={{ width: '100%', padding: '8px', background: '#111', border: '1px solid #444', borderRadius: 8, color: '#fff', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+              <select value={matchStatus} onChange={e => setMatchStatus(e.target.value as typeof matchStatus)} style={{ width: '100%', padding: '8px', background: '#111', border: '1px solid #444', borderRadius: 8, color: '#fff' }}>
+                <option value="pending">Ожидание</option>
+                <option value="upcoming">Скоро</option>
+                <option value="live">LIVE</option>
+                <option value="completed">Завершён</option>
+                <option value="cancelled">Отменён</option>
+                <option value="bye">Автопроход</option>
+              </select>
+              <select value={matchFormat} onChange={e => setMatchFormat(e.target.value as typeof matchFormat)} style={{ width: '100%', padding: '8px', background: '#111', border: '1px solid #444', borderRadius: 8, color: '#fff' }}>
+                <option value="BO1">BO1</option>
+                <option value="BO3">BO3</option>
+                <option value="BO5">BO5</option>
+              </select>
+            </div>
+            <input type="datetime-local" value={matchStartTime} onChange={e => setMatchStartTime(e.target.value)} style={{ width: '100%', padding: '8px', background: '#111', border: '1px solid #444', borderRadius: 8, color: '#fff', marginBottom: 12, boxSizing: 'border-box' }} />
             <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
               <input type="number" min={0} value={score1} onChange={e => setScore1(Number(e.target.value))}
                 style={{ flex: 1, padding: '8px', background: '#111', border: '1px solid #444', borderRadius: 8, color: '#fff', textAlign: 'center' }} />
@@ -441,16 +523,21 @@ function BracketManager({ tournamentId, token, onClose }: { tournamentId: number
               <input type="number" min={0} value={score2} onChange={e => setScore2(Number(e.target.value))}
                 style={{ flex: 1, padding: '8px', background: '#111', border: '1px solid #444', borderRadius: 8, color: '#fff', textAlign: 'center' }} />
             </div>
-            <label style={{ display: 'block', fontSize: 12, color: '#888', marginBottom: 6 }}>Победитель</label>
             <select value={winner} onChange={e => setWinner(e.target.value)}
-              style={{ width: '100%', padding: '8px', background: '#111', border: '1px solid #444', borderRadius: 8, color: '#fff', marginBottom: 14 }}>
-              <option value="">— выбери —</option>
-              {editMatch.player1_name && <option value={editMatch.player1_name}>{editMatch.player1_name}</option>}
-              {editMatch.player2_name && <option value={editMatch.player2_name}>{editMatch.player2_name}</option>}
+              style={{ width: '100%', padding: '8px', background: '#111', border: '1px solid #444', borderRadius: 8, color: '#fff', marginBottom: 12 }}>
+              <option value="">— выбрать победителя —</option>
+              {player1Name && <option value={player1Name}>{player1Name}</option>}
+              {player2Name && <option value={player2Name}>{player2Name}</option>}
             </select>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={saveMatch} disabled={!winner} style={{ flex: 1, padding: '8px', background: '#4f9fff', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Сохранить</button>
-              <button onClick={() => setEditMatch(null)} style={{ flex: 1, padding: '8px', background: '#333', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer' }}>Отмена</button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#bbb', fontSize: 12, marginBottom: 12 }}>
+              <input type="checkbox" checked={matchBye} onChange={e => setMatchBye(e.target.checked)} />
+              Автопроход / BYE матч
+            </label>
+            {matchError && <div style={{ color: '#ff7b7b', fontSize: 12, marginBottom: 12 }}>{matchError}</div>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              <button onClick={resetMatchProgress} disabled={matchResetting} style={{ padding: '8px', background: '#7f1d1d', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 600, cursor: 'pointer' }}>{matchResetting ? 'Сброс...' : 'Сбросить'}</button>
+              <button onClick={saveMatch} disabled={matchSaving} style={{ padding: '8px', background: '#4f9fff', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 600, cursor: 'pointer' }}>{matchSaving ? 'Сохранение...' : 'Сохранить'}</button>
+              <button onClick={() => setEditMatch(null)} style={{ padding: '8px', background: '#333', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer' }}>Отмена</button>
             </div>
           </div>
         </div>
@@ -522,7 +609,7 @@ export default function AdminTournamentsPage() {
   }
 
   const handleSave = async () => {
-    if (!form.title.trim()) { setError('Название обязательно'); return }
+    if (!form.title.trim()) { setError('РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ'); return }
     setSaving(true)
     setError('')
     const token = localStorage.getItem('admin_token')
@@ -550,7 +637,7 @@ export default function AdminTournamentsPage() {
         handleAdminAuthError()
         return
       }
-      if (!res.ok) { setError('Ошибка сохранения'); return }
+      if (!res.ok) { setError('РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ'); return }
       setShowModal(false)
       fetch_()
     } finally {
@@ -559,7 +646,7 @@ export default function AdminTournamentsPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Удалить турнир?')) return
+    if (!confirm('РЈРґР°Р»РёС‚СЊ С‚СѓСЂРЅРёСЂ?')) return
     const token = localStorage.getItem('admin_token')
     const response = await fetch(`${API_URL}/api/admin/tournaments/${id}`, {
       method: 'DELETE',
@@ -574,23 +661,23 @@ export default function AdminTournamentsPage() {
 
   const fmtDate = (s: string | null) => s
     ? new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : '—'
+    : 'вЂ”'
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <button onClick={() => router.push('/admin')} className={styles.backButton}>← Назад</button>
-        <h1 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Trophy size={22} /> Управление турнирами</h1>
-        <button onClick={openCreate} className={styles.addButton} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Plus size={16} /> Добавить</button>
+        <button onClick={() => router.push('/admin')} className={styles.backButton}>в†ђ РќР°Р·Р°Рґ</button>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Trophy size={22} /> РЈРїСЂР°РІР»РµРЅРёРµ С‚СѓСЂРЅРёСЂР°РјРё</h1>
+        <button onClick={openCreate} className={styles.addButton} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Plus size={16} /> Р”РѕР±Р°РІРёС‚СЊ</button>
       </header>
 
       {loading ? (
-        <div className={styles.loading}>Загрузка...</div>
+        <div className={styles.loading}>Р—Р°РіСЂСѓР·РєР°...</div>
       ) : items.length === 0 ? (
         <div className={styles.list}>
           <div className={styles.empty}>
-            <p>Турниров пока нет</p>
-            <button onClick={openCreate} className={styles.emptyButton}>Создать первый турнир</button>
+            <p>РўСѓСЂРЅРёСЂРѕРІ РїРѕРєР° РЅРµС‚</p>
+            <button onClick={openCreate} className={styles.emptyButton}>РЎРѕР·РґР°С‚СЊ РїРµСЂРІС‹Р№ С‚СѓСЂРЅРёСЂ</button>
           </div>
         </div>
       ) : (
@@ -600,11 +687,11 @@ export default function AdminTournamentsPage() {
               <div className={styles.cardHeader}>
                 <h3>{item.title}</h3>
                 <div className={styles.cardActions}>
-                  <span className={styles.published}>{STATUS_LABEL[item.status]} · {item.type} {item.game ? `· ${item.game}` : ''}</span>
-                  <button onClick={() => setRegViewId(item.id)} className={styles.editButton} title="Заявки"><Users size={15} /></button>
-                  <button onClick={() => setBracketId(item.id)} className={styles.editButton} title="Сетка"><Network size={15} /></button>
-                  <button onClick={() => openEdit(item)} className={styles.editButton} title="Редактировать"><Pencil size={15} /></button>
-                  <button onClick={() => handleDelete(item.id)} className={styles.deleteButton} title="Удалить"><Trash2 size={15} /></button>
+                  <span className={styles.published}>{STATUS_LABEL[item.status]} В· {item.type} {item.game ? `В· ${item.game}` : ''}</span>
+                  <button onClick={() => setRegViewId(item.id)} className={styles.editButton} title="Р—Р°СЏРІРєРё"><Users size={15} /></button>
+                  <button onClick={() => setBracketId(item.id)} className={styles.editButton} title="РЎРµС‚РєР°"><Network size={15} /></button>
+                  <button onClick={() => openEdit(item)} className={styles.editButton} title="Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ"><Pencil size={15} /></button>
+                  <button onClick={() => handleDelete(item.id)} className={styles.deleteButton} title="РЈРґР°Р»РёС‚СЊ"><Trash2 size={15} /></button>
                 </div>
               </div>
               {item.description && <p className={styles.cardContent}>{item.description}</p>}
@@ -641,35 +728,35 @@ export default function AdminTournamentsPage() {
         <div className={modalStyles.overlay} onClick={e => e.target === e.currentTarget && setShowModal(false)}>
           <div className={modalStyles.modal}>
             <div className={modalStyles.modalHeader}>
-              <h2>{editing ? 'Редактировать турнир' : 'Новый турнир'}</h2>
+              <h2>{editing ? 'Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ С‚СѓСЂРЅРёСЂ' : 'РќРѕРІС‹Р№ С‚СѓСЂРЅРёСЂ'}</h2>
               <button className={modalStyles.close} onClick={() => setShowModal(false)}><X size={16} /></button>
             </div>
 
             <div className={modalStyles.body}>
               <label className={modalStyles.label}>
-                Название *
+                РќР°Р·РІР°РЅРёРµ *
                 <input
                   className={modalStyles.input}
                   value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  placeholder="Название турнира"
+                  placeholder="РќР°Р·РІР°РЅРёРµ С‚СѓСЂРЅРёСЂР°"
                 />
               </label>
 
               <label className={modalStyles.label}>
-                Описание
+                РћРїРёСЃР°РЅРёРµ
                 <textarea
                   className={modalStyles.textarea}
                   value={form.description ?? ''}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Описание"
+                  placeholder="РћРїРёСЃР°РЅРёРµ"
                   rows={3}
                 />
               </label>
 
               <div className={modalStyles.row}>
                 <label className={modalStyles.label}>
-                  Игра
+                  РРіСЂР°
                   <input
                     className={modalStyles.input}
                     value={form.game ?? ''}
@@ -679,29 +766,29 @@ export default function AdminTournamentsPage() {
                 </label>
 
                 <label className={modalStyles.label}>
-                  Приз
+                  РџСЂРёР·
                   <input
                     className={modalStyles.input}
                     value={form.prize ?? ''}
                     onChange={e => setForm(f => ({ ...f, prize: e.target.value }))}
-                    placeholder="1000 ₽, скин..."
+                    placeholder="1000 в‚Ѕ, СЃРєРёРЅ..."
                   />
                 </label>
               </div>
 
               <div className={modalStyles.row}>
                 <label className={modalStyles.label}>
-                  Роль (награда)
+                  Р РѕР»СЊ (РЅР°РіСЂР°РґР°)
                   <input
                     className={modalStyles.input}
                     value={form.role_reward ?? ''}
                     onChange={e => setForm(f => ({ ...f, role_reward: e.target.value }))}
-                    placeholder="Чемпион турнира..."
+                    placeholder="Р§РµРјРїРёРѕРЅ С‚СѓСЂРЅРёСЂР°..."
                   />
                 </label>
 
                 <label className={modalStyles.label}>
-                  Макс. участников
+                  РњР°РєСЃ. СѓС‡Р°СЃС‚РЅРёРєРѕРІ
                   <input
                     className={modalStyles.input}
                     type="number"
@@ -715,33 +802,33 @@ export default function AdminTournamentsPage() {
 
               <div className={modalStyles.row}>
                 <label className={modalStyles.label}>
-                  Формат
+                  Р¤РѕСЂРјР°С‚
                   <select
                     className={modalStyles.select}
                     value={form.type}
                     onChange={e => setForm(f => ({ ...f, type: e.target.value as '1v1' | '5v5' }))}
                   >
-                    <option value="1v1">1 на 1</option>
-                    <option value="5v5">5 на 5</option>
+                    <option value="1v1">1 РЅР° 1</option>
+                    <option value="5v5">5 РЅР° 5</option>
                   </select>
                 </label>
 
                 <label className={modalStyles.label}>
-                  Статус
+                  РЎС‚Р°С‚СѓСЃ
                   <select
                     className={modalStyles.select}
                     value={form.status}
                     onChange={e => setForm(f => ({ ...f, status: e.target.value as Tournament['status'] }))}
                   >
-                    <option value="upcoming">Скоро</option>
-                    <option value="active">Идёт</option>
-                    <option value="completed">Завершён</option>
+                    <option value="upcoming">РЎРєРѕСЂРѕ</option>
+                    <option value="active">РРґС‘С‚</option>
+                    <option value="completed">Р—Р°РІРµСЂС€С‘РЅ</option>
                   </select>
                 </label>
               </div>
 
               <label className={modalStyles.label}>
-                Картинка (URL)
+                РљР°СЂС‚РёРЅРєР° (URL)
                 <input
                   className={modalStyles.input}
                   value={form.image_url ?? ''}
@@ -752,7 +839,7 @@ export default function AdminTournamentsPage() {
 
               <div className={modalStyles.row}>
                 <label className={modalStyles.label}>
-                  Дата начала
+                  Р”Р°С‚Р° РЅР°С‡Р°Р»Р°
                   <input
                     className={modalStyles.input}
                     type="datetime-local"
@@ -764,12 +851,12 @@ export default function AdminTournamentsPage() {
 
               {(form.status === 'completed' || editing?.status === 'completed') && (
                 <label className={modalStyles.label}>
-                  Победитель
+                  РџРѕР±РµРґРёС‚РµР»СЊ
                   <input
                     className={modalStyles.input}
                     value={form.winner ?? ''}
                     onChange={e => setForm(f => ({ ...f, winner: e.target.value }))}
-                    placeholder="Ник победителя или название команды"
+                    placeholder="РќРёРє РїРѕР±РµРґРёС‚РµР»СЏ РёР»Рё РЅР°Р·РІР°РЅРёРµ РєРѕРјР°РЅРґС‹"
                   />
                 </label>
               )}
@@ -778,9 +865,9 @@ export default function AdminTournamentsPage() {
             </div>
 
             <div className={modalStyles.footer}>
-              <button className={modalStyles.cancel} onClick={() => setShowModal(false)}>Отмена</button>
+              <button className={modalStyles.cancel} onClick={() => setShowModal(false)}>РћС‚РјРµРЅР°</button>
               <button className={modalStyles.save} onClick={handleSave} disabled={saving}>
-                {saving ? 'Сохранение...' : 'Сохранить'}
+                {saving ? 'РЎРѕС…СЂР°РЅРµРЅРёРµ...' : 'РЎРѕС…СЂР°РЅРёС‚СЊ'}
               </button>
             </div>
           </div>
@@ -789,3 +876,5 @@ export default function AdminTournamentsPage() {
     </div>
   )
 }
+
+

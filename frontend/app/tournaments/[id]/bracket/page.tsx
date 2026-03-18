@@ -22,6 +22,8 @@ interface Match {
   score2: number | null
   is_bye: boolean
   status: string
+  match_format: 'BO1' | 'BO3' | 'BO5' | null
+  start_time: string | null
 }
 
 const SECTION_LABELS: Record<string, string> = {
@@ -35,6 +37,8 @@ function normalizeStatus(match: Match) {
   if (match.status === 'completed') return 'finished'
   if (match.status === 'cancelled') return 'cancelled'
   if (match.status === 'live') return 'live'
+  if (match.status === 'pending') return 'pending'
+  if (match.status === 'upcoming') return 'upcoming'
   if (!match.player1_name || !match.player2_name) return 'pending'
   return 'upcoming'
 }
@@ -78,6 +82,8 @@ function buildSections(matches: Match[]): BracketSectionData[] {
               round,
               position: match.match_index + 1,
               status: normalizeStatus(match) as 'upcoming' | 'live' | 'finished' | 'cancelled' | 'pending' | 'bye',
+              matchFormat: match.match_format ?? 'BO1',
+              startTime: match.start_time,
               winnerName: match.winner_name,
               participants: [
                 {

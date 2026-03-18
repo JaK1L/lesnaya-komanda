@@ -647,6 +647,13 @@ async def _migrate_bracket(conn):
             EXCEPTION WHEN duplicate_column THEN NULL;
             END $$;
         """)
+        await conn.execute("""
+            DO $$ BEGIN
+                ALTER TABLE bracket_matches ADD COLUMN IF NOT EXISTS match_format VARCHAR(10) DEFAULT 'BO1';
+                ALTER TABLE bracket_matches ADD COLUMN IF NOT EXISTS start_time TIMESTAMP NULL;
+            EXCEPTION WHEN duplicate_column THEN NULL;
+            END $$;
+        """)
         logger.info("Bracket tables ready")
     except Exception as e:
         logger.error(f"Bracket migration failed: {e}", exc_info=True)

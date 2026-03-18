@@ -5,6 +5,8 @@ import type { BracketSectionData } from '../tournament/types'
 
 export interface BracketMatch {
   id: number
+  tournament_id?: number
+  bracket_type?: string
   section: string
   round: number
   match_index: number
@@ -15,6 +17,10 @@ export interface BracketMatch {
   score2: number | null
   is_bye: boolean
   status: string
+  match_format?: 'BO1' | 'BO3' | 'BO5' | null
+  start_time?: string | null
+  next_winner_match_id?: number | null
+  next_loser_match_id?: number | null
 }
 
 interface Props {
@@ -36,6 +42,8 @@ function normalizeStatus(match: BracketMatch) {
   if (match.status === 'completed') return 'finished'
   if (match.status === 'cancelled') return 'cancelled'
   if (match.status === 'live') return 'live'
+  if (match.status === 'pending') return 'pending'
+  if (match.status === 'upcoming') return 'upcoming'
   if (!match.player1_name || !match.player2_name) return 'pending'
   return 'upcoming'
 }
@@ -76,6 +84,8 @@ export default function BracketView({
         round: match.round,
         position: match.match_index + 1,
         status: normalizeStatus(match) as 'upcoming' | 'live' | 'finished' | 'cancelled' | 'pending' | 'bye',
+        matchFormat: match.match_format ?? 'BO1',
+        startTime: match.start_time ?? null,
         winnerName: match.winner_name,
         participants: [
           {
