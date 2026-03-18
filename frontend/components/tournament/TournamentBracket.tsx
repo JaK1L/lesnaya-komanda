@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { AlertCircle, ChevronRight, Loader2, Network, Trophy } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AlertCircle, ChevronRight, Loader2, Network, Search, Trophy, ZoomIn, ZoomOut } from 'lucide-react'
 import BracketMatchCard from './BracketMatchCard'
 import BracketMatchDetails from './BracketMatchDetails'
 import styles from './TournamentBracket.module.css'
@@ -20,11 +20,12 @@ interface Props {
   onDropPlayer?: (match: any, slot: 1 | 2, player: string) => void
 }
 
-const CARD_WIDTH = 260
-const CARD_HEIGHT = 126
-const ROW_GAP = 24
-const COLUMN_GAP = 72
-const CONNECTOR_BEND = 28
+const CARD_WIDTH = 280
+const CARD_HEIGHT = 140
+const ROW_GAP = 28
+const COLUMN_GAP = 92
+const CONNECTOR_BEND = 34
+const CHAMPION_WIDTH = 220
 
 function getFormatLabel(format?: TournamentBracketFormat) {
   if (format === 'double-elimination') return 'Double Elimination'
@@ -103,17 +104,68 @@ function BracketBoard({
   onDropPlayer?: (match: any, slot: 1 | 2, player: string) => void
 }) {
   const [selectedMatch, setSelectedMatch] = useState<BracketMatchData | null>(null)
+  const [zoom, setZoom] = useState(1)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
   const rounds = section.rounds.map((round, index) => normalizeRound(round, index, section.rounds.length))
   const boardHeight = getBoardHeight(rounds)
   const boardWidth = rounds.length * CARD_WIDTH + Math.max(0, rounds.length - 1) * COLUMN_GAP
   const connectors = createConnectorPaths(rounds)
   const champion = getChampion(section)
+  const canvasWidth = boardWidth + (champion ? CHAMPION_WIDTH + 40 : 0)
+  const canvasHeight = Math.max(boardHeight, champion ? CARD_HEIGHT : 0)
+
+  const fitBoard = useCallback(() => {
+    if (!scrollRef.current) return
+    const viewportWidth = scrollRef.current.clientWidth - 24
+    const viewportHeight = scrollRef.current.clientHeight - 24
+    if (viewportWidth <= 0 || viewportHeight <= 0) return
+    const widthScale = viewportWidth / canvasWidth
+    const heightScale = viewportHeight / canvasHeight
+    const nextZoom = Math.min(1, Math.max(0.6, Math.min(widthScale, heightScale)))
+    setZoom(Number(nextZoom.toFixed(2)))
+  }, [canvasHeight, canvasWidth])
+
+  useEffect(() => {
+    fitBoard()
+  }, [fitBoard])
+
+  useEffect(() => {
+    const node = scrollRef.current
+    if (!node || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => fitBoard())
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [fitBoard])
+
+  const zoomLabel = useMemo(() => `${Math.round(zoom * 100)}%`, [zoom])
 
   return (
     <>
-      <div className={styles.boardScroll}>
-        <div className={styles.boardShell} style={{ width: boardWidth, minHeight: boardHeight }}>
-          <svg className={styles.connectorLayer} width={boardWidth} height={boardHeight} aria-hidden="true">
+      <div className={styles.boardChrome}>
+        <div className={styles.boardToolbar}>
+          <div className={styles.boardToolbarLabel}>
+            <Search size={14} />
+            Вид сетки
+          </div>
+          <div className={styles.boardToolbarActions}>
+            <button type="button" className={styles.zoomButton} onClick={() => setZoom(current => Math.max(0.6, Number((current - 0.1).toFixed(2))))} aria-label="Уменьшить">
+              <ZoomOut size={14} />
+            </button>
+            <span className={styles.zoomValue}>{zoomLabel}</span>
+            <button type="button" className={styles.zoomButton} onClick={() => setZoom(current => Math.min(1.2, Number((current + 0.1).toFixed(2))))} aria-label="Увеличить">
+              <ZoomIn size={14} />
+            </button>
+            <button type="button" className={styles.fitButton} onClick={fitBoard}>
+              Вписать
+            </button>
+          </div>
+        </div>
+
+        <div ref={scrollRef} className={styles.boardScroll}>
+          <div className={styles.boardViewport} style={{ width: canvasWidth * zoom, minHeight: canvasHeight * zoom }}>
+            <div className={styles.boardScale} style={{ width: canvasWidth, minHeight: canvasHeight, transform: `scale(${zoom})` }}>
+              <div className={styles.boardShell} style={{ width: canvasWidth, minHeight: canvasHeight }}>
+          <svg className={styles.connectorLayer} width={boardWidth} height={canvasHeight} aria-hidden="true">
             {connectors.map(path => (
               <path key={path.id} d={path.d} className={styles.connectorPath} />
             ))}
@@ -153,6 +205,9 @@ function BracketBoard({
               </div>
             </div>
           )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -104,6 +104,71 @@
   background: rgba(9, 12, 19, 0.72);
 }
 
+.boardChrome {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+.boardToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.boardToolbarLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.boardToolbarActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.zoomButton,
+.fitButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(71, 85, 105, 0.42);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #dbeafe;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.zoomButton:hover,
+.fitButton:hover {
+  border-color: rgba(142, 125, 255, 0.48);
+  background: rgba(28, 36, 58, 0.82);
+  transform: translateY(-1px);
+}
+
+.zoomValue {
+  min-width: 56px;
+  text-align: center;
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .sectionHeading {
   color: #eef2ff;
   font-size: 15px;
@@ -115,8 +180,12 @@
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-  padding-right: 10px;
-  padding-bottom: 18px;
+  padding: 4px 10px 18px 4px;
+  border: 1px solid rgba(51, 65, 85, 0.42);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(5, 9, 18, 0.88) 0%, rgba(8, 12, 21, 0.94) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .boardScroll::-webkit-scrollbar {
@@ -131,7 +200,16 @@
 
 .boardShell {
   position: relative;
-  padding-right: 236px;
+}
+
+.boardViewport {
+  position: relative;
+}
+
+.boardScale {
+  position: relative;
+  transform-origin: top left;
+  will-change: transform;
 }
 
 .connectorLayer {
@@ -358,7 +436,7 @@
 .championWrap {
   position: absolute;
   top: 0;
-  width: 188px;
+  width: 220px;
 }
 
 .championCard {
@@ -555,11 +633,7 @@
   }
 
   .matchCard {
-    width: 232px;
-  }
-
-  .boardShell {
-    padding-right: 204px;
+    width: 256px;
   }
 }
 
@@ -575,20 +649,24 @@
   }
 
   .matchCard {
-    width: 220px;
-  }
-
-  .boardShell {
-    padding-right: 0;
+    width: 244px;
   }
 
   .championWrap {
     position: static;
-    width: 220px;
+    width: 244px;
     margin-top: 24px;
   }
 
   .detailsPanel {
+    width: 100%;
+  }
+
+  .boardToolbar {
+    align-items: flex-start;
+  }
+
+  .boardToolbarActions {
     width: 100%;
   }
 }
