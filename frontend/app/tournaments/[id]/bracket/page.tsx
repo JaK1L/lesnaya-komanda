@@ -167,6 +167,7 @@ export default function BracketPage() {
         <h1 className={styles.title}>Турнирная сетка</h1>
       </div>
 
+      <div className={styles.viewport}>
       <TournamentBracket
         title={`Турнир #${id}`}
         format={format}
@@ -176,6 +177,7 @@ export default function BracketPage() {
         emptyMessage="Сетка еще не сформирована. Организаторы опубликуют ее после завершения регистрации."
         sectionMode="tabs"
       />
+      </div>
     </div>
   )
 }
