@@ -8,7 +8,7 @@ import axios from 'axios'
 import { LoginModal } from '../auth/LoginModal'
 import Logo from '../Logo/Logo'
 import { getImageUrl } from '../../lib/imageUtils'
-import { getProfileIdentifierFromProfileResponse, getProfileIdentifierFromToken } from '../../lib/profileIdentifier'
+import { getProfileIdentifierFromToken } from '../../lib/profileIdentifier'
 import styles from './Navigation.module.css'
 
 interface NavigationProps {
@@ -132,28 +132,14 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
     }
   }
 
-  const handleProfileClick = async () => {
-    try {
-      const token = localStorage.getItem('lesnaya_token')
-      let profileIdentifier = getProfileIdentifierFromToken(token)
+  const handleProfileClick = () => {
+    const token = localStorage.getItem('lesnaya_token')
+    const profileIdentifier = getProfileIdentifierFromToken(token)
 
-      if (token) {
-        try {
-          const res = await axios.get(`${API_URL}/api/profile`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          const canonicalIdentifier = getProfileIdentifierFromProfileResponse(res.data)
-          if (canonicalIdentifier) {
-            profileIdentifier = canonicalIdentifier
-          }
-        } catch {}
-      }
-
-      if (profileIdentifier) {
-        router.push(`/profile/${encodeURIComponent(profileIdentifier)}`)
-        return
-      }
-    } catch {}
+    if (profileIdentifier) {
+      router.push(`/profile/${encodeURIComponent(profileIdentifier)}`)
+      return
+    }
 
     router.push('/profile')
   }
