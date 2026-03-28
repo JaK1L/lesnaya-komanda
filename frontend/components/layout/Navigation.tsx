@@ -55,6 +55,13 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
   const pathname = usePathname()
   const router = useRouter()
 
+  const handleUnauthorized = () => {
+    setNotifications([])
+    setUnreadCount(0)
+    setNotificationsOpen(false)
+    onLogout()
+  }
+
   const loadNotifications = async () => {
     const token = localStorage.getItem('lesnaya_token')
     if (!token) return
@@ -70,7 +77,12 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
       ])
       setNotifications(listRes.data)
       setUnreadCount(countRes.data.count || 0)
-    } catch {
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        handleUnauthorized()
+        return
+      }
+
       setNotifications([])
       setUnreadCount(0)
     }
@@ -84,7 +96,11 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
         headers: { Authorization: `Bearer ${token}` },
       })
       await loadNotifications()
-    } catch {}
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        handleUnauthorized()
+      }
+    }
   }
 
   const handleNotificationClick = async (item: NotificationItem) => {
@@ -104,7 +120,12 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
         })
         setNotifications((prev) => prev.map((entry) => entry.id === item.id ? { ...entry, is_read: true } : entry))
         setUnreadCount((prev) => Math.max(0, prev - 1))
-      } catch {}
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          handleUnauthorized()
+          return
+        }
+      }
     }
 
     setNotificationsOpen(false)
@@ -125,7 +146,12 @@ export function Navigation({ isAuthenticated, onLogout }: NavigationProps) {
         { headers: { Authorization: `Bearer ${token}` } },
       )
       await loadNotifications()
-    } catch {
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        handleUnauthorized()
+        return
+      }
+
       // ignore, dropdown remains open with the same notification
     } finally {
       setFriendRequestActionId(null)

@@ -80,6 +80,13 @@ export default function Home() {
         setShowGamePreferencesModal(true)
       }
     } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        localStorage.removeItem(TOKEN_KEY)
+        setToken(null)
+        setShowGamePreferencesModal(false)
+        return
+      }
+
       console.error('Error checking game preferences:', err)
     }
   }, [])
