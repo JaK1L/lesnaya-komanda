@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Pencil, Trash2, User, Zap } from 'lucide-react'
 import { UserModal } from '../../../components/admin/UserModal'
@@ -122,10 +123,6 @@ export default function AdminUsersPage() {
 
   const handleSave = () => {
     void fetchUsers()
-  }
-
-  const handleOpenProfile = (user: User) => {
-    router.push(`/profile/${encodeURIComponent(user.public_profile_identifier)}`)
   }
 
   const handleDelete = async (user: User) => {
@@ -309,9 +306,13 @@ export default function AdminUsersPage() {
                   </div>
                 </div>
                 <div className={styles.cardActions}>
-                  <button onClick={() => handleOpenProfile(user)} className={styles.editButton} title="Открыть профиль">
+                  <Link
+                    href={`/profile/${encodeURIComponent(user.public_profile_identifier)}`}
+                    className={styles.editButton}
+                    title="Открыть профиль"
+                  >
                     <User size={15} />
-                  </button>
+                  </Link>
                   <button onClick={() => setXpModal(user)} className={styles.editButton} title="Выдать XP">
                     <Zap size={15} />
                   </button>

@@ -195,7 +195,7 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
       <div key={comment.id} className={styles.commentThread}>
         <div className={styles.comment} style={{ marginLeft: depth > 0 ? Math.min(depth, 3) * 18 : 0 }}>
           {profileHref ? (
-            <Link href={profileHref} className={styles.commentAvatarLink} onClick={onClose}>
+            <Link href={profileHref} className={styles.commentAvatarLink}>
               {comment.user_avatar_url ? (
                 <img
                   src={getImageUrl(comment.user_avatar_url) || ''}
@@ -216,7 +216,7 @@ export function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
           <div className={styles.commentBody}>
             <div className={styles.commentHeader}>
               {profileHref ? (
-                <Link href={profileHref} className={styles.commentAuthorLink} onClick={onClose}>
+                <Link href={profileHref} className={styles.commentAuthorLink}>
                   {comment.user_name}
                 </Link>
               ) : (
